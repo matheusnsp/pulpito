@@ -30,7 +30,10 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
         importScripts: ['push-sw.js'],
-        globIgnores: ['**/pdf-*.js', '**/pdf.worker*', '**/jszip*.js'],
+        globIgnores: [
+          '**/pdf-*.js', '**/pdf.worker*', '**/jszip*.js',
+          '**/*-cyrillic*', '**/*-greek*', '**/*-vietnamese*',
+        ],          
         navigateFallback: '/index.html',
         cleanupOutdatedCaches: true,
         runtimeCaching: [
