@@ -3,8 +3,7 @@ import { Link, Navigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { normalizarUsuario, usuarioNovoValido, usuarioParaEmail } from '../lib/usuario'
-
-const campo = 'w-full rounded-lg bg-neutral-900 px-3 py-2.5 ring-1 ring-neutral-800 outline-none focus:ring-neutral-600'
+import Marca from '../components/Marca'
 
 export default function CriarConta() {
   const { sessao } = useAuth()
@@ -35,39 +34,52 @@ export default function CriarConta() {
         ? 'Esse usuário já existe. Escolha outro ou entre na sua conta.'
         : m.includes('password')
           ? 'Senha fraca demais. Use pelo menos 6 caracteres.'
-          : 'Não foi possível criar a conta. Tente de novo.')
+          : 'Não foi possível criar a conta. Verifique a internet e tente de novo.')
       return
     }
     if (!data.session) setErro('Conta criada, mas a confirmação automática está desligada no Supabase.')
   }
 
   return (
-    <div className="flex min-h-full items-center justify-center p-6">
-      <form onSubmit={criar} className="w-full max-w-sm space-y-3">
-        <h1 className="mb-4 text-2xl font-semibold">Criar conta</h1>
+    <div className="flex min-h-full items-center justify-center px-6 py-10">
+      <div className="w-full max-w-sm">
+        <Marca className="text-4xl" />
+        <h1 className="mt-10 text-2xl font-semibold">Criar conta</h1>
+        <p className="mt-1 text-texto-2">Seu usuário é seu nome e sobrenome, separados por ponto.</p>
 
-        <input type="text" required placeholder="nome.sobrenome" value={usuario}
-          onChange={(e) => setUsuario(e.target.value)} className={campo}
-          autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false} />
-        {usuario && final !== usuario && (
-          <p className="text-sm text-neutral-400">Seu usuário será <b className="text-neutral-200">{final}</b></p>
-        )}
+        <form onSubmit={criar} className="mt-6 space-y-4">
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-semibold">Usuário</span>
+            <input type="text" required placeholder="maria.souza" value={usuario}
+              onChange={(e) => setUsuario(e.target.value)} className="campo"
+              autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false} />
+            {usuario && final !== usuario && (
+              <span className="mt-1.5 block text-sm text-texto-2">
+                Vai ficar assim: <b className="text-texto">{final}</b>
+              </span>
+            )}
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-semibold">Senha</span>
+            <input type="password" required autoComplete="new-password" placeholder="Pelo menos 6 caracteres"
+              value={senha} onChange={(e) => setSenha(e.target.value)} className="campo" />
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-semibold">Repita a senha</span>
+            <input type="password" required autoComplete="new-password"
+              value={confirmacao} onChange={(e) => setConfirmacao(e.target.value)} className="campo" />
+          </label>
+          {erro && <p role="alert" className="text-sm text-perigo">{erro}</p>}
+          <button disabled={enviando} className="botao-primario w-full">
+            {enviando ? 'Criando conta…' : 'Criar conta'}
+          </button>
+        </form>
 
-        <input type="password" required autoComplete="new-password" placeholder="Senha (mínimo 6 caracteres)"
-          value={senha} onChange={(e) => setSenha(e.target.value)} className={campo} />
-        <input type="password" required autoComplete="new-password" placeholder="Repita a senha"
-          value={confirmacao} onChange={(e) => setConfirmacao(e.target.value)} className={campo} />
-
-        {erro && <p className="text-sm text-red-400">{erro}</p>}
-
-        <button disabled={enviando}
-          className="w-full rounded-lg bg-neutral-100 py-2.5 font-medium text-neutral-900 disabled:opacity-50">
-          {enviando ? 'Criando…' : 'Criar conta'}
-        </button>
-        <p className="text-center text-sm text-neutral-500">
-          Já tem conta? <Link to="/login" className="text-neutral-200 underline">Entrar</Link>
+        <p className="mt-8 text-center text-sm text-texto-2">
+          Já tem conta?{' '}
+          <Link to="/login" className="font-semibold text-acao underline-offset-4 hover:underline">Entrar</Link>
         </p>
-      </form>
+      </div>
     </div>
   )
 }

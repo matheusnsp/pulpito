@@ -3,8 +3,7 @@ import { Link, Navigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { normalizarUsuario, usuarioValido, usuarioParaEmail } from '../lib/usuario'
-
-const campo = 'w-full rounded-lg bg-neutral-900 px-3 py-2.5 ring-1 ring-neutral-800 outline-none focus:ring-neutral-600'
+import Marca from '../components/Marca'
 
 export default function Login() {
   const { sessao } = useAuth()
@@ -21,42 +20,46 @@ export default function Login() {
     e.preventDefault()
     setErro('')
     const nome = normalizarUsuario(usuario)
-    if (!usuarioValido(nome)) {
-      setErro('Usuário inválido. Use o formato nome.sobrenome.')
-      return
-    }
+    if (!usuarioValido(nome)) { setErro('Digite seu usuário no formato nome.sobrenome.'); return }
     setEnviando(true)
-    const { error } = await supabase.auth.signInWithPassword({
-      email: usuarioParaEmail(nome),
-      password: senha,
-    })
+    const { error } = await supabase.auth.signInWithPassword({ email: usuarioParaEmail(nome), password: senha })
     setEnviando(false)
     if (error) {
       setErro(error.message === 'Invalid login credentials'
         ? 'Usuário ou senha incorretos.'
-        : 'Não foi possível entrar. Tente de novo.')
+        : 'Não foi possível entrar. Verifique a internet e tente de novo.')
     }
   }
 
   return (
-    <div className="flex min-h-full items-center justify-center p-6">
-      <form onSubmit={entrar} className="w-full max-w-sm space-y-3">
-        <h1 className="mb-4 text-2xl font-semibold">Entrar</h1>
-        <input type="text" required placeholder="nome.sobrenome" value={usuario}
-          onChange={(e) => setUsuario(e.target.value)} className={campo}
-          autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false} />
-        <input type="password" required autoComplete="current-password" placeholder="Senha"
-          value={senha} onChange={(e) => setSenha(e.target.value)} className={campo} />
-        {erro && <p className="text-sm text-red-400">{erro}</p>}
-        <button disabled={enviando}
-          className="w-full rounded-lg bg-neutral-100 py-2.5 font-medium text-neutral-900 disabled:opacity-50">
-          {enviando ? 'Entrando…' : 'Entrar'}
-        </button>
-        <p className="text-center text-sm text-neutral-500">
+    <div className="flex min-h-full items-center justify-center px-6 py-10">
+      <div className="w-full max-w-sm">
+        <Marca className="text-4xl" />
+        <p className="mt-2 text-texto-2">Suas mensagens, a Bíblia e o telão no mesmo lugar.</p>
+
+        <form onSubmit={entrar} className="mt-10 space-y-4">
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-semibold">Usuário</span>
+            <input type="text" required placeholder="nome.sobrenome" value={usuario}
+              onChange={(e) => setUsuario(e.target.value)} className="campo"
+              autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false} />
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-semibold">Senha</span>
+            <input type="password" required autoComplete="current-password"
+              value={senha} onChange={(e) => setSenha(e.target.value)} className="campo" />
+          </label>
+          {erro && <p role="alert" className="text-sm text-perigo">{erro}</p>}
+          <button disabled={enviando} className="botao-primario w-full">
+            {enviando ? 'Entrando…' : 'Entrar'}
+          </button>
+        </form>
+
+        <p className="mt-8 text-center text-sm text-texto-2">
           Ainda não tem conta?{' '}
-          <Link to="/criar-conta" className="text-neutral-200 underline">Criar conta</Link>
+          <Link to="/criar-conta" className="font-semibold text-acao underline-offset-4 hover:underline">Criar conta</Link>
         </p>
-      </form>
+      </div>
     </div>
   )
 }
