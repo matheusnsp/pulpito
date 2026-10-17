@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { CAMPOS_TOPICO, type Mensagem, type Topico } from '../lib/tipos'
+import { CAMPOS_TOPICO, type Mensagem, type Pasta, type Topico } from '../lib/tipos'
 import { parseReferencia, formatarReferencia, lerReferencia, type VersaoId } from '../lib/biblia'
 
 type Status = 'salvo' | 'salvando' | 'erro'
@@ -50,20 +50,23 @@ export default function EditorMensagem() {
   const { id } = useParams()
   const [mensagem, setMensagem] = useState<Mensagem | null | undefined>(undefined)
   const [topicos, setTopicos] = useState<Topico[]>([])
+  const [pastas, setPastas] = useState<Pasta[]>([])
   const [aberto, setAberto] = useState<string | null>(null)
   const [status, setStatus] = useState<Status>('salvo')
   const pendentes = useRef(new Map<string, Pendente>())
 
-  /* Carrega a mensagem e os tópicos */
+  /* Carrega a mensagem, os tópicos e as pastas */
   useEffect(() => {
     let ativo = true
     Promise.all([
       supabase.from('mensagens').select('*').eq('id', id!).maybeSingle(),
       supabase.from('topicos').select('*').eq('mensagem_id', id!).order('ordem'),
-    ]).then(([m, t]) => {
+      supabase.from('pastas').select('id, nome').order('nome'),
+    ]).then(([m, t, p]) => {
       if (!ativo) return
       setMensagem((m.data as Mensagem) ?? null)
       setTopicos((t.data as Topico[]) ?? [])
+      setPastas((p.data as Pasta[]) ?? [])
     })
     return () => { ativo = false }
   }, [id])
@@ -160,6 +163,10 @@ export default function EditorMensagem() {
         <span className={`ml-auto text-sm ${status === 'erro' ? 'text-red-400' : 'text-neutral-500'}`}>
           {textoStatus}
         </span>
+        <Link to={`/mensagem/${mensagem.id}/slides`}
+          className="rounded-lg px-4 py-2 ring-1 ring-neutral-700 hover:bg-neutral-900">
+          Slides
+        </Link>
         <Link to={`/pregar/${mensagem.id}`}
           className="rounded-lg bg-neutral-100 px-4 py-2 font-medium text-neutral-900">
           Pregar
@@ -170,7 +177,7 @@ export default function EditorMensagem() {
         placeholder="Título da mensagem"
         className="mb-3 w-full bg-transparent text-3xl font-semibold outline-none" />
 
-      <div className="mb-6 grid gap-3 sm:grid-cols-[1fr_auto]">
+      <div className="mb-6 grid gap-3 sm:grid-cols-[1fr_auto_auto]">
         <div>
           <label className="mb-1 block text-sm text-neutral-400">Texto base</label>
           <input value={mensagem.texto_base ?? ''} placeholder="ex: Rm 8:28"
@@ -185,6 +192,15 @@ export default function EditorMensagem() {
               if (n >= 1 && n <= 300) alterarMensagem({ tempo_minutos: n })
             }}
             className={`${campo} sm:w-28`} />
+        </div>
+        <div>
+          <label className="mb-1 block text-sm text-neutral-400">Pasta</label>
+          <select value={mensagem.pasta_id ?? ''}
+            onChange={(e) => alterarMensagem({ pasta_id: e.target.value || null })}
+            className={`${campo} sm:w-44`}>
+            <option value="">Sem pasta</option>
+            {pastas.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
+          </select>
         </div>
       </div>
 

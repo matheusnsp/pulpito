@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import { supabase } from './supabase'
+import type { EstiloSlide } from './tipos'
 
 export type SlideTelao =
   | { tipo: 'vazio' }
@@ -10,6 +11,10 @@ export type SlideTelao =
       referencia?: string; textoVersiculo?: string; frase?: string
     }
   | { tipo: 'versiculo'; referencia: string; texto: string }
+  | {
+      tipo: 'personalizado'; titulo?: string | null; subtitulo?: string | null
+      texto?: string | null; fundo?: string | null; estilo?: Partial<EstiloSlide> | null
+    }
 
 export const CHAVE_TELAO = 'pulpito-telao'
 export const canalTelao = (codigo: string) => `telao-${codigo}`

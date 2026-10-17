@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import type { Mensagem, Topico } from '../lib/tipos'
+import type { Mensagem, Slide, Topico } from '../lib/tipos'
 import {
   parseReferencia, formatarReferencia, lerCapitulo, lerReferencia, nomeDoLivro, type VersaoId,
 } from '../lib/biblia'
@@ -209,7 +209,9 @@ export default function Pregar() {
   const { id } = useParams()
   const [mensagem, setMensagem] = useState<Mensagem | null | undefined>(undefined)
   const [topicos, setTopicos] = useState<Topico[]>([])
+  const [slides, setSlides] = useState<Slide[]>([])
   const [indice, setIndice] = useState(0)
+  const [subEstado, setSubEstado] = useState({ pagina: 0, sub: 0 })
   const [biblia, setBiblia] = useState<string | null>(null)
   const [escala, setEscala] = useState(() => {
     const salvo = localStorage.getItem(CHAVE_ESCALA)
@@ -238,13 +240,36 @@ export default function Pregar() {
     Promise.all([
       supabase.from('mensagens').select('*').eq('id', id!).maybeSingle(),
       supabase.from('topicos').select('*').eq('mensagem_id', id!).order('ordem'),
-    ]).then(([m, t]) => {
+      supabase.from('slides').select('*').eq('mensagem_id', id!).order('ordem'),
+    ]).then(([m, t, s]) => {
       if (!ativo) return
       setMensagem((m.data as Mensagem) ?? null)
       setTopicos((t.data as Topico[]) ?? [])
+      setSlides((s.data as Slide[]) ?? [])
     })
     return () => { ativo = false }
   }, [id])
+
+  // Slides personalizados da página atual (capa ou tópico)
+  const slidesDaPagina = useMemo(() => {
+    const topicoId = indice > 0 ? topicos[indice - 1]?.id ?? null : null
+    return slides.filter((s) => s.topico_id === topicoId).sort((a, b) => a.ordem - b.ordem)
+  }, [slides, topicos, indice])
+
+  const sub = subEstado.pagina === indice
+    ? Math.max(0, Math.min(subEstado.sub, slidesDaPagina.length - 1))
+    : 0
+
+  // Próximo/anterior: passa pelos slides do tópico antes de mudar de tópico
+  const ir = useCallback((dir: -1 | 1) => {
+    const qtd = slidesDaPagina.length
+    if (dir === 1 && sub < qtd - 1) { setSubEstado({ pagina: indice, sub: sub + 1 }); return }
+    if (dir === -1 && sub > 0) { setSubEstado({ pagina: indice, sub: sub - 1 }); return }
+    const novo = Math.min(Math.max(indice + dir, 0), topicos.length)
+    if (novo === indice) return
+    setIndice(novo)
+    setSubEstado({ pagina: novo, sub: dir === -1 ? 999 : 0 })
+  }, [slidesDaPagina.length, sub, indice, topicos.length])
 
   useEffect(() => { localStorage.setItem(CHAVE_ESCALA, String(escala)) }, [escala])
 
@@ -258,6 +283,15 @@ export default function Pregar() {
     if (!mensagem || !codigoTelao) return
     if (telaoApagado) { enviar({ tipo: 'vazio' }); return }
     if (versiculoProjetado) { enviar(versiculoProjetado); return }
+
+    const personalizado = slidesDaPagina[sub]
+    if (personalizado) {
+      enviar({
+        tipo: 'personalizado', titulo: personalizado.titulo, subtitulo: personalizado.subtitulo,
+        texto: personalizado.texto, fundo: personalizado.fundo, estilo: personalizado.estilo,
+      })
+      return
+    }
 
     const topico = indice > 0 ? topicos[indice - 1] : null
     const refTexto = topico ? topico.versiculo : mensagem.texto_base
@@ -283,8 +317,9 @@ export default function Pregar() {
       })
       .catch(() => {})
     return () => { ativo = false }
-  }, [mensagem, topicos, indice, codigoTelao, telaoApagado, versiculoProjetado, enviar])
+  }, [mensagem, topicos, indice, sub, slidesDaPagina, codigoTelao, telaoApagado, versiculoProjetado, enviar])
 
+  // Relógio: a cada segundo parado, a cada 250ms com o cronômetro rodando
   useEffect(() => {
     const intervalo = setInterval(() => setAgora(Date.now()), rodando ? 250 : 1000)
     return () => clearInterval(intervalo)
@@ -320,16 +355,12 @@ export default function Pregar() {
         if (e.key === 'Escape') { setBiblia(null); setVersiculoProjetado(null) }
         return
       }
-      if (['ArrowRight', 'PageDown'].includes(e.key)) setIndice((i) => Math.min(i + 1, topicos.length))
-      if (['ArrowLeft', 'PageUp'].includes(e.key)) setIndice((i) => Math.max(i - 1, 0))
+      if (['ArrowRight', 'PageDown'].includes(e.key)) ir(1)
+      if (['ArrowLeft', 'PageUp'].includes(e.key)) ir(-1)
     }
     window.addEventListener('keydown', tecla)
     return () => window.removeEventListener('keydown', tecla)
-  }, [biblia, painelTelao, topicos.length])
-
-  function ir(dir: -1 | 1) {
-    setIndice((i) => Math.min(Math.max(i + dir, 0), topicos.length))
-  }
+  }, [biblia, painelTelao, ir])
 
   function fecharBiblia() {
     setBiblia(null)
@@ -378,6 +409,8 @@ export default function Pregar() {
   const tam = TAMANHOS[escala]
   const hora = new Date(agora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
   const topico = indice > 0 ? topicos[indice - 1] : null
+  const noInicio = indice === 0 && sub === 0
+  const noFim = indice === topicos.length && sub >= slidesDaPagina.length - 1
 
   const secoes = topico ? ([
     ['Observação', topico.observacao],
@@ -484,12 +517,15 @@ export default function Pregar() {
       </main>
 
       <footer className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-t border-neutral-800 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-        <button onClick={() => ir(-1)} disabled={indice === 0}
+        <button onClick={() => ir(-1)} disabled={noInicio}
           className="rounded-xl py-4 text-lg ring-1 ring-neutral-800 disabled:opacity-30">← Anterior</button>
-        <span className="px-3 tabular-nums text-neutral-500">
+        <span className="px-3 text-center tabular-nums text-neutral-500">
           {indice === 0 ? 'Início' : `${indice} / ${topicos.length}`}
+          {slidesDaPagina.length > 1 && (
+            <span className="block text-xs">slide {sub + 1}/{slidesDaPagina.length}</span>
+          )}
         </span>
-        <button onClick={() => ir(1)} disabled={indice === topicos.length}
+        <button onClick={() => ir(1)} disabled={noFim}
           className="rounded-xl bg-neutral-100 py-4 text-lg font-medium text-neutral-900 disabled:opacity-30">Próximo →</button>
       </footer>
 

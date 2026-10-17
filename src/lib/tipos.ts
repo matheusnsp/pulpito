@@ -44,3 +44,43 @@ export const OPCOES_LEMBRETE = [
   { minutos: 60, rotulo: '1 hora antes' },
   { minutos: 15, rotulo: '15 min antes' },
 ]
+
+export type Pasta = {
+  id: string
+  nome: string
+}
+
+export type EstiloSlide = {
+  cor: string
+  alinhamento: 'left' | 'center'
+  tamanho: 'p' | 'm' | 'g'
+  fonte: 'sans' | 'serif'
+  escurecer: number // 0 a 0.8, usado só com imagem de fundo
+}
+
+export const ESTILO_PADRAO: EstiloSlide = {
+  cor: '#ffffff', alinhamento: 'center', tamanho: 'm', fonte: 'sans', escurecer: 0.45,
+}
+
+export type Slide = {
+  id: string
+  mensagem_id: string
+  topico_id: string | null
+  ordem: number
+  titulo: string | null
+  subtitulo: string | null
+  texto: string | null
+  fundo: string | null // cor, degradê CSS ou "img:URL"
+  estilo: Partial<EstiloSlide>
+}
+
+export const FUNDOS_PRONTOS = [
+  { nome: 'Preto', valor: '#000000' },
+  { nome: 'Grafite', valor: '#1c1c1e' },
+  { nome: 'Azul noite', valor: 'linear-gradient(135deg, #0f172a, #1e3a8a)' },
+  { nome: 'Vinho', valor: 'linear-gradient(135deg, #2a0a12, #7f1d1d)' },
+  { nome: 'Floresta', valor: 'linear-gradient(135deg, #052e16, #166534)' },
+  { nome: 'Aurora', valor: 'linear-gradient(135deg, #1e1b4b, #6d28d9 55%, #db2777)' },
+  { nome: 'Areia', valor: 'linear-gradient(135deg, #fef3c7, #fde68a)' },
+  { nome: 'Branco', valor: '#ffffff' },
+]

@@ -10,6 +10,7 @@ import Pregar from './pages/Pregar'
 import Projetar from './pages/Projetar'
 import Conectar from './pages/Conectar'
 import Agenda from './pages/Agenda'
+import EditorSlides from './pages/EditorSlides'
 
 function Layout() {
   const { sessao } = useAuth()
@@ -59,6 +60,7 @@ export default function App() {
         <Route element={<Layout />}>
           <Route path="/" element={<Mensagens />} />
           <Route path="/mensagem/:id" element={<EditorMensagem />} />
+          <Route path="/mensagem/:id/slides" element={<EditorSlides />} />
           <Route path="/biblia" element={<Biblia />} />
           <Route path="/agenda" element={<Agenda />} />
           <Route path="/conectar/:codigo" element={<Conectar />} />

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { supabase } from '../lib/supabase'
 import { canalTelao, codigoValido, gerarCodigo, type SlideTelao } from '../lib/telao'
+import SlideVisual from '../components/SlideVisual'
 
 const CHAVE_CODIGO = 'pulpito-codigo-telao'
 
@@ -10,6 +11,9 @@ const porTamanho = (t: string, grande: string, medio: string, pequeno: string) =
 
 function Slide({ slide }: { slide: SlideTelao }) {
   if (slide.tipo === 'vazio') return null
+
+  // Slide montado no editor de slides: mesmo visual da prévia
+  if (slide.tipo === 'personalizado') return <SlideVisual slide={slide} preencher />
 
   if (slide.tipo === 'versiculo') return (
     <div className="flex h-full flex-col items-center justify-center gap-[4vh] px-[8vw] text-center">
