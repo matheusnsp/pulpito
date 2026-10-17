@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { AuthProvider } from './lib/auth'
 import App from './App'
+import AvisoAtualizacao from './components/AvisoAtualizacao'
 import './index.css'
 
 createRoot(document.getElementById('root')!).render(
@@ -10,6 +11,7 @@ createRoot(document.getElementById('root')!).render(
     <BrowserRouter>
       <AuthProvider>
         <App />
+        <AvisoAtualizacao />
       </AuthProvider>
     </BrowserRouter>
   </StrictMode>

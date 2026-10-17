@@ -29,6 +29,7 @@ export default function Biblia() {
   const [busca, setBusca] = useState('')
   const [erroBusca, setErroBusca] = useState('')
   const [marcados, setMarcados] = useState<Set<string>>(lerMarcados)
+  const [download, setDownload] = useState<'' | 'baixando' | 'ok' | 'erro'>('')
 
   const chaveAtual = `${versao}.${livro}.${capitulo}`
   const carregando = resultado?.chave !== chaveAtual
@@ -55,6 +56,20 @@ export default function Biblia() {
     if (!carregando && destaque)
       document.getElementById(`v-${destaque.inicio}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' })
   }, [carregando, destaque])
+
+  // Baixa todas as versões para o aparelho (usar sem internet)
+  async function baixarTodas() {
+    setDownload('baixando')
+    try {
+      await Promise.all(VERSOES.map((v) =>
+        fetch(`${import.meta.env.BASE_URL}biblia/${v.id}.json`).then((r) => {
+          if (!r.ok) throw new Error()
+        })))
+      setDownload('ok')
+    } catch {
+      setDownload('erro')
+    }
+  }
 
   function irPara(e: FormEvent) {
     e.preventDefault()
@@ -108,7 +123,7 @@ export default function Biblia() {
       </form>
       {erroBusca && <p className="mb-2 text-sm text-red-400">{erroBusca}</p>}
 
-      <div className="mb-4 flex flex-wrap gap-2">
+      <div className="mb-2 flex flex-wrap gap-2">
         <select value={versao} onChange={(e) => setVersao(e.target.value as VersaoId)} className={campo}>
           {VERSOES.map((v) => <option key={v.id} value={v.id}>{v.id}</option>)}
         </select>
@@ -122,6 +137,16 @@ export default function Biblia() {
           ))}
         </select>
       </div>
+
+      <button onClick={baixarTodas} disabled={download === 'baixando'}
+        className="mb-4 text-sm text-sky-400 disabled:opacity-50">
+        {{
+          '': '⬇ Baixar todas as versões para usar sem internet',
+          baixando: 'Baixando…',
+          ok: '✓ Versões salvas neste aparelho',
+          erro: 'Falha ao baixar. Tente com internet.',
+        }[download]}
+      </button>
 
       <div className="mb-4 flex items-center justify-between">
         <button onClick={anterior} className={botao} disabled={livro === 'GEN' && capitulo === 1}>←</button>

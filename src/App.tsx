@@ -13,6 +13,10 @@ import Agenda from './pages/Agenda'
 
 function Layout() {
   const { sessao } = useAuth()
+    async function sair() {
+    if ('caches' in window) await caches.delete('supabase-api')
+    await supabase.auth.signOut()
+  }
   const link = ({ isActive }: { isActive: boolean }) =>
     `px-3 py-2 rounded-lg ${isActive ? 'bg-neutral-800' : 'text-neutral-400'}`
 
@@ -25,7 +29,7 @@ function Layout() {
         <span className="ml-auto text-sm text-neutral-500">
           {emailParaUsuario(sessao?.user.email)}
         </span>
-        <button onClick={() => supabase.auth.signOut()}
+        <button onClick={sair}
           className="px-3 py-2 text-sm text-neutral-500 hover:text-neutral-300">
           Sair
         </button>
