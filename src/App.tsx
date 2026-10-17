@@ -6,6 +6,7 @@ import Biblia from './pages/Biblia'
 import Login from './pages/Login'
 import Mensagens from './pages/Mensagens'
 import EditorMensagem from './pages/EditorMensagem'
+import Pregar from './pages/Pregar'
 
 const Tela = ({ nome }: { nome: string }) => (
   <div className="p-6 text-xl font-semibold">{nome}</div>
@@ -42,7 +43,7 @@ function Protegido() {
   const location = useLocation()
   if (carregando) return <div className="p-6 text-neutral-500">Carregando…</div>
   if (!sessao) return <Navigate to="/login" replace state={{ de: location.pathname }} />
-  return <Layout />
+  return <Outlet />
 }
 
 export default function App() {
@@ -51,11 +52,13 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/projetar" element={<Tela nome="Tela do telão" />} />
       <Route element={<Protegido />}>
-        <Route path="/" element={<Mensagens />} />
-        <Route path="/mensagem/:id" element={<EditorMensagem />} />
-        <Route path="/pregar/:id" element={<Tela nome="Modo pregação" />} />
-        <Route path="/biblia" element={<Biblia />} />
-        <Route path="/agenda" element={<Tela nome="Agenda" />} />
+        <Route path="/pregar/:id" element={<Pregar />} />
+        <Route element={<Layout />}>
+          <Route path="/" element={<Mensagens />} />
+          <Route path="/mensagem/:id" element={<EditorMensagem />} />
+          <Route path="/biblia" element={<Biblia />} />
+          <Route path="/agenda" element={<Tela nome="Agenda" />} />
+        </Route>
       </Route>
     </Routes>
   )
