@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { OPCOES_LEMBRETE, type Evento } from '../lib/tipos'
+import CartaoNotificacoes from '../components/CartaoNotificacoes'
 
 const pad = (n: number) => String(n).padStart(2, '0')
 const chaveDia = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
@@ -239,6 +240,8 @@ export default function Agenda() {
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-4">
       {erro && <p className="text-sm text-red-400">{erro}</p>}
+
+      <CartaoNotificacoes />
 
       <section className="rounded-2xl p-3 ring-1 ring-neutral-800">
         <div className="mb-3 flex items-center gap-2">

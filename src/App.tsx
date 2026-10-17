@@ -2,24 +2,29 @@ import { Routes, Route, NavLink, Navigate, Outlet, useLocation } from 'react-rou
 import { useAuth } from './lib/auth'
 import { supabase } from './lib/supabase'
 import { emailParaUsuario } from './lib/usuario'
+import { desativarNotificacoes } from './lib/notificacoes'
 import Biblia from './pages/Biblia'
 import Login from './pages/Login'
 import Mensagens from './pages/Mensagens'
 import EditorMensagem from './pages/EditorMensagem'
+import EditorSlides from './pages/EditorSlides'
 import Pregar from './pages/Pregar'
 import Projetar from './pages/Projetar'
 import Conectar from './pages/Conectar'
 import Agenda from './pages/Agenda'
-import EditorSlides from './pages/EditorSlides'
 
 function Layout() {
   const { sessao } = useAuth()
-    async function sair() {
+  const link = ({ isActive }: { isActive: boolean }) =>
+    `px-3 py-2 rounded-lg ${isActive ? 'bg-neutral-800' : 'text-neutral-400'}`
+
+  // Ao sair: este aparelho para de receber lembretes desta conta
+  // e a cópia offline das mensagens é apagada
+  async function sair() {
+    await desativarNotificacoes().catch(() => {})
     if ('caches' in window) await caches.delete('supabase-api')
     await supabase.auth.signOut()
   }
-  const link = ({ isActive }: { isActive: boolean }) =>
-    `px-3 py-2 rounded-lg ${isActive ? 'bg-neutral-800' : 'text-neutral-400'}`
 
   return (
     <div className="flex h-full flex-col">
