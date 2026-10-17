@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import {
+  BookOpen, ChevronLeft, ChevronRight, Minus, MonitorPlay, Plus, RotateCcw, Type, X,
+} from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Mensagem, Slide, Topico } from '../lib/tipos'
 import {
@@ -10,9 +13,9 @@ import { CHAVE_TELAO, codigoValido, useEmissorTelao, type SlideTelao } from '../
 type SlideVersiculo = Extract<SlideTelao, { tipo: 'versiculo' }>
 
 const TAMANHOS = [
-  { titulo: 'text-2xl', corpo: 'text-base' },
   { titulo: 'text-3xl', corpo: 'text-lg' },
   { titulo: 'text-4xl', corpo: 'text-xl' },
+  { titulo: 'text-[2.6rem]', corpo: 'text-[1.4rem]' },
   { titulo: 'text-5xl', corpo: 'text-2xl' },
   { titulo: 'text-6xl', corpo: 'text-3xl' },
 ]
@@ -24,6 +27,8 @@ function fmt(ms: number) {
 }
 
 const versaoAtual = () => (localStorage.getItem('pulpito-versao') as VersaoId) || 'ARA'
+
+const iconeBotao = 'flex h-10 w-10 items-center justify-center rounded-xl text-texto-2 hover:bg-superficie-2 hover:text-texto'
 
 /* ── Bíblia por cima da tela ── */
 function BibliaSobreposta({ inicial, podeProjetar, projetado, onProjetar, onFechar }: {
@@ -65,7 +70,7 @@ function BibliaSobreposta({ inicial, podeProjetar, projetado, onProjetar, onFech
 
   function buscar(e: FormEvent) {
     e.preventDefault()
-    if (!parseReferencia(consulta)) { setErro('Referência não reconhecida. Ex: Sl 23 ou Jo 3:16'); return }
+    if (!parseReferencia(consulta)) { setErro('Referência não reconhecida. Tente Sl 23 ou Jo 3:16.'); return }
     setErro('')
     setAtual(consulta)
   }
@@ -77,53 +82,57 @@ function BibliaSobreposta({ inicial, podeProjetar, projetado, onProjetar, onFech
   return (
     <div className="fixed inset-0 z-40 bg-black/60" onClick={onFechar}>
       <div onClick={(e) => e.stopPropagation()}
-        className="absolute inset-x-0 bottom-0 flex max-h-[85dvh] flex-col rounded-t-2xl bg-neutral-950 ring-1 ring-neutral-800">
-        <form onSubmit={buscar} className="flex gap-2 border-b border-neutral-800 p-3">
-          <input value={consulta} onChange={(e) => setConsulta(e.target.value)} placeholder='ex: "Sl 23"'
-            className="min-w-0 flex-1 rounded-lg bg-neutral-900 px-3 py-2 ring-1 ring-neutral-800 outline-none" />
-          <button className="rounded-lg px-3 py-2 ring-1 ring-neutral-700">Ir</button>
-          <button type="button" onClick={onFechar}
-            className="rounded-lg bg-neutral-100 px-3 py-2 font-medium text-neutral-900">Fechar</button>
+        className="absolute inset-x-0 bottom-0 flex max-h-[88dvh] flex-col rounded-t-3xl border-t border-borda bg-superficie">
+        <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-borda" aria-hidden />
+        <form onSubmit={buscar} className="flex gap-2 p-4 pb-3">
+          <input value={consulta} onChange={(e) => setConsulta(e.target.value)} placeholder="Sl 23"
+            className="campo min-w-0 flex-1" />
+          <button className="botao-secundario">Ir</button>
+          <button type="button" onClick={onFechar} aria-label="Fechar Bíblia" className={iconeBotao}>
+            <X size={22} />
+          </button>
         </form>
-        <div className="overflow-y-auto p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          {erro && <p className="mb-2 text-sm text-red-400">{erro}</p>}
-          {!ref && <p className="text-neutral-500">Digite uma referência para abrir.</p>}
-          {ref && !carregado && <p className="text-neutral-500">Carregando…</p>}
+
+        <div className="overflow-y-auto px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+          {erro && <p className="mb-3 text-sm text-perigo">{erro}</p>}
+          {!ref && <p className="py-6 text-center text-texto-2">Digite uma referência para abrir.</p>}
+          {ref && !carregado && <p className="py-6 text-center text-texto-2">Carregando…</p>}
           {ref && carregado && (
             <>
-              <div className="mb-3 flex flex-wrap items-center gap-2">
-                <h3 className="text-lg font-semibold">
-                  {nomeCap} <span className="text-sm font-normal text-neutral-500">{versao}</span>
-                </h3>
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <h3 className="font-escritura text-2xl font-semibold">{nomeCap}</h3>
+                <span className="text-sm text-texto-2">{versao}</span>
                 {trecho && (
                   <button onClick={() => onProjetar(trecho.referencia, trecho.texto)}
-                    className="ml-auto rounded-lg bg-sky-500/20 px-3 py-1.5 text-sm text-sky-300 ring-1 ring-sky-500/40">
-                    Projetar {inicio}-{fim}
+                    className="botao ml-auto bg-acao/15 px-3 py-1.5 text-sm text-acao">
+                    <MonitorPlay size={16} /> Projetar {inicio}-{fim}
                   </button>
                 )}
               </div>
               {podeProjetar && (
-                <p className="mb-3 text-xs text-neutral-500">
-                  Toque num versículo para mostrar no telão. Feche a Bíblia para voltar ao slide.
+                <p className="mb-3 text-sm text-texto-2">
+                  Toque num versículo para mostrar no telão. Ao fechar, o slide volta.
                 </p>
               )}
-              {versos.length === 0 && <p className="text-neutral-500">Capítulo não encontrado.</p>}
-              {versos.map((texto, i) => {
-                const n = i + 1
-                const destaque = !!inicio && n >= inicio && n <= (fim ?? inicio)
-                const rotulo = `${nomeCap}:${n}`
-                const noTelao = projetado === rotulo
-                return (
-                  <p key={n} id={`sv-${n}`}
-                    onClick={() => podeProjetar && onProjetar(rotulo, texto)}
-                    className={`rounded-md px-2 py-1 text-lg leading-relaxed
-                      ${podeProjetar ? 'cursor-pointer hover:bg-neutral-900' : ''}
-                      ${destaque ? 'bg-sky-500/15 text-neutral-50' : 'text-neutral-400'}
-                      ${noTelao ? 'ring-2 ring-emerald-400' : ''}`}>
-                    <sup className="mr-1 text-xs text-neutral-500">{n}</sup>{texto}
-                  </p>
-                )
-              })}
+              {versos.length === 0 && <p className="text-texto-2">Capítulo não encontrado.</p>}
+              <div className="space-y-1 font-escritura">
+                {versos.map((texto, i) => {
+                  const n = i + 1
+                  const destaque = !!inicio && n >= inicio && n <= (fim ?? inicio)
+                  const rotulo = `${nomeCap}:${n}`
+                  const noTelao = projetado === rotulo
+                  return (
+                    <p key={n} id={`sv-${n}`}
+                      onClick={() => podeProjetar && onProjetar(rotulo, texto)}
+                      className={`rounded-xl px-3 py-1.5 text-lg leading-relaxed
+                        ${podeProjetar ? 'cursor-pointer hover:bg-superficie-2' : ''}
+                        ${destaque ? 'bg-acao/15 text-texto' : 'text-texto-2'}
+                        ${noTelao ? 'ring-2 ring-[#5DCAA5]' : ''}`}>
+                      <sup className="mr-1.5 font-sans text-xs text-texto-2">{n}</sup>{texto}
+                    </p>
+                  )
+                })}
+              </div>
             </>
           )}
         </div>
@@ -147,47 +156,44 @@ function PainelTelao({ codigo, online, apagado, onConectar, onDesconectar, onAlt
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/60 sm:items-center" onClick={onFechar}>
       <div onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-sm space-y-4 rounded-t-2xl bg-neutral-950 p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] ring-1 ring-neutral-800 sm:rounded-2xl">
-        <h2 className="text-lg font-semibold">Telão</h2>
+        className="w-full max-w-sm space-y-4 rounded-t-3xl border border-borda bg-superficie p-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:rounded-3xl">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold">Telão</h2>
+          <button onClick={onFechar} aria-label="Fechar" className={iconeBotao}><X size={20} /></button>
+        </div>
 
         {!codigo ? (
-          <form className="space-y-3"
+          <form className="space-y-4"
             onSubmit={(e) => { e.preventDefault(); if (codigoValido(digitado)) onConectar(digitado) }}>
-            <p className="text-sm text-neutral-400">
-              No computador do projetor, abra <b className="text-neutral-200">{window.location.host}/projetar</b> e
-              digite o código que aparecer na tela.
+            <p className="text-texto-2">
+              No computador do projetor, abra{' '}
+              <b className="text-texto">{window.location.host}/projetar</b> e digite o código que aparecer.
             </p>
             <input inputMode="numeric" maxLength={6} autoFocus value={digitado} placeholder="000000"
               onChange={(e) => setDigitado(e.target.value.replace(/\D/g, ''))}
-              className="w-full rounded-lg bg-neutral-900 px-3 py-3 text-center font-mono text-3xl tracking-[0.3em] ring-1 ring-neutral-800 outline-none" />
-            <button disabled={!codigoValido(digitado)}
-              className="w-full rounded-lg bg-neutral-100 py-2.5 font-medium text-neutral-900 disabled:opacity-40">
-              Conectar
-            </button>
+              className="campo py-4 text-center text-3xl font-bold tracking-[0.35em] tabular-nums" />
+            <button disabled={!codigoValido(digitado)} className="botao-primario w-full">Conectar</button>
           </form>
         ) : (
           <div className="space-y-3">
-            <p className="flex items-center gap-2">
-              <span className={`h-2.5 w-2.5 rounded-full ${online ? 'bg-emerald-400' : 'bg-amber-400'}`} />
-              {online ? 'Telão conectado' : 'Procurando o telão…'}
-              <span className="ml-auto font-mono text-neutral-500">{codigo}</span>
-            </p>
+            <div className="flex items-center gap-3 rounded-2xl bg-superficie-2 px-4 py-3">
+              <span className={`h-2.5 w-2.5 rounded-full ${online ? 'bg-[#5DCAA5]' : 'bg-amber-400'}`} />
+              <span className="font-semibold">{online ? 'Telão conectado' : 'Procurando o telão…'}</span>
+              <span className="ml-auto tabular-nums text-texto-2">{codigo}</span>
+            </div>
             {!online && (
-              <p className="text-sm text-neutral-500">
-                Confira se a página /projetar está aberta com esse código. Se o código mudou,
-                desconecte e digite o novo.
+              <p className="text-sm text-texto-2">
+                Confira se a página /projetar está aberta com esse código. Se ele mudou, desconecte e digite o novo.
               </p>
             )}
-            <button onClick={onAlternarApagado} className="w-full rounded-lg py-2.5 ring-1 ring-neutral-700">
-              {apagado ? 'Mostrar slides no telão' : 'Apagar telão (tela preta)'}
+            <button onClick={onAlternarApagado} className="botao-secundario w-full">
+              {apagado ? 'Voltar a mostrar os slides' : 'Apagar o telão'}
             </button>
-            <button onClick={onDesconectar} className="w-full rounded-lg py-2.5 text-red-400 ring-1 ring-neutral-800">
+            <button onClick={onDesconectar} className="botao-fantasma w-full text-perigo hover:text-perigo">
               Desconectar
             </button>
           </div>
         )}
-
-        <button onClick={onFechar} className="w-full py-2 text-sm text-neutral-500">Fechar</button>
       </div>
     </div>
   )
@@ -195,11 +201,11 @@ function PainelTelao({ codigo, online, apagado, onConectar, onDesconectar, onAlt
 
 function ChipVersiculo({ texto, classe, onAbrir }: { texto: string; classe: string; onAbrir: () => void }) {
   const ref = parseReferencia(texto)
-  if (!ref) return <p className={`${classe} text-neutral-400`}>{texto}</p>
+  if (!ref) return <p className={`${classe} text-texto-2`}>{texto}</p>
   return (
     <button onClick={onAbrir}
-      className={`${classe} inline-flex items-center gap-2 rounded-full bg-sky-500/15 px-4 py-2 text-sky-300 ring-1 ring-sky-500/30`}>
-      📖 {formatarReferencia(ref)}
+      className={`${classe} inline-flex items-center gap-2 rounded-full bg-acao/15 px-4 py-2 font-semibold text-acao hover:bg-acao/25`}>
+      <BookOpen size={20} /> {formatarReferencia(ref)}
     </button>
   )
 }
@@ -213,6 +219,7 @@ export default function Pregar() {
   const [indice, setIndice] = useState(0)
   const [subEstado, setSubEstado] = useState({ pagina: 0, sub: 0 })
   const [biblia, setBiblia] = useState<string | null>(null)
+  const [painelTexto, setPainelTexto] = useState(false)
   const [escala, setEscala] = useState(() => {
     const salvo = localStorage.getItem(CHAVE_ESCALA)
     return salvo !== null && TAMANHOS[Number(salvo)] ? Number(salvo) : 2
@@ -391,11 +398,11 @@ export default function Pregar() {
     setIniciadoEm(null)
   }
 
-  if (mensagem === undefined) return <p className="p-6 text-neutral-500">Carregando…</p>
+  if (mensagem === undefined) return <div className="escuro h-dvh bg-fundo p-6 text-texto-2">Carregando…</div>
   if (mensagem === null) return (
-    <div className="p-6">
-      <p className="mb-2">Mensagem não encontrada.</p>
-      <Link to="/" className="text-sky-400">Voltar</Link>
+    <div className="escuro h-dvh bg-fundo p-6 text-texto">
+      <p className="mb-3">Mensagem não encontrada.</p>
+      <Link to="/" className="botao-secundario">Voltar para mensagens</Link>
     </div>
   )
 
@@ -403,14 +410,16 @@ export default function Pregar() {
   const decorrido = acumulado + (rodando && iniciadoEm !== null ? agora - iniciadoEm : 0)
   const restante = total - decorrido
   const fracao = decorrido / total
-  const cor = decorrido === 0 ? 'text-neutral-100'
-    : fracao >= 0.8 ? 'text-red-500' : fracao >= 0.5 ? 'text-amber-400' : 'text-emerald-400'
-  const barra = fracao >= 0.8 ? 'bg-red-500' : fracao >= 0.5 ? 'bg-amber-400' : 'bg-emerald-500'
+  const corTempo = decorrido === 0 ? 'text-texto'
+    : fracao >= 1 ? 'text-perigo' : fracao >= 0.8 ? 'text-[#F07167]' : fracao >= 0.5 ? 'text-amber-300' : 'text-texto'
+  const corBarra = fracao >= 0.8 ? 'bg-[#F07167]' : fracao >= 0.5 ? 'bg-amber-400' : 'bg-[#5DCAA5]'
   const tam = TAMANHOS[escala]
   const hora = new Date(agora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
   const topico = indice > 0 ? topicos[indice - 1] : null
   const noInicio = indice === 0 && sub === 0
   const noFim = indice === topicos.length && sub >= slidesDaPagina.length - 1
+  const proximoESlide = sub < slidesDaPagina.length - 1
+  const rotuloProximo = noFim ? 'Fim da mensagem' : proximoESlide ? 'Próximo slide' : 'Próximo tópico'
 
   const secoes = topico ? ([
     ['Observação', topico.observacao],
@@ -419,48 +428,73 @@ export default function Pregar() {
     ['Notas', topico.notas],
   ] as const).filter(([, v]) => v?.trim()) : []
 
-  const botaoTopo = 'rounded-lg px-2.5 py-1.5 text-sm ring-1 ring-neutral-800 hover:bg-neutral-900 disabled:opacity-30'
-  const corTelao = !telaoOnline ? 'bg-amber-400' : telaoApagado ? 'bg-neutral-500' : 'bg-emerald-400'
+  const corTelao = !telaoOnline ? 'bg-amber-400' : telaoApagado ? 'bg-texto-2' : 'bg-[#5DCAA5]'
 
   return (
-    <div className="flex h-dvh flex-col bg-neutral-950">
+    <div className="escuro flex h-dvh flex-col bg-fundo text-texto">
       {fracao >= 1 && (
-        <div className="pointer-events-none fixed inset-0 z-30 animate-pulse border-8 border-red-600" />
+        <div className="pointer-events-none fixed inset-0 z-30 animate-pulse border-[6px] border-perigo" />
       )}
 
-      <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-neutral-800 px-3 py-2">
-        <div className="flex items-center gap-1">
-          <Link to={`/mensagem/${mensagem.id}`} className="px-2 py-1 text-xl text-neutral-400" title="Sair">✕</Link>
-          <button onClick={() => setPainelTelao(true)} className={`${botaoTopo} flex items-center gap-1.5`}>
-            {codigoTelao && <span className={`h-2 w-2 rounded-full ${corTelao}`} />}
-            Telão
-          </button>
-          {!rodando && decorrido > 0 && <button onClick={zerar} className={botaoTopo}>Zerar</button>}
-        </div>
+      {/* Topo */}
+      <header className="relative flex items-center justify-between px-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+        <Link to={`/mensagem/${mensagem.id}`} aria-label="Sair do modo pregação" className={iconeBotao}>
+          <X size={22} />
+        </Link>
 
-        <button onClick={alternarCronometro} className="flex flex-col items-center leading-none">
-          <span className={`font-mono text-4xl font-semibold tabular-nums ${cor}`}>
-            {restante >= 0 ? fmt(restante) : `+${fmt(restante)}`}
-          </span>
-          <span className="mt-1.5 flex items-center gap-2 text-xs text-neutral-500">
-            <span className="font-mono text-sm tabular-nums text-neutral-300">{hora}</span>
-            <span>·</span>
-            <span>{rodando ? 'pausar' : decorrido ? 'pausado' : 'iniciar'}</span>
-          </span>
+        <button onClick={() => setPainelTelao(true)}
+          className="flex items-center gap-2 rounded-full border border-borda px-3.5 py-1.5 text-sm font-semibold text-texto-2 hover:text-texto">
+          {codigoTelao ? <span className={`h-2 w-2 rounded-full ${corTelao}`} /> : <MonitorPlay size={16} />}
+          Telão
         </button>
 
-        <div className="flex items-center justify-end gap-1">
-          <button onClick={() => setEscala((e) => e - 1)} disabled={escala === 0} className={botaoTopo}>A−</button>
-          <button onClick={() => setEscala((e) => e + 1)} disabled={escala === TAMANHOS.length - 1} className={botaoTopo}>A+</button>
-          <button onClick={() => setBiblia(topico?.versiculo || mensagem.texto_base || '')} className={botaoTopo}>Bíblia</button>
+        <div className="flex">
+          <button onClick={() => setPainelTexto((v) => !v)} aria-label="Tamanho do texto" className={iconeBotao}>
+            <Type size={20} />
+          </button>
+          <button onClick={() => setBiblia(topico?.versiculo || mensagem.texto_base || '')}
+            aria-label="Abrir Bíblia" className={iconeBotao}>
+            <BookOpen size={20} />
+          </button>
         </div>
+
+        {painelTexto && (
+          <div className="absolute right-3 top-full z-20 mt-2 flex items-center gap-1 rounded-2xl border border-borda bg-superficie p-1.5 shadow-xl">
+            <button onClick={() => setEscala((e) => Math.max(0, e - 1))} disabled={escala === 0}
+              aria-label="Diminuir texto" className={`${iconeBotao} disabled:opacity-30`}><Minus size={20} /></button>
+            <span className="w-12 text-center text-sm tabular-nums text-texto-2">{escala + 1} de {TAMANHOS.length}</span>
+            <button onClick={() => setEscala((e) => Math.min(TAMANHOS.length - 1, e + 1))}
+              disabled={escala === TAMANHOS.length - 1}
+              aria-label="Aumentar texto" className={`${iconeBotao} disabled:opacity-30`}><Plus size={20} /></button>
+          </div>
+        )}
       </header>
 
-      <div className="h-1 bg-neutral-900">
-        <div className={`h-full ${barra} transition-all`} style={{ width: `${Math.min(fracao, 1) * 100}%` }} />
+      {/* Cronômetro */}
+      <div className="px-5 pt-2 text-center">
+        <button onClick={alternarCronometro} className="leading-none"
+          aria-label={rodando ? 'Pausar cronômetro' : 'Iniciar cronômetro'}>
+          <span className={`block text-6xl font-bold tabular-nums tracking-tight ${corTempo}`}>
+            {restante >= 0 ? fmt(restante) : `+${fmt(restante)}`}
+          </span>
+        </button>
+        <p className="mt-2 flex items-center justify-center gap-2 text-sm text-texto-2">
+          <span>são {hora}</span>
+          <span aria-hidden>·</span>
+          <span>{rodando ? 'toque para pausar' : decorrido ? 'pausado' : 'toque para iniciar'}</span>
+          {!rodando && decorrido > 0 && (
+            <button onClick={zerar} className="ml-1 inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-texto hover:bg-superficie-2">
+              <RotateCcw size={14} /> zerar
+            </button>
+          )}
+        </p>
+        <div className="mx-auto mt-4 h-1 max-w-md overflow-hidden rounded-full bg-superficie-2">
+          <div className={`h-full rounded-full ${corBarra} transition-all`} style={{ width: `${Math.min(fracao, 1) * 100}%` }} />
+        </div>
       </div>
 
-      <main className="flex-1 overflow-y-auto"
+      {/* Conteúdo */}
+      <main className="flex-1 overflow-y-auto" onClick={() => setPainelTexto(false)}
         onTouchStart={(e) => { toqueX.current = e.touches[0].clientX }}
         onTouchEnd={(e) => {
           if (toqueX.current === null) return
@@ -468,27 +502,29 @@ export default function Pregar() {
           toqueX.current = null
           if (Math.abs(dx) > 70) ir(dx < 0 ? 1 : -1)
         }}>
-        <div className="mx-auto max-w-3xl space-y-6 p-5">
+        <div className="mx-auto max-w-3xl px-6 pb-8 pt-8">
           {!topico && (
-            <div className="space-y-4 pt-8">
-              <h1 className={`${tam.titulo} font-semibold leading-tight`}>{mensagem.titulo}</h1>
+            <div className="space-y-5">
+              <p className="text-texto-2">
+                {topicos.length} {topicos.length === 1 ? 'tópico' : 'tópicos'}, {mensagem.tempo_minutos} min
+                {slidesDaPagina.length > 1 && `, slide ${sub + 1} de ${slidesDaPagina.length}`}
+              </p>
+              <h1 className={`${tam.titulo} font-escritura font-semibold leading-[1.1]`}>{mensagem.titulo}</h1>
               {mensagem.texto_base && (
                 <ChipVersiculo texto={mensagem.texto_base} classe={tam.corpo}
                   onAbrir={() => setBiblia(mensagem.texto_base)} />
               )}
-              <p className="text-neutral-500">
-                {topicos.length} {topicos.length === 1 ? 'tópico' : 'tópicos'} · {mensagem.tempo_minutos} min
-              </p>
             </div>
           )}
 
           {topico && (
-            <>
-              <div className="space-y-3">
-                <p className="text-sm uppercase tracking-widest text-neutral-500">
+            <div className="space-y-7">
+              <div className="space-y-4">
+                <p className="text-texto-2">
                   Tópico {indice} de {topicos.length}
+                  {slidesDaPagina.length > 1 && `, slide ${sub + 1} de ${slidesDaPagina.length}`}
                 </p>
-                <h1 className={`${tam.titulo} font-semibold leading-tight`}>
+                <h1 className={`${tam.titulo} font-escritura font-semibold leading-[1.1]`}>
                   {topico.titulo || 'Sem título'}
                 </h1>
                 {topico.versiculo && (
@@ -498,35 +534,34 @@ export default function Pregar() {
               </div>
 
               {topico.frase_chave?.trim() && (
-                <p className={`${tam.corpo} whitespace-pre-wrap rounded-xl border-l-4 border-amber-400 bg-amber-400/10 p-4 font-medium leading-relaxed`}>
+                <p className={`${tam.corpo} whitespace-pre-wrap rounded-none border-l-[3px] border-ouro py-1 pl-4 font-semibold leading-relaxed text-[#F4E7BF]`}>
                   {topico.frase_chave}
                 </p>
               )}
 
               {secoes.map(([rotulo, valor]) => (
                 <section key={rotulo}>
-                  <h2 className="mb-1 text-xs uppercase tracking-widest text-neutral-500">{rotulo}</h2>
-                  <p className={`${tam.corpo} whitespace-pre-wrap leading-relaxed ${rotulo === 'Notas' ? 'text-neutral-400' : ''}`}>
+                  <h2 className="mb-1.5 text-sm font-semibold text-texto-2">{rotulo}</h2>
+                  <p className={`${tam.corpo} whitespace-pre-wrap leading-relaxed ${rotulo === 'Notas' ? 'text-texto-2' : 'text-texto/90'}`}>
                     {valor}
                   </p>
                 </section>
               ))}
-            </>
+            </div>
           )}
         </div>
       </main>
 
-      <footer className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-t border-neutral-800 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-        <button onClick={() => ir(-1)} disabled={noInicio}
-          className="rounded-xl py-4 text-lg ring-1 ring-neutral-800 disabled:opacity-30">← Anterior</button>
-        <span className="px-3 text-center tabular-nums text-neutral-500">
-          {indice === 0 ? 'Início' : `${indice} / ${topicos.length}`}
-          {slidesDaPagina.length > 1 && (
-            <span className="block text-xs">slide {sub + 1}/{slidesDaPagina.length}</span>
-          )}
-        </span>
+      {/* Navegação */}
+      <footer className="grid grid-cols-[auto_1fr] gap-3 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
+        <button onClick={() => ir(-1)} disabled={noInicio} aria-label="Voltar"
+          className="flex h-16 w-16 items-center justify-center rounded-2xl border border-borda text-texto-2 hover:text-texto disabled:opacity-30">
+          <ChevronLeft size={28} />
+        </button>
         <button onClick={() => ir(1)} disabled={noFim}
-          className="rounded-xl bg-neutral-100 py-4 text-lg font-medium text-neutral-900 disabled:opacity-30">Próximo →</button>
+          className="flex h-16 items-center justify-center gap-2 rounded-2xl bg-texto text-lg font-bold text-fundo hover:brightness-95 disabled:opacity-30">
+          {rotuloProximo} {!noFim && <ChevronRight size={22} />}
+        </button>
       </footer>
 
       {biblia !== null && (
