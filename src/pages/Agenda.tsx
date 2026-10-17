@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { OPCOES_LEMBRETE, type Evento } from '../lib/tipos'
 import CartaoNotificacoes from '../components/CartaoNotificacoes'
+import CartaoCalendario from '../components/CartaoCalendario'
 
 const pad = (n: number) => String(n).padStart(2, '0')
 const chaveDia = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
@@ -242,6 +243,7 @@ export default function Agenda() {
       {erro && <p className="text-sm text-red-400">{erro}</p>}
 
       <CartaoNotificacoes />
+      <CartaoCalendario />
 
       <section className="rounded-2xl p-3 ring-1 ring-neutral-800">
         <div className="mb-3 flex items-center gap-2">
