@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Navigate, useLocation } from 'react-router-dom'
+import { Link, Navigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { normalizarUsuario, usuarioValido, usuarioParaEmail } from '../lib/usuario'
@@ -22,7 +22,7 @@ export default function Login() {
     setErro('')
     const nome = normalizarUsuario(usuario)
     if (!usuarioValido(nome)) {
-      setErro('Usuário inválido. Use letras, números, ponto, hífen ou _.')
+      setErro('Usuário inválido. Use o formato nome.sobrenome.')
       return
     }
     setEnviando(true)
@@ -42,7 +42,7 @@ export default function Login() {
     <div className="flex min-h-full items-center justify-center p-6">
       <form onSubmit={entrar} className="w-full max-w-sm space-y-3">
         <h1 className="mb-4 text-2xl font-semibold">Entrar</h1>
-        <input type="text" required placeholder="Usuário" value={usuario}
+        <input type="text" required placeholder="nome.sobrenome" value={usuario}
           onChange={(e) => setUsuario(e.target.value)} className={campo}
           autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false} />
         <input type="password" required autoComplete="current-password" placeholder="Senha"
@@ -52,6 +52,10 @@ export default function Login() {
           className="w-full rounded-lg bg-neutral-100 py-2.5 font-medium text-neutral-900 disabled:opacity-50">
           {enviando ? 'Entrando…' : 'Entrar'}
         </button>
+        <p className="text-center text-sm text-neutral-500">
+          Ainda não tem conta?{' '}
+          <Link to="/criar-conta" className="text-neutral-200 underline">Criar conta</Link>
+        </p>
       </form>
     </div>
   )

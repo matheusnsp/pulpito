@@ -5,6 +5,7 @@ import { emailParaUsuario } from './lib/usuario'
 import { desativarNotificacoes } from './lib/notificacoes'
 import Biblia from './pages/Biblia'
 import Login from './pages/Login'
+import CriarConta from './pages/CriarConta'
 import Mensagens from './pages/Mensagens'
 import EditorMensagem from './pages/EditorMensagem'
 import EditorSlides from './pages/EditorSlides'
@@ -59,6 +60,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/criar-conta" element={<CriarConta />} />
       <Route path="/projetar" element={<Projetar />} />
       <Route element={<Protegido />}>
         <Route path="/pregar/:id" element={<Pregar />} />
