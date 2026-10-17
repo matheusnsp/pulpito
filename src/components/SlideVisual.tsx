@@ -21,7 +21,13 @@ export default function SlideVisual({ slide, preencher = false, className = '' }
   const fundo = slide.fundo || '#000000'
   const imagem = fundo.startsWith('img:') ? fundo.slice(4) : null
   const base: CSSProperties = imagem
-    ? { backgroundImage: `url("${imagem}")`, backgroundSize: 'cover', backgroundPosition: 'center' }
+    ? {
+        backgroundColor: '#000000',
+        backgroundImage: `url("${imagem}")`,
+        backgroundSize: e.ajuste === 'conter' ? 'contain' : 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      }
     : { background: fundo }
   const texto = slide.texto ?? ''
   const tamTexto = texto.length > 300 ? 2.5 : texto.length > 150 ? 3.1 : 3.8
@@ -29,7 +35,9 @@ export default function SlideVisual({ slide, preencher = false, className = '' }
   return (
     <div className={`relative overflow-hidden ${preencher ? 'h-full w-full' : 'aspect-video w-full'} ${className}`}
       style={{ ...base, containerType: 'size' }}>
-      {imagem && <div className="absolute inset-0" style={{ background: `rgba(0,0,0,${e.escurecer})` }} />}
+      {imagem && e.escurecer > 0 && (
+        <div className="absolute inset-0" style={{ background: `rgba(0,0,0,${e.escurecer})` }} />
+      )}
       <div className={`relative flex h-full flex-col justify-center ${e.alinhamento === 'center' ? 'items-center text-center' : 'items-start text-left'}`}
         style={{
           color: e.cor,

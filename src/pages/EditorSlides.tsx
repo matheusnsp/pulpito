@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { useSalvamento } from '../lib/salvamento'
+import { lerArquivos } from '../lib/importar'
 import SlideVisual from '../components/SlideVisual'
 import {
   ESTILO_PADRAO, FUNDOS_PRONTOS, type EstiloSlide, type Mensagem, type Slide, type Topico,
@@ -53,8 +54,12 @@ export default function EditorSlides() {
   const [comFrase, setComFrase] = useState(false)
   const [gerando, setGerando] = useState(false)
   const [enviando, setEnviando] = useState(false)
+  const [painelImportar, setPainelImportar] = useState(false)
+  const [destinoImport, setDestinoImport] = useState('')
+  const [importando, setImportando] = useState<string | null>(null)
   const [erro, setErro] = useState('')
   const arquivo = useRef<HTMLInputElement>(null)
+  const arquivoImport = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     let ativo = true
@@ -208,6 +213,49 @@ export default function EditorSlides() {
     alterar(sel.id, { fundo: `img:${data.publicUrl}` })
   }
 
+  /* Importa PDF, imagens ou .pptx como novos slides no fim da lista */
+  async function importar(lista: FileList | null) {
+    if (!lista?.length || !mensagem || !sessao) return
+    setErro('')
+    try {
+      setImportando('Lendo arquivos…')
+      const lidos = await lerArquivos(Array.from(lista), setImportando)
+      if (!lidos.length) { setErro('Nenhum slide encontrado no arquivo.'); return }
+
+      const linhas: Omit<Slide, 'id'>[] = []
+      for (const [i, s] of lidos.entries()) {
+        let fundo = sel?.fundo ?? '#000000'
+        let est: Partial<EstiloSlide> = sel?.estilo ?? {}
+        if (s.imagem) {
+          setImportando(`Enviando ${i + 1} de ${lidos.length}…`)
+          const caminho = `${sessao.user.id}/${crypto.randomUUID()}.jpg`
+          const { error } = await supabase.storage.from('fundos')
+            .upload(caminho, s.imagem, { contentType: 'image/jpeg', cacheControl: '31536000' })
+          if (error) throw new Error('Falha ao enviar uma das páginas. Verifique a internet.')
+          fundo = `img:${supabase.storage.from('fundos').getPublicUrl(caminho).data.publicUrl}`
+          est = { escurecer: 0, ajuste: 'conter' }
+        }
+        linhas.push({
+          mensagem_id: mensagem.id, topico_id: destinoImport || null, ordem: slides.length + i,
+          titulo: s.titulo ?? null, subtitulo: s.subtitulo ?? null, texto: s.texto ?? null,
+          fundo, estilo: est,
+        })
+      }
+
+      setImportando('Salvando slides…')
+      const { data, error } = await supabase.from('slides').insert(linhas).select()
+      if (error || !data) throw new Error('Não foi possível salvar os slides.')
+      const novos = (data as Slide[]).sort((a, b) => a.ordem - b.ordem)
+      setSlides((atual) => [...atual, ...novos])
+      setSelId(novos[0].id)
+      setPainelImportar(false)
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : 'Não foi possível importar.')
+    } finally {
+      setImportando(null)
+    }
+  }
+
   if (mensagem === undefined) return <p className="p-6 text-neutral-500">Carregando…</p>
   if (mensagem === null) return (
     <div className="p-6">
@@ -232,23 +280,51 @@ export default function EditorSlides() {
   )
 
   return (
-    <div className="mx-auto max-w-6xl p-4 pb-24">
-      <div className="mb-4 flex flex-wrap items-center gap-3">
+    <div className="mx-auto max-w-6xl space-y-4 p-4 pb-24">
+      <div className="flex flex-wrap items-center gap-3">
         <Link to={`/mensagem/${mensagem.id}`} className="text-neutral-400 hover:text-neutral-200">← Mensagem</Link>
         <h1 className="truncate text-lg font-semibold">Slides · {mensagem.titulo}</h1>
         <span className={`ml-auto text-sm ${status === 'erro' ? 'text-red-400' : 'text-neutral-500'}`}>{textoStatus}</span>
+        <button onClick={() => setPainelImportar((v) => !v)} className={botao}>⬆ Importar</button>
         <Link to={`/pregar/${mensagem.id}`} className="rounded-lg bg-neutral-100 px-4 py-2 font-medium text-neutral-900">
           Pregar
         </Link>
       </div>
 
-      {erro && <p className="mb-3 text-sm text-red-400">{erro}</p>}
+      {erro && <p className="text-sm text-red-400">{erro}</p>}
+
+      {painelImportar && (
+        <div className="space-y-3 rounded-2xl p-4 ring-1 ring-neutral-800">
+          <p className="font-medium">Importar apresentação</p>
+          <p className="text-sm text-neutral-400">
+            <b className="text-neutral-200">PDF ou imagens:</b> cada página vira um slide idêntico ao original.
+            No PowerPoint, Keynote ou Google Slides, use <b className="text-neutral-200">Arquivo → Salvar como PDF</b>.
+            <br />
+            <b className="text-neutral-200">PowerPoint (.pptx):</b> importa só os textos, para você aplicar o visual do Pulpito.
+          </p>
+          <label className="flex flex-wrap items-center gap-2 text-sm text-neutral-400">
+            Os slides vão aparecer em
+            <select value={destinoImport} onChange={(e) => setDestinoImport(e.target.value)}
+              className="rounded-lg bg-neutral-900 px-2 py-1.5 ring-1 ring-neutral-800">
+              <option value="">Capa</option>
+              {topicos.map((t, i) => <option key={t.id} value={t.id}>{i + 1}. {t.titulo || 'Sem título'}</option>)}
+            </select>
+          </label>
+          <input ref={arquivoImport} type="file" multiple accept=".pdf,.pptx,image/*" className="hidden"
+            onChange={(e) => { importar(e.target.files); e.target.value = '' }} />
+          <button onClick={() => arquivoImport.current?.click()} disabled={!!importando}
+            className="rounded-lg bg-neutral-100 px-4 py-2 font-medium text-neutral-900 disabled:opacity-60">
+            {importando ?? 'Escolher arquivos'}
+          </button>
+        </div>
+      )}
 
       {slides.length === 0 ? (
         <div className="space-y-4 rounded-2xl p-6 ring-1 ring-neutral-800">
           <p className="text-lg">Esta mensagem ainda não tem slides.</p>
           <p className="text-neutral-400">
             Gere automaticamente uma capa e um slide por tópico, com título e versículo, e depois personalize.
+            Ou use <b className="text-neutral-200">⬆ Importar</b> para trazer uma apresentação pronta.
             Enquanto não houver slides, o telão usa o visual automático.
           </p>
           {blocoGerar}
@@ -344,12 +420,19 @@ export default function EditorSlides() {
                       )}
                     </div>
                     {imagemAtual && (
-                      <label className="mt-3 block text-sm text-neutral-400">
-                        Escurecer a foto
-                        <input type="range" min={0} max={0.8} step={0.05} value={estilo.escurecer}
-                          onChange={(e) => alterarEstilo({ escurecer: Number(e.target.value) })}
-                          className="mt-1 block w-full" />
-                      </label>
+                      <div className="mt-3 space-y-3">
+                        <div className="flex flex-wrap items-center gap-2 text-sm text-neutral-400">
+                          Encaixe da foto
+                          <Opcao ativo={estilo.ajuste === 'cobrir'} onClick={() => alterarEstilo({ ajuste: 'cobrir' })}>Preencher</Opcao>
+                          <Opcao ativo={estilo.ajuste === 'conter'} onClick={() => alterarEstilo({ ajuste: 'conter' })}>Mostrar inteira</Opcao>
+                        </div>
+                        <label className="block text-sm text-neutral-400">
+                          Escurecer a foto
+                          <input type="range" min={0} max={0.8} step={0.05} value={estilo.escurecer}
+                            onChange={(e) => alterarEstilo({ escurecer: Number(e.target.value) })}
+                            className="mt-1 block w-full" />
+                        </label>
+                      </div>
                     )}
                   </div>
 

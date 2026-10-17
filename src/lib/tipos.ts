@@ -56,10 +56,11 @@ export type EstiloSlide = {
   tamanho: 'p' | 'm' | 'g'
   fonte: 'sans' | 'serif'
   escurecer: number // 0 a 0.8, usado só com imagem de fundo
+  ajuste: 'cobrir' | 'conter' // foto preenche o slide ou aparece inteira
 }
 
 export const ESTILO_PADRAO: EstiloSlide = {
-  cor: '#ffffff', alinhamento: 'center', tamanho: 'm', fonte: 'sans', escurecer: 0.45,
+  cor: '#ffffff', alinhamento: 'center', tamanho: 'm', fonte: 'sans', escurecer: 0.45, ajuste: 'cobrir',
 }
 
 export type Slide = {
