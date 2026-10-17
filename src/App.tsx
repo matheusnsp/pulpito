@@ -1,4 +1,5 @@
 import { Routes, Route, NavLink } from 'react-router-dom'
+import Biblia from './pages/Biblia'
 
 const Tela = ({ nome }: { nome: string }) => (
   <div className="p-6 text-xl font-semibold">{nome}</div>
@@ -21,7 +22,7 @@ export default function App() {
           <Route path="/mensagem/:id" element={<Tela nome="Editor de mensagem" />} />
           <Route path="/pregar/:id" element={<Tela nome="Modo pregação" />} />
           <Route path="/projetar" element={<Tela nome="Tela do telão" />} />
-          <Route path="/biblia" element={<Tela nome="Bíblia" />} />
+          <Route path="/biblia" element={<Biblia />} />
           <Route path="/agenda" element={<Tela nome="Agenda" />} />
           <Route path="/login" element={<Tela nome="Entrar" />} />
         </Routes>
