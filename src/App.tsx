@@ -7,10 +7,9 @@ import Login from './pages/Login'
 import Mensagens from './pages/Mensagens'
 import EditorMensagem from './pages/EditorMensagem'
 import Pregar from './pages/Pregar'
-
-const Tela = ({ nome }: { nome: string }) => (
-  <div className="p-6 text-xl font-semibold">{nome}</div>
-)
+import Projetar from './pages/Projetar'
+import Conectar from './pages/Conectar'
+import Agenda from './pages/Agenda'
 
 function Layout() {
   const { sessao } = useAuth()
@@ -50,16 +49,18 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-      <Route path="/projetar" element={<Tela nome="Tela do telão" />} />
+      <Route path="/projetar" element={<Projetar />} />
       <Route element={<Protegido />}>
         <Route path="/pregar/:id" element={<Pregar />} />
         <Route element={<Layout />}>
           <Route path="/" element={<Mensagens />} />
           <Route path="/mensagem/:id" element={<EditorMensagem />} />
           <Route path="/biblia" element={<Biblia />} />
-          <Route path="/agenda" element={<Tela nome="Agenda" />} />
+          <Route path="/agenda" element={<Agenda />} />
+          <Route path="/conectar/:codigo" element={<Conectar />} />
         </Route>
       </Route>
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }

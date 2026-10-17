@@ -28,3 +28,19 @@ export const CAMPOS_TOPICO = [
   { chave: 'ilustracao', rotulo: 'Ilustração', dica: 'História, exemplo ou comparação' },
   { chave: 'notas', rotulo: 'Notas pessoais', dica: 'Lembretes só para você' },
 ] as const satisfies readonly { chave: keyof Topico; rotulo: string; dica: string }[]
+
+export type Evento = {
+  id: string
+  titulo: string
+  local: string | null
+  inicio: string
+  mensagem_id: string | null
+  lembretes: number[]
+}
+
+export const OPCOES_LEMBRETE = [
+  { minutos: 1440, rotulo: '1 dia antes' },
+  { minutos: 180, rotulo: '3 horas antes' },
+  { minutos: 60, rotulo: '1 hora antes' },
+  { minutos: 15, rotulo: '15 min antes' },
+]
