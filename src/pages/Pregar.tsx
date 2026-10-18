@@ -513,6 +513,7 @@ export default function Pregar() {
 
   const total = mensagem.tempo_minutos * 60_000
   const decorrido = acumulado + (rodando && iniciadoEm !== null ? agora - iniciadoEm : 0)
+  const restante = total - decorrido
   const fracao = decorrido / total
   const corBarra = fracao >= 0.8 ? 'bg-perigo' : fracao >= 0.5 ? 'bg-aviso' : 'bg-sucesso'
   const fase = decorrido === 0 ? 'parado' : fracao >= 1 ? 'estourou' : fracao >= 0.8 ? 'final' : fracao >= 0.5 ? 'metade' : 'normal'
@@ -568,10 +569,10 @@ export default function Pregar() {
             title="Iniciar ou pausar (espaço)"
             className={`flex min-w-[6.5rem] flex-col items-center rounded-xl border px-3 py-1.5 transition-colors duration-500 ${pilulaTempo.caixa}`}>
             <span className={`flex max-w-[7.5rem] items-center gap-1 overflow-hidden whitespace-nowrap text-[8px] font-bold uppercase tracking-[0.1em] ${pilulaTempo.rotulo}`}>
-              <Timer size={9} className="shrink-0" /> <span className="truncate">{fase === 'estourou' ? 'Tempo esgotado' : 'Tempo de mensagem'}</span>
+              <Timer size={9} className="shrink-0" /> <span className="truncate">{fase === 'estourou' ? 'Passou do tempo' : 'Tempo restante'}</span>
             </span>
             <span className={`flex items-center gap-1.5 font-mono text-lg font-bold leading-tight tabular-nums ${pilulaTempo.valor}`}>
-              {fmt(decorrido)}
+              {restante >= 0 ? fmt(restante) : `+${fmt(-restante)}`}
               <span className={`flex h-4 w-4 items-center justify-center rounded-full ${pilulaTempo.bolinha}`}>
                 {rodando ? <Pause size={8} fill="currentColor" /> : <Play size={8} fill="currentColor" className="ml-px" />}
               </span>
