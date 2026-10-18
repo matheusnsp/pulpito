@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { ESTILO_PADRAO, type EstiloSlide } from '../lib/tipos'
+import ElementoSlide from './ElementoSlide'
 
 export type ConteudoSlide = {
   titulo?: string | null
@@ -27,19 +28,27 @@ export default function SlideVisual({ slide, preencher = false, className = '' }
   className?: string
 }) {
   const e = { ...ESTILO_PADRAO, ...(slide.estilo ?? {}) }
-  const k = ESCALA[e.tamanho] ?? 1
+  const k0 = ESCALA[e.tamanho] ?? 1
   const destaque = e.destaque || '#FFC107'
   const fundo = slide.fundo || '#000000'
-  const imagem = fundo.startsWith('img:') ? fundo.slice(4) : null
-  const base: CSSProperties = imagem
-    ? {
-        backgroundColor: '#000000',
-        backgroundImage: `url("${imagem}")`,
-        backgroundSize: e.ajuste === 'conter' ? 'contain' : 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-      }
-    : { background: fundo }
+  const fotoNoFundo = fundo.startsWith('img:') ? fundo.slice(4) : null
+  const foto = e.foto || fotoNoFundo
+  const disp = foto ? (e.disposicao && e.disposicao !== 'texto' ? e.disposicao : fotoNoFundo ? 'fundo' : 'esquerda') : 'texto'
+  const lateral = disp === 'esquerda' || disp === 'direita'
+  const tam = Math.min(0.7, Math.max(0.25, e.fotoTam ?? 0.5))
+  const estiloFoto = (url: string): CSSProperties => ({
+    backgroundColor: '#000000',
+    backgroundImage: `url("${url}")`,
+    backgroundSize: e.ajuste === 'conter' ? 'contain' : 'cover',
+    backgroundPosition: `center ${e.fotoPos ?? 'center'}`,
+    backgroundRepeat: 'no-repeat',
+  })
+  // Fundo do slide: a foto (quando é "foto de fundo") ou a cor/degradê escolhido
+  const base: CSSProperties = disp === 'fundo' || disp === 'so-foto'
+    ? estiloFoto(foto!)
+    : { background: fotoNoFundo ? '#000000' : fundo }
+  // Texto encolhe quando divide o espaço com a foto
+  const kTexto = lateral ? Math.min(1, (1 - tam) * 1.45) : disp === 'cima' ? 0.78 : 1
   const titulo = slide.titulo?.trim() ?? ''
   const subtitulo = slide.subtitulo?.trim() ?? ''
   const texto = slide.texto?.trim() ?? ''
@@ -47,6 +56,7 @@ export default function SlideVisual({ slide, preencher = false, className = '' }
   const alinhar = centro ? 'items-center text-center' : 'items-start text-left'
   const layout = e.layout ?? 'livre'
 
+  const k = k0 * kTexto
   let miolo: ReactNode
 
   if (layout === 'capa') {
@@ -113,21 +123,36 @@ export default function SlideVisual({ slide, preencher = false, className = '' }
     )
   }
 
+  const caixaTexto = (
+    <div className={`relative flex min-w-0 flex-1 flex-col justify-center overflow-hidden ${alinhar}`}
+      style={{
+        color: e.cor,
+        padding: lateral ? '6cqh 5cqw' : disp === 'cima' ? '3cqh 8cqw 5cqh' : '6cqh 9cqw',
+        gap: lateral || disp === 'cima' ? '2.2cqh' : '3cqh',
+        fontFamily: e.fonte === 'serif' ? SERIF : 'inherit',
+      }}>
+      {miolo}
+    </div>
+  )
+
   return (
     <div className={`relative overflow-hidden ${preencher ? 'h-full w-full' : 'aspect-video w-full'} ${className}`}
       style={{ ...base, containerType: 'size' }}>
-      {imagem && e.escurecer > 0 && (
+      {disp === 'fundo' && e.escurecer > 0 && (
         <div className="absolute inset-0" style={{ background: `rgba(0,0,0,${e.escurecer})` }} />
       )}
-      <div className={`relative flex h-full flex-col justify-center overflow-hidden ${alinhar}`}
-        style={{
-          color: e.cor,
-          padding: '6cqh 9cqw',
-          gap: '3cqh',
-          fontFamily: e.fonte === 'serif' ? SERIF : 'inherit',
-        }}>
-        {miolo}
-      </div>
+      {disp === 'so-foto' ? null : lateral || disp === 'cima' ? (
+        <div className={`relative flex h-full ${disp === 'cima' ? 'flex-col' : disp === 'direita' ? 'flex-row-reverse' : 'flex-row'}`}>
+          <div className="shrink-0" style={{
+            ...estiloFoto(foto!),
+            [disp === 'cima' ? 'height' : 'width']: `${tam * 100}%`,
+          }} />
+          {caixaTexto}
+        </div>
+      ) : (
+        <div className="relative flex h-full">{caixaTexto}</div>
+      )}
+      {e.elementos?.map((el) => <ElementoSlide key={el.id} el={el} />)}
     </div>
   )
 }

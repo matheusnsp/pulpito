@@ -57,9 +57,30 @@ export type EstiloSlide = {
   fonte: 'sans' | 'serif'
   escurecer: number // 0 a 0.8, usado só com imagem de fundo
   ajuste: 'cobrir' | 'conter' // foto preenche o slide ou aparece inteira
-  layout?: LayoutSlide // como o conteúdo é arrumado (slides gerados a partir dos tópicos)
+  layout?: LayoutSlide // como o texto é arrumado (capa, tópico, versículo, frase)
   destaque?: string // cor de destaque (referências, faixa, aspas)
+  disposicao?: Disposicao // onde fica a foto em relação ao texto
+  foto?: string // URL da foto do slide
+  fotoPos?: 'top' | 'center' | 'bottom' // parte da foto que aparece
+  fotoTam?: number // fração do slide ocupada pela foto (0.33, 0.5, 0.66)
+  elementos?: Elemento[] // fotos extras, setas, formas, ícones e textos soltos
 }
+
+/* Elemento solto no slide. Posição e tamanho em % do slide */
+export type TipoElemento = 'foto' | 'seta' | 'circulo' | 'retangulo' | 'linha' | 'icone' | 'texto'
+export type Elemento = {
+  id: string
+  tipo: TipoElemento
+  x: number; y: number; w: number; h: number
+  rot?: number
+  cor?: string
+  preenchido?: boolean
+  url?: string
+  icone?: string
+  texto?: string
+}
+
+export type Disposicao = 'texto' | 'esquerda' | 'direita' | 'cima' | 'fundo' | 'so-foto'
 
 export type LayoutSlide = 'livre' | 'capa' | 'topico' | 'versiculo' | 'frase'
 

@@ -2,7 +2,8 @@ import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 're
 import { Link, useParams } from 'react-router-dom'
 import {
   ArrowDown, ArrowUp, Check, ChevronLeft, CircleAlert, CircleCheck, Copy, Download, FileText, ImagePlus, ListChecks,
-  ListPlus, LoaderCircle, Play, Plus, Presentation, Redo2, Trash2, Undo2, Upload, X,
+  Circle, ListPlus, LoaderCircle, Minus, MoveRight, Play, Plus, Presentation, Redo2, Shapes, Square, Trash2,
+  Type as TypeIcon, Undo2, Upload, X,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
@@ -10,8 +11,10 @@ import { useSalvamento } from '../lib/salvamento'
 import { useHistorico } from '../lib/historico'
 import { lerArquivos } from '../lib/importar'
 import SlideVisual from '../components/SlideVisual'
+import CamadaElementos from '../components/CamadaElementos'
+import { ICONES } from '../lib/icones'
 import {
-  ESTILO_PADRAO, FUNDOS_PRONTOS, type EstiloSlide, type LayoutSlide, type Mensagem, type Slide, type Topico,
+  ESTILO_PADRAO, FUNDOS_PRONTOS, type Disposicao, type Elemento, type EstiloSlide, type LayoutSlide, type TipoElemento, type Mensagem, type Slide, type Topico,
 } from '../lib/tipos'
 import { formatarReferencia, lerReferencia, parseReferencia, type VersaoId } from '../lib/biblia'
 
@@ -65,6 +68,36 @@ function Campo({ rotulo, children }: { rotulo: string; children: ReactNode }) {
   )
 }
 
+const DISPOSICOES: { valor: Disposicao; rotulo: string }[] = [
+  { valor: 'texto', rotulo: 'Só texto' },
+  { valor: 'esquerda', rotulo: 'Foto à esquerda' },
+  { valor: 'direita', rotulo: 'Foto à direita' },
+  { valor: 'cima', rotulo: 'Foto em cima' },
+  { valor: 'fundo', rotulo: 'Foto de fundo' },
+  { valor: 'so-foto', rotulo: 'Só foto' },
+]
+
+/* Desenho pequeno de cada disposição */
+function MiniDisposicao({ d }: { d: Disposicao }) {
+  const foto = <span className="block bg-[linear-gradient(170deg,#2B4A6F,#C27A3A_60%,#2a1a0c)]" />
+  const linhas = (
+    <span className="flex flex-1 flex-col justify-center gap-1 px-1.5">
+      <span className="h-1 rounded bg-white/70" /><span className="h-1 w-2/3 rounded bg-white/70" />
+      <span className="h-0.5 w-1/3 rounded bg-[#FFC107]" />
+    </span>
+  )
+  return (
+    <span className="flex aspect-video overflow-hidden rounded-md bg-black" style={d === 'fundo' || d === 'so-foto' ? { background: 'linear-gradient(170deg,#2B4A6F,#C27A3A 60%,#2a1a0c)' } : undefined}>
+      {d === 'texto' && linhas}
+      {d === 'esquerda' && <>{<span className="w-1/2 bg-[linear-gradient(170deg,#2B4A6F,#C27A3A_60%,#2a1a0c)]" />}{linhas}</>}
+      {d === 'direita' && <>{linhas}{<span className="w-1/2 bg-[linear-gradient(170deg,#2B4A6F,#C27A3A_60%,#2a1a0c)]" />}</>}
+      {d === 'cima' && <span className="flex flex-1 flex-col"><span className="h-1/2 bg-[linear-gradient(170deg,#2B4A6F,#C27A3A_60%,#2a1a0c)]" />{linhas}</span>}
+      {d === 'fundo' && linhas}
+      {d === 'so-foto' && foto}
+    </span>
+  )
+}
+
 function Segmentos<T extends string>({ valor, opcoes, onChange }: {
   valor: T; opcoes: { valor: T; rotulo: string }[]; onChange: (v: T) => void
 }) {
@@ -95,6 +128,10 @@ export default function EditorSlides() {
   const [comFrase, setComFrase] = useState(true)
   const [gerando, setGerando] = useState(false)
   const [enviando, setEnviando] = useState(false)
+  const disposicaoPendente = useRef<Disposicao | null>(null)
+  const arquivoElemento = useRef<HTMLInputElement>(null)
+  const [elSel, setElSel] = useState<string | null>(null)
+  const [rascunhoEl, setRascunhoEl] = useState<Elemento | null>(null)
   const [painelImportar, setPainelImportar] = useState(false)
   const [menuExportar, setMenuExportar] = useState(false)
   const [exportando, setExportando] = useState('')
@@ -138,6 +175,9 @@ export default function EditorSlides() {
   const iSel = sel ? slides.findIndex((s) => s.id === sel.id) : -1
   const estilo = { ...ESTILO_PADRAO, ...(sel?.estilo ?? {}) }
   const imagemAtual = sel?.fundo?.startsWith('img:') ? sel.fundo.slice(4) : null
+  const fotoAtual = sel?.estilo?.foto || imagemAtual
+  const disposicaoAtual: Disposicao = !fotoAtual ? 'texto'
+    : sel?.estilo?.disposicao && sel.estilo.disposicao !== 'texto' ? sel.estilo.disposicao : imagemAtual ? 'fundo' : 'esquerda'
 
   function rotuloTopico(topicoId: string | null) {
     if (!topicoId) return 'Capa'
@@ -335,10 +375,10 @@ export default function EditorSlides() {
     if (res.some((r) => r.error)) setErro('Não foi possível aplicar a todos.')
   }
 
-  async function enviarImagem(file: File) {
-    if (!sel || !sessao) return
-    if (!file.type.startsWith('image/')) { setErro('Escolha um arquivo de imagem.'); return }
-    if (file.size > 5 * 1024 * 1024) { setErro('Imagem muito grande. O máximo é 5 MB.'); return }
+  async function subirImagem(file: File) {
+    if (!sessao) return null
+    if (!file.type.startsWith('image/')) { setErro('Escolha um arquivo de imagem.'); return null }
+    if (file.size > 5 * 1024 * 1024) { setErro('Imagem muito grande. O máximo é 5 MB.'); return null }
     setEnviando(true)
     setErro('')
     const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
@@ -346,9 +386,85 @@ export default function EditorSlides() {
     const { error } = await supabase.storage.from('fundos')
       .upload(caminho, file, { cacheControl: '31536000', contentType: file.type })
     setEnviando(false)
-    if (error) { setErro('Não foi possível enviar a imagem.'); return }
-    const { data } = supabase.storage.from('fundos').getPublicUrl(caminho)
-    alterar(sel.id, { fundo: `img:${data.publicUrl}` })
+    if (error) { setErro('Não foi possível enviar a imagem.'); return null }
+    return supabase.storage.from('fundos').getPublicUrl(caminho).data.publicUrl
+  }
+
+  /* ── Elementos soltos ── */
+  const elementos = sel?.estilo?.elementos ?? []
+  const elAtual = elementos.find((x) => x.id === elSel) ?? null
+
+  function salvarElementos(lista: Elemento[]) {
+    if (!sel) return
+    alterar(sel.id, { estilo: { ...sel.estilo, elementos: lista } })
+  }
+
+  function adicionarElemento(tipo: TipoElemento, extra: Partial<Elemento> = {}) {
+    const base: Record<TipoElemento, Partial<Elemento>> = {
+      foto: { w: 30, h: 40 }, seta: { w: 22, h: 9 }, circulo: { w: 14, h: 25 }, retangulo: { w: 26, h: 22 },
+      linha: { w: 30, h: 4 }, icone: { w: 9, h: 16, icone: 'cruz' }, texto: { w: 34, h: 12, texto: 'Texto', cor: '#FFFFFF' },
+    }
+    const b = base[tipo]
+    const el: Elemento = {
+      // Cada novo elemento entra um pouco deslocado para não cair em cima do anterior
+      id: crypto.randomUUID(), tipo,
+      x: 50 - (b.w ?? 20) / 2 + (elementos.length % 5) * 4, y: 50 - (b.h ?? 20) / 2 + (elementos.length % 5) * 4,
+      w: b.w ?? 20, h: b.h ?? 20,
+      cor: '#FFC107', ...b, ...extra,
+    }
+    salvarElementos([...elementos, el])
+    setElSel(el.id)
+  }
+
+  function mudarElemento(campos: Partial<Elemento>) {
+    if (!elAtual) return
+    salvarElementos(elementos.map((x) => (x.id === elAtual.id ? { ...x, ...campos } : x)))
+  }
+
+  function ordemElemento(dir: 'frente' | 'tras') {
+    if (!elAtual) return
+    const resto = elementos.filter((x) => x.id !== elAtual.id)
+    salvarElementos(dir === 'frente' ? [...resto, elAtual] : [elAtual, ...resto])
+  }
+
+  async function adicionarFotoElemento(file: File) {
+    const url = await subirImagem(file)
+    if (url) adicionarElemento('foto', { url })
+  }
+
+  async function enviarImagem(file: File) {
+    if (!sel) return
+    const url = await subirImagem(file)
+    if (!url) return
+    const data = { publicUrl: url }
+    const disposicao = disposicaoPendente.current ?? (disposicaoAtual === 'texto' ? 'esquerda' : disposicaoAtual)
+    disposicaoPendente.current = null
+    alterar(sel.id, {
+      fundo: imagemAtual ? '#000000' : sel.fundo,
+      estilo: { ...sel.estilo, foto: data.publicUrl, disposicao },
+    })
+  }
+
+  function escolherDisposicao(d: Disposicao) {
+    if (!sel) return
+    if (d !== 'texto' && !fotoAtual) {
+      // Precisa de foto: abre o seletor e aplica a disposição quando a foto chegar
+      disposicaoPendente.current = d
+      arquivo.current?.click()
+      return
+    }
+    if (d === 'texto') { removerFoto(); return }
+    alterar(sel.id, {
+      fundo: imagemAtual ? '#000000' : sel.fundo,
+      estilo: { ...sel.estilo, foto: fotoAtual ?? undefined, disposicao: d },
+    })
+  }
+
+  function removerFoto() {
+    if (!sel) return
+    const { foto: _f, disposicao: _d, ...resto } = sel.estilo ?? {}
+    void _f; void _d
+    alterar(sel.id, { fundo: imagemAtual ? '#000000' : sel.fundo, estilo: resto })
   }
 
   async function importar(lista: FileList | null) {
@@ -655,7 +771,89 @@ export default function EditorSlides() {
 
             {sel && (
               <section className="min-w-0 space-y-5">
-                <SlideVisual slide={sel} className="rounded-2xl ring-1 ring-borda" />
+                <div className="relative">
+                  <SlideVisual className="rounded-2xl ring-1 ring-borda"
+                    slide={rascunhoEl ? { ...sel, estilo: { ...sel.estilo, elementos: elementos.map((x) => (x.id === rascunhoEl.id ? rascunhoEl : x)) } } : sel} />
+                  <CamadaElementos elementos={rascunhoEl ? elementos.map((x) => (x.id === rascunhoEl.id ? rascunhoEl : x)) : elementos}
+                    selecionado={elSel} onSelecionar={setElSel} onPreview={setRascunhoEl}
+                    onConfirmar={(el) => salvarElementos(elementos.map((x) => (x.id === el.id ? el : x)))} />
+                </div>
+
+                {/* Elementos: adicionar e editar o selecionado */}
+                <div className="rounded-2xl border border-borda bg-superficie p-3">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="rotulo mr-1">Adicionar</span>
+                    <input ref={arquivoElemento} type="file" accept="image/*" className="hidden"
+                      onChange={(e) => { const f = e.target.files?.[0]; if (f) adicionarFotoElemento(f); e.target.value = '' }} />
+                    <button onClick={() => arquivoElemento.current?.click()} disabled={enviando} className={botaoPequeno}><ImagePlus size={15} /> Foto</button>
+                    <button onClick={() => adicionarElemento('seta')} className={botaoPequeno}><MoveRight size={15} /> Seta</button>
+                    <button onClick={() => adicionarElemento('circulo')} className={botaoPequeno}><Circle size={15} /> Círculo</button>
+                    <button onClick={() => adicionarElemento('retangulo')} className={botaoPequeno}><Square size={15} /> Retângulo</button>
+                    <button onClick={() => adicionarElemento('linha')} className={botaoPequeno}><Minus size={15} /> Linha</button>
+                    <button onClick={() => adicionarElemento('icone')} className={botaoPequeno}><Shapes size={15} /> Ícone</button>
+                    <button onClick={() => adicionarElemento('texto')} className={botaoPequeno}><TypeIcon size={15} /> Texto</button>
+                  </div>
+
+                  {elAtual && (
+                    <div className="mt-3 space-y-3 border-t border-borda pt-3">
+                      <p className="text-xs text-texto-2">Arraste no slide para mover. Puxe a bolinha do canto para mudar o tamanho.</p>
+                      {elAtual.tipo === 'texto' && (
+                        <input value={elAtual.texto ?? ''} onChange={(e) => mudarElemento({ texto: e.target.value })}
+                          placeholder="Texto" className="campo" />
+                      )}
+                      {elAtual.tipo === 'icone' && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {Object.entries(ICONES).map(([chave, { Icone, nome }]) => (
+                            <button key={chave} onClick={() => mudarElemento({ icone: chave })} title={nome} aria-label={nome}
+                              className={`flex h-9 w-9 items-center justify-center rounded-lg border ${elAtual.icone === chave ? 'border-acao bg-acao/15' : 'border-borda hover:bg-superficie-2'}`}>
+                              <Icone size={18} />
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+                        {elAtual.tipo !== 'foto' && (
+                          <div className="flex items-center gap-1.5">
+                            {['#FFC107', '#FFFFFF', '#F44336', '#2DD4BF', '#7DD3FC', '#111111'].map((c) => (
+                              <button key={c} onClick={() => mudarElemento({ cor: c })} aria-label={`Cor ${c}`} style={{ background: c }}
+                                className={`h-7 w-7 rounded-full ${(elAtual.cor ?? '#FFC107') === c ? 'ring-2 ring-acao ring-offset-2 ring-offset-superficie' : 'ring-1 ring-borda'}`} />
+                            ))}
+                          </div>
+                        )}
+                        {['circulo', 'retangulo', 'icone'].includes(elAtual.tipo) && (
+                          <Segmentos valor={elAtual.preenchido ? 'cheio' : 'contorno'}
+                            opcoes={[{ valor: 'contorno', rotulo: 'Contorno' }, { valor: 'cheio', rotulo: 'Preenchido' }]}
+                            onChange={(v) => mudarElemento({ preenchido: v === 'cheio' })} />
+                        )}
+                        <label className="flex items-center gap-2 text-sm text-texto-2">
+                          Girar
+                          <input type="range" min={-180} max={180} step={5} value={elAtual.rot ?? 0}
+                            onChange={(e) => mudarElemento({ rot: Number(e.target.value) })} className="w-28 accent-[var(--acao)]" />
+                        </label>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        <button onClick={() => ordemElemento('frente')} className={botaoPequeno}><ArrowUp size={15} /> Pra frente</button>
+                        <button onClick={() => ordemElemento('tras')} className={botaoPequeno}><ArrowDown size={15} /> Pra trás</button>
+                        <button onClick={() => { const c = { ...elAtual, id: crypto.randomUUID(), x: elAtual.x + 3, y: elAtual.y + 3 }; salvarElementos([...elementos, c]); setElSel(c.id) }} className={botaoPequeno}><Copy size={15} /> Duplicar</button>
+                        <button onClick={() => { salvarElementos(elementos.filter((x) => x.id !== elAtual.id)); setElSel(null) }} className={`${botaoPequeno} hover:text-perigo`}><Trash2 size={15} /> Excluir</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Disposição: onde fica a foto em relação ao texto */}
+                <div>
+                  <span className="rotulo mb-2 block">Disposição do slide</span>
+                  <div className="sem-barra flex gap-2 overflow-x-auto pb-1">
+                    {DISPOSICOES.map((d) => (
+                      <button key={d.valor} onClick={() => escolherDisposicao(d.valor)} aria-pressed={disposicaoAtual === d.valor}
+                        className={`w-28 shrink-0 rounded-xl border-2 bg-superficie p-1.5 text-left transition-colors ${disposicaoAtual === d.valor ? 'border-acao' : 'border-borda hover:border-texto-2'}`}>
+                        <MiniDisposicao d={d.valor} />
+                        <span className="mt-1 block truncate px-0.5 text-xs font-bold">{d.rotulo}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
                 <div className="flex flex-wrap items-center gap-2">
                   <button onClick={() => mover(-1)} disabled={iSel === 0} className={botaoPequeno}>
@@ -718,30 +916,44 @@ export default function EditorSlides() {
                         <input ref={arquivo} type="file" accept="image/*" className="hidden"
                           onChange={(e) => { const f = e.target.files?.[0]; if (f) enviarImagem(f); e.target.value = '' }} />
                         <button onClick={() => arquivo.current?.click()} disabled={enviando} className={botaoPequeno}>
-                          <ImagePlus size={16} /> {enviando ? 'Enviando…' : 'Usar foto de fundo'}
+                          <ImagePlus size={16} /> {enviando ? 'Enviando…' : fotoAtual ? 'Trocar foto' : 'Adicionar foto'}
                         </button>
-                        {imagemAtual && (
-                          <button onClick={() => alterar(sel.id, { fundo: '#000000' })} className="botao-fantasma px-3 py-1.5 text-sm">
+                        {fotoAtual && (
+                          <button onClick={removerFoto} className="botao-fantasma px-3 py-1.5 text-sm">
                             Remover foto
                           </button>
                         )}
                       </div>
                     </div>
 
-                    {imagemAtual && (
+                    {fotoAtual && (
                       <div className="space-y-4">
                         <div>
-                          <span className="mb-2 block text-sm font-semibold text-texto-2">Encaixe da foto</span>
+                          <span className="mb-2 block text-sm font-semibold text-texto-2">Posição da foto</span>
+                          <Segmentos valor={estilo.fotoPos ?? 'center'}
+                            opcoes={[{ valor: 'top', rotulo: 'Cima' }, { valor: 'center', rotulo: 'Centro' }, { valor: 'bottom', rotulo: 'Baixo' }]}
+                            onChange={(v) => alterarEstilo({ fotoPos: v })} />
+                        </div>
+                        {['esquerda', 'direita', 'cima'].includes(disposicaoAtual) && (
+                          <div>
+                            <span className="mb-2 block text-sm font-semibold text-texto-2">Tamanho da foto</span>
+                            <Segmentos valor={String(estilo.fotoTam ?? 0.5)}
+                              opcoes={[{ valor: '0.33', rotulo: '1/3' }, { valor: '0.5', rotulo: 'Metade' }, { valor: '0.66', rotulo: '2/3' }]}
+                              onChange={(v) => alterarEstilo({ fotoTam: Number(v) })} />
+                          </div>
+                        )}
+                        <div>
+                          <span className="mb-2 block text-sm font-semibold text-texto-2">Enquadramento</span>
                           <Segmentos valor={estilo.ajuste}
                             opcoes={[{ valor: 'cobrir', rotulo: 'Preencher' }, { valor: 'conter', rotulo: 'Mostrar inteira' }]}
                             onChange={(v) => alterarEstilo({ ajuste: v })} />
                         </div>
-                        <label className="block">
+                        {disposicaoAtual === 'fundo' && <label className="block">
                           <span className="mb-2 block text-sm font-semibold text-texto-2">Escurecer a foto</span>
                           <input type="range" min={0} max={0.8} step={0.05} value={estilo.escurecer}
                             onChange={(e) => alterarEstilo({ escurecer: Number(e.target.value) })}
                             className="w-full accent-[var(--acao)]" />
-                        </label>
+                        </label>}
                       </div>
                     )}
 

@@ -39,9 +39,12 @@ async function renderizar(slides: Slide[], aoProgredir?: (feito: number, total: 
       createElement('div', { key: s.id, 'data-slide': '', style: { width: LARGURA, height: ALTURA } },
         createElement(SlideVisual, { slide: s, preencher: true })))))
 
-    await Promise.all(slides
-      .filter((s) => s.fundo?.startsWith('img:'))
-      .map((s) => carregarImagem(s.fundo!.slice(4))))
+    const urls = slides.flatMap((s) => [
+      s.fundo?.startsWith('img:') ? s.fundo.slice(4) : null,
+      s.estilo?.foto ?? null,
+      ...(s.estilo?.elementos ?? []).map((el) => el.url ?? null),
+    ]).filter((u): u is string => !!u)
+    await Promise.all(urls.map(carregarImagem))
     await document.fonts.ready
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
 
