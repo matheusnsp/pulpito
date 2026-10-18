@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
-  BookOpen, Cast, ChevronDown, ChevronLeft, Maximize, Minus, MonitorPlay, Pause, Play, Plus, RotateCcw, Settings, X,
+  BookOpen, Cast, ChevronDown, Clock, Timer, ChevronLeft, Maximize, Minus, MonitorPlay, Pause, Play, Plus, RotateCcw, Settings, X,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Mensagem, Slide, Topico } from '../lib/tipos'
@@ -21,7 +21,7 @@ const ESCALA_MAX = 2
 
 function fmt(ms: number) {
   const s = Math.floor(Math.abs(ms) / 1000)
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+  return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 }
 
 const versaoAtual = () => (localStorage.getItem('pulpito-versao') as VersaoId) || 'ARA'
@@ -513,16 +513,16 @@ export default function Pregar() {
 
   const total = mensagem.tempo_minutos * 60_000
   const decorrido = acumulado + (rodando && iniciadoEm !== null ? agora - iniciadoEm : 0)
-  const restante = total - decorrido
   const fracao = decorrido / total
   const corBarra = fracao >= 0.8 ? 'bg-perigo' : fracao >= 0.5 ? 'bg-aviso' : 'bg-sucesso'
   const fase = decorrido === 0 ? 'parado' : fracao >= 1 ? 'estourou' : fracao >= 0.8 ? 'final' : fracao >= 0.5 ? 'metade' : 'normal'
+  // Pílula do tempo: escura (verde parado em 00:00), amarela na metade, vermelha em 80% e ao estourar
   const pilulaTempo = {
-    parado: 'bg-superficie-2 text-texto',
-    normal: 'bg-superficie-2 text-sucesso',
-    metade: 'bg-aviso text-[#1A1200]',
-    final: 'bg-perigo text-white',
-    estourou: 'bg-perigo text-white animate-pulse',
+    parado: { caixa: 'bg-superficie-2 border-borda', valor: 'text-sucesso', rotulo: 'text-texto-2', bolinha: 'bg-acao text-acao-texto' },
+    normal: { caixa: 'bg-superficie-2 border-borda', valor: 'text-texto', rotulo: 'text-texto-2', bolinha: 'bg-texto/15 text-texto' },
+    metade: { caixa: 'bg-aviso border-aviso', valor: 'text-[#1A1200]', rotulo: 'text-[#1A1200]/70', bolinha: 'bg-black/20 text-[#1A1200]' },
+    final: { caixa: 'bg-perigo border-perigo', valor: 'text-white', rotulo: 'text-white/80', bolinha: 'bg-black/25 text-white' },
+    estourou: { caixa: 'bg-perigo border-perigo', valor: 'text-white', rotulo: 'text-white/80', bolinha: 'bg-black/25 text-white' },
   }[fase]
   const hora = new Date(agora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
   const topico = indice > 0 ? topicos[indice - 1] : null
@@ -537,13 +537,18 @@ export default function Pregar() {
 
   return (
     <div className="escuro flex h-dvh flex-col bg-fundo text-texto">
-      {/* Tela avermelha perto do fim e pisca quando o tempo estoura */}
-      {(fase === 'final' || fase === 'estourou') && (
-        <div aria-hidden className={`pointer-events-none fixed inset-0 z-0 transition-opacity duration-700 ${fase === 'estourou' ? 'opacity-100' : 'opacity-60'}`}
-          style={{ background: 'radial-gradient(120% 70% at 50% 100%, rgb(255 60 50 / 0.28), transparent 70%)' }} />
+      {/* Perto do fim (80%): bordas com brilho vermelho. Estourou: tela toda vermelha, bordas pulsando */}
+      {fase === 'final' && (
+        <div aria-hidden className="pointer-events-none fixed inset-0 z-30 transition-opacity duration-700"
+          style={{ boxShadow: 'inset 0 0 90px 10px rgb(244 67 54 / 0.45)' }} />
       )}
       {fase === 'estourou' && (
-        <div className="pointer-events-none fixed inset-0 z-30 animate-pulse border-[6px] border-perigo" />
+        <>
+          <div aria-hidden className="pointer-events-none fixed inset-0 z-0"
+            style={{ background: 'radial-gradient(120% 90% at 50% 50%, rgb(120 10 10 / 0.55), rgb(200 30 30 / 0.85))' }} />
+          <div aria-hidden className="pointer-events-none fixed inset-0 z-30 animate-estouro"
+            style={{ boxShadow: 'inset 0 0 0 4px rgb(255 70 60), inset 0 0 120px 30px rgb(255 50 40 / 0.85)' }} />
+        </>
       )}
 
       {/* Topo: sair, hora + cronômetro, transmitir e ferramentas */}
@@ -553,24 +558,28 @@ export default function Pregar() {
         </Link>
 
         <div className="flex flex-1 items-center justify-center gap-1.5">
-          <div className="flex min-w-[4.6rem] flex-col items-center rounded-xl bg-superficie-2 px-2.5 py-1">
-            <span className="text-[8px] font-bold uppercase tracking-[0.14em] text-texto-2">Hora atual</span>
-            <span className="font-display text-lg font-extrabold leading-tight tabular-nums">{hora}</span>
+          <div className="flex min-w-[5.5rem] flex-col items-center rounded-xl border border-borda bg-superficie-2 px-3 py-1.5">
+            <span className="flex items-center gap-1 whitespace-nowrap text-[8px] font-bold uppercase tracking-[0.1em] text-texto-2">
+              <Clock size={9} /> Hora atual
+            </span>
+            <span className="font-mono text-lg font-bold leading-tight tabular-nums">{hora}</span>
           </div>
           <button onClick={alternarCronometro} aria-label={rodando ? 'Pausar cronômetro' : 'Iniciar cronômetro'}
             title="Iniciar ou pausar (espaço)"
-            className={`flex min-w-[5.6rem] flex-col items-center rounded-xl px-2.5 py-1 transition-colors ${pilulaTempo}`}>
-            <span className="flex items-center gap-1 text-[8px] font-bold uppercase tracking-[0.14em] opacity-80">
-              {rodando ? <Pause size={8} fill="currentColor" /> : <Play size={8} fill="currentColor" />}
-              {fase === 'estourou' ? 'Estourou' : 'Mensagem'}
+            className={`flex min-w-[6.5rem] flex-col items-center rounded-xl border px-3 py-1.5 transition-colors duration-500 ${pilulaTempo.caixa}`}>
+            <span className={`flex max-w-[7.5rem] items-center gap-1 overflow-hidden whitespace-nowrap text-[8px] font-bold uppercase tracking-[0.1em] ${pilulaTempo.rotulo}`}>
+              <Timer size={9} className="shrink-0" /> <span className="truncate">{fase === 'estourou' ? 'Tempo esgotado' : 'Tempo de mensagem'}</span>
             </span>
-            <span className="font-display text-lg font-extrabold leading-tight tabular-nums">
-              {restante >= 0 ? fmt(restante) : `+${fmt(restante)}`}
+            <span className={`flex items-center gap-1.5 font-mono text-lg font-bold leading-tight tabular-nums ${pilulaTempo.valor}`}>
+              {fmt(decorrido)}
+              <span className={`flex h-4 w-4 items-center justify-center rounded-full ${pilulaTempo.bolinha}`}>
+                {rodando ? <Pause size={8} fill="currentColor" /> : <Play size={8} fill="currentColor" className="ml-px" />}
+              </span>
             </span>
           </button>
           {!rodando && decorrido > 0 && (
             <button onClick={zerar} aria-label="Zerar cronômetro" title="Zerar"
-              className="flex h-10 w-9 items-center justify-center rounded-xl bg-superficie-2 text-texto-2 hover:text-texto">
+              className="flex h-11 w-9 items-center justify-center rounded-xl border border-borda bg-superficie-2 text-texto-2 hover:text-texto">
               <RotateCcw size={16} />
             </button>
           )}
@@ -707,7 +716,7 @@ export default function Pregar() {
 
       {/* Navegação */}
       {/* Rodapé: versículo base. Para trocar de tópico, deslize a tela para o lado (ou use as setas do teclado) */}
-      <footer className="mx-auto w-full max-w-5xl px-3 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-2">
+      <footer className="relative z-40 mx-auto w-full max-w-5xl px-3 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-2">
         <div>
 
         {(topico?.versiculo || (!topico && mensagem.texto_base)) && (

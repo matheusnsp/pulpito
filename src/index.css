@@ -119,10 +119,15 @@ html.tema-claro .escuro {
   --font-escritura: "Literata Variable", Georgia, serif;
   --animate-entrar: entrar 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   --animate-subir: subir 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-estouro: estouro 1.2s ease-in-out infinite;
 
   @keyframes entrar {
     from { opacity: 0; transform: translateY(6px); }
     to { opacity: 1; transform: none; }
+  }
+  @keyframes estouro {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
   }
   @keyframes subir {
     from { transform: translateY(100%); }
