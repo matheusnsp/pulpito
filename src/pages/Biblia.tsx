@@ -1,3 +1,4 @@
+import { aoMudarVersao, lerVersao, salvarVersao } from '../lib/preferencias'
 import AvisoDeslizante from '../components/AvisoDeslizante'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import {
@@ -9,7 +10,6 @@ import {
 } from '../lib/biblia'
 import { usePinca } from '../lib/pinca'
 
-const CHAVE_VERSAO = 'pulpito-versao'
 const CHAVE_MARCADOS = 'pulpito-marcados'
 const CHAVE_POSICAO = 'pulpito-biblia-posicao'
 const CHAVE_ESCALA = 'pulpito-biblia-escala'
@@ -198,9 +198,8 @@ function Seletor({ versao, livroAtual, onEscolher, onFechar }: {
 
 export default function Biblia() {
   const [inicial] = useState(() => lerJSON(CHAVE_POSICAO, { livro: 'JHN', capitulo: 1 }))
-  const [versao, setVersao] = useState<VersaoId>(
-    () => (localStorage.getItem(CHAVE_VERSAO) as VersaoId) || 'ARA'
-  )
+  const [versao, setVersao] = useState<VersaoId>(lerVersao)
+  useEffect(() => aoMudarVersao(() => setVersao(lerVersao())), [])
   const [livro, setLivro] = useState(inicial.livro)
   const [capitulo, setCapitulo] = useState(inicial.capitulo)
   const [resultado, setResultado] = useState<Resultado | null>(null)
@@ -228,7 +227,6 @@ export default function Biblia() {
   const ehPrimeiro = livro === 'GEN' && capitulo === 1
   const ehUltimo = livro === 'REV' && !!resultado && !carregando && capitulo >= resultado.total
 
-  useEffect(() => { localStorage.setItem(CHAVE_VERSAO, versao) }, [versao])
   useEffect(() => { localStorage.setItem(CHAVE_ESCALA, String(escala)) }, [escala])
 
   function mudarEscala(n: number) {
@@ -367,7 +365,7 @@ export default function Biblia() {
         <div role="radiogroup" aria-label="Versão" className="inline-flex rounded-xl border border-borda bg-superficie p-1">
           {VERSOES.map((v) => (
             <button key={v.id} role="radio" aria-checked={versao === v.id} title={v.nome}
-              onClick={() => setVersao(v.id)}
+              onClick={() => { setVersao(v.id); salvarVersao(v.id) }}
               className={`rounded-lg px-2.5 py-1.5 text-xs font-bold transition-colors ${versao === v.id
                 ? 'bg-texto text-fundo' : 'text-texto-2 hover:text-texto'}`}>
               {v.id}

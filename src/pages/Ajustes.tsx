@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Check, GraduationCap, KeyRound, LoaderCircle, LogOut, RefreshCw } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
@@ -8,6 +8,7 @@ import { VERSOES, type VersaoId } from '../lib/biblia'
 import { emailParaUsuario, nomeDeExibicao } from '../lib/usuario'
 import { VERSAO_APP, carregarUltimaVersao } from '../lib/atualizar'
 import { abrirTutorial } from '../lib/tutorial'
+import { aoMudarVersao, lerVersao, salvarVersao } from '../lib/preferencias'
 
 
 function TrocarSenha({ email }: { email: string }) {
@@ -82,9 +83,8 @@ export default function Ajustes() {
   const nome = nomeDeExibicao(usuario)
   const iniciais = nome.split(' ').map((p) => p[0]).slice(0, 2).join('')
   const [tema, setTema] = useState<Tema>(lerTema)
-  const [versao, setVersao] = useState<VersaoId>(
-    () => (localStorage.getItem('pulpito-versao') as VersaoId) || 'ARA'
-  )
+  const [versao, setVersao] = useState<VersaoId>(lerVersao)
+  useEffect(() => aoMudarVersao(() => setVersao(lerVersao())), [])
   const [saindo, setSaindo] = useState(false)
 
   function mudarTema(t: Tema) {
@@ -94,7 +94,7 @@ export default function Ajustes() {
 
   function mudarVersao(v: VersaoId) {
     setVersao(v)
-    localStorage.setItem('pulpito-versao', v)
+    salvarVersao(v)
   }
 
   async function sair() {
@@ -163,7 +163,7 @@ export default function Ajustes() {
       <section className="space-y-3">
         <div>
           <h2 className="font-display text-lg font-bold">Bíblia</h2>
-          <p className="text-sm text-texto-2">Versão usada no editor, no modo pregação e no telão.</p>
+          <p className="text-sm text-texto-2">Versão usada no editor, no modo pregação e no telão. Fica salva na sua conta, em qualquer aparelho.</p>
         </div>
         <select value={versao} onChange={(e) => mudarVersao(e.target.value as VersaoId)} className="campo">
           {VERSOES.map((v) => <option key={v.id} value={v.id}>{v.id}, {v.nome}</option>)}

@@ -1,3 +1,4 @@
+import { lerVersao } from '../lib/preferencias'
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import {
   DndContext, PointerSensor, TouchSensor, pointerWithin, useDraggable, useDroppable, useSensor, useSensors, type DragEndEvent,
@@ -12,7 +13,7 @@ import { supabase } from '../lib/supabase'
 import { useSalvamento } from '../lib/salvamento'
 import { useHistorico } from '../lib/historico'
 import { CAMPOS_TOPICO, type Mensagem, type Pasta, type Topico } from '../lib/tipos'
-import { parseReferencia, formatarReferencia, lerReferencia, type VersaoId } from '../lib/biblia'
+import { parseReferencia, formatarReferencia, lerReferencia } from '../lib/biblia'
 import { esbocoEmTexto } from '../lib/mensagens'
 
 type Foto = { mensagem: Mensagem; topicos: Topico[] }
@@ -23,7 +24,7 @@ const CAMPOS_TOP = ['titulo', 'versiculo', 'observacao', 'aplicacao', 'ilustraca
 
 /* Mostra o texto do versículo enquanto a pessoa digita a referência */
 function PreviaVersiculo({ texto }: { texto: string }) {
-  const versao = (localStorage.getItem('pulpito-versao') as VersaoId) || 'ARA'
+  const versao = lerVersao()
   const ref = parseReferencia(texto)
   const chave = ref ? `${versao}:${formatarReferencia(ref)}` : ''
   const [res, setRes] = useState<{ chave: string; texto: string } | null>(null)

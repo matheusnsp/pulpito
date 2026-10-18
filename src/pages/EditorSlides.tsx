@@ -1,3 +1,4 @@
+import { lerVersao } from '../lib/preferencias'
 import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
@@ -16,11 +17,11 @@ import { ICONES } from '../lib/icones'
 import {
   ESTILO_PADRAO, FUNDOS_PRONTOS, type Disposicao, type Elemento, type EstiloSlide, type LayoutSlide, type TipoElemento, type Mensagem, type Slide, type Topico,
 } from '../lib/tipos'
-import { formatarReferencia, lerReferencia, parseReferencia, type VersaoId } from '../lib/biblia'
+import { formatarReferencia, lerReferencia, parseReferencia } from '../lib/biblia'
 
 const CORES_TEXTO = ['#ffffff', '#000000', '#fde68a', '#7dd3fc', '#fca5a5']
 const CAMPOS_SLIDE = ['topico_id', 'ordem', 'titulo', 'subtitulo', 'texto', 'fundo', 'estilo'] as const
-const versaoAtual = () => (localStorage.getItem('pulpito-versao') as VersaoId) || 'ARA'
+const versaoAtual = () => lerVersao()
 const botaoPequeno = 'botao-secundario px-3 py-1.5 text-sm'
 /* Ferramentas em linha (rolam para o lado no celular) */
 const ferramenta = 'botao-secundario shrink-0 px-3 py-2 text-sm sm:py-1.5'

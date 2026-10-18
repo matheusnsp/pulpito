@@ -1,3 +1,4 @@
+import { lerVersao } from '../lib/preferencias'
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
@@ -6,7 +7,7 @@ import {
 import { supabase } from '../lib/supabase'
 import type { Mensagem, Slide, Topico } from '../lib/tipos'
 import {
-  parseReferencia, formatarReferencia, lerCapitulo, lerReferencia, nomeDoLivro, type VersaoId,
+  parseReferencia, formatarReferencia, lerCapitulo, lerReferencia, nomeDoLivro,
 } from '../lib/biblia'
 import { CHAVE_TELAO, codigoValido, useEmissorTelao, type SlideTelao } from '../lib/telao'
 import { usePinca } from '../lib/pinca'
@@ -24,7 +25,7 @@ function fmt(ms: number) {
   return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 }
 
-const versaoAtual = () => (localStorage.getItem('pulpito-versao') as VersaoId) || 'ARA'
+const versaoAtual = () => lerVersao()
 
 const iconeBotao = 'flex h-10 w-10 items-center justify-center rounded-xl text-texto-2 hover:bg-superficie-2 hover:text-texto'
 
