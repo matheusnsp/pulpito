@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
-  ArrowDown, ArrowUp, Check, ChevronLeft, CircleAlert, Copy, ImagePlus, ListPlus, LoaderCircle,
-  Play, Plus, Redo2, Trash2, Undo2, Upload, X,
+  ArrowDown, ArrowUp, Check, ChevronLeft, CircleAlert, CircleCheck, Copy, ImagePlus, ListChecks,
+  ListPlus, LoaderCircle, Play, Plus, Redo2, Trash2, Undo2, Upload, X,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
@@ -74,6 +74,8 @@ export default function EditorSlides() {
   const [topicos, setTopicos] = useState<Topico[]>([])
   const [slides, setSlides] = useState<Slide[]>([])
   const [selId, setSelId] = useState<string | null>(null)
+  const [selecao, setSelecao] = useState<Set<string> | null>(null)
+  const [ancora, setAncora] = useState<string | null>(null)
   const [comFrase, setComFrase] = useState(false)
   const [gerando, setGerando] = useState(false)
   const [enviando, setEnviando] = useState(false)
@@ -101,9 +103,10 @@ export default function EditorSlides() {
     return () => { ativo = false }
   }, [id])
 
-  // Atalhos de teclado: Cmd/Ctrl + Z desfaz; com Shift (ou Ctrl + Y) refaz
+  // Teclado: Cmd/Ctrl + Z desfaz; com Shift (ou Ctrl + Y) refaz; Esc sai da seleção
   useEffect(() => {
     function tecla(e: KeyboardEvent) {
+      if (e.key === 'Escape' && selecao) { setSelecao(null); return }
       if (!(e.metaKey || e.ctrlKey)) return
       const k = e.key.toLowerCase()
       if (k === 'z' && !e.shiftKey) { e.preventDefault(); desfazerAgora() }
@@ -144,6 +147,49 @@ export default function EditorSlides() {
         agendar(`s:${s.id}:ordem`, () => supabase.from('slides').update({ ordem: s.ordem }).eq('id', s.id))
     })
     return renumerada
+  }
+
+  /* ── Seleção de vários slides ── */
+  function clicarMiniatura(s: Slide, e: MouseEvent) {
+    if (!selecao) { setSelId(s.id); return }
+    const nova = new Set(selecao)
+    if (e.shiftKey && ancora) {
+      const a = slides.findIndex((x) => x.id === ancora)
+      const b = slides.findIndex((x) => x.id === s.id)
+      const [ini, fim] = a < b ? [a, b] : [b, a]
+      slides.slice(ini, fim + 1).forEach((x) => nova.add(x.id))
+    } else if (nova.has(s.id)) {
+      nova.delete(s.id)
+    } else {
+      nova.add(s.id)
+    }
+    setAncora(s.id)
+    setSelecao(nova)
+  }
+
+  async function moverSelecionados(valor: string) {
+    if (!selecao?.size) return
+    const topico_id = valor === 'capa' ? null : valor
+    const ids = [...selecao]
+    historico.registrar(slides)
+    ids.forEach((sid) => cancelar(`s:${sid}:topico_id`))
+    setSlides((lista) => lista.map((s) => (selecao.has(s.id) ? { ...s, topico_id } : s)))
+    setSelecao(null)
+    const { error } = await supabase.from('slides').update({ topico_id }).in('id', ids)
+    if (error) setErro('Não foi possível mover os slides. Verifique a internet.')
+  }
+
+  async function excluirSelecionados() {
+    if (!selecao?.size) return
+    const ids = [...selecao]
+    historico.registrar(slides)
+    ids.forEach((sid) => cancelar(`s:${sid}:`))
+    const restantes = slides.filter((s) => !selecao.has(s.id))
+    setSlides(salvarOrdem(restantes))
+    if (sel && selecao.has(sel.id)) setSelId(restantes[0]?.id ?? null)
+    setSelecao(null)
+    const { error } = await supabase.from('slides').delete().in('id', ids)
+    if (error) setErro('Não foi possível excluir os slides. Verifique a internet.')
   }
 
   async function inserirDepois(base: Partial<Slide>) {
@@ -302,6 +348,7 @@ export default function EditorSlides() {
   async function aplicar(destino: Slide[]) {
     const atual = slides
     setSlides(destino)
+    setSelecao(null)
     if (!destino.some((s) => s.id === selId)) setSelId(destino[0]?.id ?? null)
 
     const antes = new Map(atual.map((s) => [s.id, s]))
@@ -467,161 +514,208 @@ export default function EditorSlides() {
           </button>
         </section>
       ) : (
-        <div className="mt-6 grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
-          {/* Miniaturas */}
-          <aside className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2 lg:mx-0 lg:max-h-[80dvh] lg:flex-col lg:overflow-y-auto lg:overflow-x-visible lg:px-0">
-            {slides.map((s, i) => (
-              <button key={s.id} onClick={() => setSelId(s.id)}
-                className={`w-40 shrink-0 rounded-xl p-1 text-left transition lg:w-full ${s.id === sel?.id
-                  ? 'bg-superficie ring-2 ring-acao' : 'ring-1 ring-borda hover:ring-texto-2'}`}>
-                <SlideVisual slide={s} className="rounded-lg" />
-                <p className="mt-1.5 truncate px-1 pb-0.5 text-xs text-texto-2">
-                  <b className="text-texto">{i + 1}</b> {rotuloTopico(s.topico_id)}
-                </p>
-              </button>
-            ))}
-            <button onClick={() => inserirDepois({})}
-              className="flex w-40 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-dashed border-borda py-4 text-sm font-semibold text-texto-2 hover:border-acao hover:text-acao lg:w-full">
-              <Plus size={16} /> Slide
-            </button>
-          </aside>
-
-          {sel && (
-            <section className="min-w-0 space-y-5">
-              <SlideVisual slide={sel} className="rounded-2xl ring-1 ring-borda" />
-
+        <>
+          {/* Seleção de vários */}
+          {selecao ? (
+            <div className="sticky top-0 z-10 -mx-4 mt-6 border-b border-borda bg-fundo/95 px-4 py-3 backdrop-blur">
               <div className="flex flex-wrap items-center gap-2">
-                <button onClick={() => mover(-1)} disabled={iSel === 0} className={botaoPequeno}>
-                  <ArrowUp size={16} /> Antes
-                </button>
-                <button onClick={() => mover(1)} disabled={iSel === slides.length - 1} className={botaoPequeno}>
-                  <ArrowDown size={16} /> Depois
-                </button>
-                <button onClick={() => inserirDepois({ ...sel })} className={botaoPequeno}>
-                  <Copy size={16} /> Duplicar
-                </button>
-                <button onClick={excluir} className={`${botaoPequeno} hover:text-perigo`}>
+                <span className="font-semibold">
+                  {selecao.size} {selecao.size === 1 ? 'selecionado' : 'selecionados'}
+                </span>
+                <button onClick={() => setSelecao(new Set(slides.map((s) => s.id)))}
+                  className="botao-fantasma px-2 py-1 text-sm">Todos</button>
+                <select value="" disabled={!selecao.size} aria-label="Mover selecionados para"
+                  onChange={(e) => moverSelecionados(e.target.value)} className="campo w-auto py-1.5 text-sm">
+                  <option value="" disabled>Mover para…</option>
+                  <option value="capa">Capa</option>
+                  {topicos.map((t, i) => <option key={t.id} value={t.id}>{i + 1}. {t.titulo || 'Sem título'}</option>)}
+                </select>
+                <button onClick={excluirSelecionados} disabled={!selecao.size} className={`${botaoPequeno} hover:text-perigo`}>
                   <Trash2 size={16} /> Excluir
                 </button>
-                <label className="ml-auto flex items-center gap-2 text-sm text-texto-2">
-                  Aparece em
-                  <select value={sel.topico_id ?? ''} className="campo w-auto py-1.5"
-                    onChange={(e) => alterar(sel.id, { topico_id: e.target.value || null })}>
-                    {opcoesTopico}
-                  </select>
-                </label>
+                <button onClick={() => setSelecao(null)} className="botao-primario ml-auto px-3 py-1.5 text-sm">
+                  <Check size={16} /> Concluir
+                </button>
               </div>
-
-              <div className="grid gap-6 md:grid-cols-2">
-                {/* Textos */}
-                <div className="space-y-4">
-                  <Campo rotulo="Título">
-                    <input value={sel.titulo ?? ''} className="campo"
-                      onChange={(e) => alterar(sel.id, { titulo: e.target.value })} />
-                  </Campo>
-                  <Campo rotulo="Subtítulo">
-                    <input value={sel.subtitulo ?? ''} className="campo"
-                      onChange={(e) => alterar(sel.id, { subtitulo: e.target.value })} />
-                  </Campo>
-                  <Campo rotulo="Texto">
-                    <textarea rows={6} value={sel.texto ?? ''} className="campo resize-y leading-relaxed"
-                      onChange={(e) => alterar(sel.id, { texto: e.target.value })} />
-                  </Campo>
-                </div>
-
-                {/* Visual */}
-                <div className="space-y-5 rounded-2xl border border-borda bg-superficie p-4">
-                  <div>
-                    <span className="mb-2 block text-sm font-semibold text-texto-2">Fundo</span>
-                    <div className="flex flex-wrap items-center gap-2">
-                      {FUNDOS_PRONTOS.map((f) => (
-                        <button key={f.nome} title={f.nome} aria-label={f.nome}
-                          onClick={() => alterar(sel.id, { fundo: f.valor })} style={{ background: f.valor }}
-                          className={`h-9 w-9 rounded-xl ${sel.fundo === f.valor ? 'ring-2 ring-acao ring-offset-2 ring-offset-superficie' : 'ring-1 ring-borda'}`} />
-                      ))}
-                      <label title="Cor personalizada"
-                        className="relative h-9 w-9 cursor-pointer overflow-hidden rounded-xl ring-1 ring-borda"
-                        style={{ background: 'conic-gradient(red, yellow, lime, cyan, blue, magenta, red)' }}>
-                        <input type="color" className="absolute inset-0 cursor-pointer opacity-0"
-                          value={sel.fundo?.startsWith('#') ? sel.fundo : '#000000'}
-                          onChange={(e) => alterar(sel.id, { fundo: e.target.value })} />
-                      </label>
-                    </div>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <input ref={arquivo} type="file" accept="image/*" className="hidden"
-                        onChange={(e) => { const f = e.target.files?.[0]; if (f) enviarImagem(f); e.target.value = '' }} />
-                      <button onClick={() => arquivo.current?.click()} disabled={enviando} className={botaoPequeno}>
-                        <ImagePlus size={16} /> {enviando ? 'Enviando…' : 'Usar foto de fundo'}
-                      </button>
-                      {imagemAtual && (
-                        <button onClick={() => alterar(sel.id, { fundo: '#000000' })} className="botao-fantasma px-3 py-1.5 text-sm">
-                          Remover foto
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {imagemAtual && (
-                    <div className="space-y-4">
-                      <div>
-                        <span className="mb-2 block text-sm font-semibold text-texto-2">Encaixe da foto</span>
-                        <Segmentos valor={estilo.ajuste}
-                          opcoes={[{ valor: 'cobrir', rotulo: 'Preencher' }, { valor: 'conter', rotulo: 'Mostrar inteira' }]}
-                          onChange={(v) => alterarEstilo({ ajuste: v })} />
-                      </div>
-                      <label className="block">
-                        <span className="mb-2 block text-sm font-semibold text-texto-2">Escurecer a foto</span>
-                        <input type="range" min={0} max={0.8} step={0.05} value={estilo.escurecer}
-                          onChange={(e) => alterarEstilo({ escurecer: Number(e.target.value) })}
-                          className="w-full accent-[var(--acao)]" />
-                      </label>
-                    </div>
-                  )}
-
-                  <div>
-                    <span className="mb-2 block text-sm font-semibold text-texto-2">Cor do texto</span>
-                    <div className="flex flex-wrap items-center gap-2">
-                      {CORES_TEXTO.map((c) => (
-                        <button key={c} onClick={() => alterarEstilo({ cor: c })} style={{ background: c }}
-                          aria-label={`Texto na cor ${c}`}
-                          className={`h-8 w-8 rounded-full ${estilo.cor === c ? 'ring-2 ring-acao ring-offset-2 ring-offset-superficie' : 'ring-1 ring-borda'}`} />
-                      ))}
-                      <input type="color" value={estilo.cor} onChange={(e) => alterarEstilo({ cor: e.target.value })}
-                        aria-label="Cor personalizada do texto" className="h-8 w-10 cursor-pointer rounded bg-transparent" />
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-x-5 gap-y-4">
-                    <div>
-                      <span className="mb-2 block text-sm font-semibold text-texto-2">Alinhamento</span>
-                      <Segmentos valor={estilo.alinhamento}
-                        opcoes={[{ valor: 'center', rotulo: 'Centro' }, { valor: 'left', rotulo: 'Esquerda' }]}
-                        onChange={(v) => alterarEstilo({ alinhamento: v })} />
-                    </div>
-                    <div>
-                      <span className="mb-2 block text-sm font-semibold text-texto-2">Tamanho</span>
-                      <Segmentos valor={estilo.tamanho}
-                        opcoes={[{ valor: 'p', rotulo: 'P' }, { valor: 'm', rotulo: 'M' }, { valor: 'g', rotulo: 'G' }]}
-                        onChange={(v) => alterarEstilo({ tamanho: v })} />
-                    </div>
-                    <div>
-                      <span className="mb-2 block text-sm font-semibold text-texto-2">Fonte</span>
-                      <Segmentos valor={estilo.fonte}
-                        opcoes={[{ valor: 'sans', rotulo: 'Moderna' }, { valor: 'serif', rotulo: 'Clássica' }]}
-                        onChange={(v) => alterarEstilo({ fonte: v })} />
-                    </div>
-                  </div>
-
-                  <button onClick={aplicarATodos} className={`${botaoPequeno} w-full`}>
-                    Aplicar este fundo e estilo a todos os slides
-                  </button>
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-borda bg-superficie p-4">{blocoGerar}</div>
-            </section>
+              <p className="mt-1.5 text-xs text-texto-2">
+                Toque nos slides para marcar. No computador, Shift + clique marca um intervalo.
+              </p>
+            </div>
+          ) : (
+            <button onClick={() => { setSelecao(new Set()); setAncora(null) }}
+              className="botao-fantasma -ml-2 mt-6 px-2 text-sm">
+              <ListChecks size={18} /> Selecionar vários
+            </button>
           )}
-        </div>
+
+          <div className="mt-3 grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
+            {/* Miniaturas */}
+            <aside className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2 lg:mx-0 lg:max-h-[80dvh] lg:flex-col lg:overflow-y-auto lg:overflow-x-visible lg:px-0">
+              {slides.map((s, i) => {
+                const marcado = !!selecao?.has(s.id)
+                const destaque = selecao ? marcado : s.id === sel?.id
+                return (
+                  <button key={s.id} onClick={(e) => clicarMiniatura(s, e)} aria-pressed={selecao ? marcado : undefined}
+                    className={`relative w-40 shrink-0 select-none rounded-xl p-1 text-left transition lg:w-full ${destaque
+                      ? 'bg-superficie ring-2 ring-acao' : 'ring-1 ring-borda hover:ring-texto-2'}`}>
+                    <SlideVisual slide={s} className={`rounded-lg ${selecao && !marcado ? 'opacity-60' : ''}`} />
+                    {selecao && (
+                      <span className={`absolute left-2.5 top-2.5 flex h-6 w-6 items-center justify-center rounded-full ${marcado
+                        ? 'bg-acao text-acao-texto' : 'border-2 border-white/80 bg-black/30'}`}>
+                        {marcado && <CircleCheck size={18} />}
+                      </span>
+                    )}
+                    <p className="mt-1.5 truncate px-1 pb-0.5 text-xs text-texto-2">
+                      <b className="text-texto">{i + 1}</b> {rotuloTopico(s.topico_id)}
+                    </p>
+                  </button>
+                )
+              })}
+              {!selecao && (
+                <button onClick={() => inserirDepois({})}
+                  className="flex w-40 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-dashed border-borda py-4 text-sm font-semibold text-texto-2 hover:border-acao hover:text-acao lg:w-full">
+                  <Plus size={16} /> Slide
+                </button>
+              )}
+            </aside>
+
+            {sel && (
+              <section className="min-w-0 space-y-5">
+                <SlideVisual slide={sel} className="rounded-2xl ring-1 ring-borda" />
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <button onClick={() => mover(-1)} disabled={iSel === 0} className={botaoPequeno}>
+                    <ArrowUp size={16} /> Antes
+                  </button>
+                  <button onClick={() => mover(1)} disabled={iSel === slides.length - 1} className={botaoPequeno}>
+                    <ArrowDown size={16} /> Depois
+                  </button>
+                  <button onClick={() => inserirDepois({ ...sel })} className={botaoPequeno}>
+                    <Copy size={16} /> Duplicar
+                  </button>
+                  <button onClick={excluir} className={`${botaoPequeno} hover:text-perigo`}>
+                    <Trash2 size={16} /> Excluir
+                  </button>
+                  <label className="ml-auto flex items-center gap-2 text-sm text-texto-2">
+                    Aparece em
+                    <select value={sel.topico_id ?? ''} className="campo w-auto py-1.5"
+                      onChange={(e) => alterar(sel.id, { topico_id: e.target.value || null })}>
+                      {opcoesTopico}
+                    </select>
+                  </label>
+                </div>
+
+                <div className="grid gap-6 md:grid-cols-2">
+                  {/* Textos */}
+                  <div className="space-y-4">
+                    <Campo rotulo="Título">
+                      <input value={sel.titulo ?? ''} className="campo"
+                        onChange={(e) => alterar(sel.id, { titulo: e.target.value })} />
+                    </Campo>
+                    <Campo rotulo="Subtítulo">
+                      <input value={sel.subtitulo ?? ''} className="campo"
+                        onChange={(e) => alterar(sel.id, { subtitulo: e.target.value })} />
+                    </Campo>
+                    <Campo rotulo="Texto">
+                      <textarea rows={6} value={sel.texto ?? ''} className="campo resize-y leading-relaxed"
+                        onChange={(e) => alterar(sel.id, { texto: e.target.value })} />
+                    </Campo>
+                  </div>
+
+                  {/* Visual */}
+                  <div className="space-y-5 rounded-2xl border border-borda bg-superficie p-4">
+                    <div>
+                      <span className="mb-2 block text-sm font-semibold text-texto-2">Fundo</span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {FUNDOS_PRONTOS.map((f) => (
+                          <button key={f.nome} title={f.nome} aria-label={f.nome}
+                            onClick={() => alterar(sel.id, { fundo: f.valor })} style={{ background: f.valor }}
+                            className={`h-9 w-9 rounded-xl ${sel.fundo === f.valor ? 'ring-2 ring-acao ring-offset-2 ring-offset-superficie' : 'ring-1 ring-borda'}`} />
+                        ))}
+                        <label title="Cor personalizada"
+                          className="relative h-9 w-9 cursor-pointer overflow-hidden rounded-xl ring-1 ring-borda"
+                          style={{ background: 'conic-gradient(red, yellow, lime, cyan, blue, magenta, red)' }}>
+                          <input type="color" className="absolute inset-0 cursor-pointer opacity-0"
+                            value={sel.fundo?.startsWith('#') ? sel.fundo : '#000000'}
+                            onChange={(e) => alterar(sel.id, { fundo: e.target.value })} />
+                        </label>
+                      </div>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <input ref={arquivo} type="file" accept="image/*" className="hidden"
+                          onChange={(e) => { const f = e.target.files?.[0]; if (f) enviarImagem(f); e.target.value = '' }} />
+                        <button onClick={() => arquivo.current?.click()} disabled={enviando} className={botaoPequeno}>
+                          <ImagePlus size={16} /> {enviando ? 'Enviando…' : 'Usar foto de fundo'}
+                        </button>
+                        {imagemAtual && (
+                          <button onClick={() => alterar(sel.id, { fundo: '#000000' })} className="botao-fantasma px-3 py-1.5 text-sm">
+                            Remover foto
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {imagemAtual && (
+                      <div className="space-y-4">
+                        <div>
+                          <span className="mb-2 block text-sm font-semibold text-texto-2">Encaixe da foto</span>
+                          <Segmentos valor={estilo.ajuste}
+                            opcoes={[{ valor: 'cobrir', rotulo: 'Preencher' }, { valor: 'conter', rotulo: 'Mostrar inteira' }]}
+                            onChange={(v) => alterarEstilo({ ajuste: v })} />
+                        </div>
+                        <label className="block">
+                          <span className="mb-2 block text-sm font-semibold text-texto-2">Escurecer a foto</span>
+                          <input type="range" min={0} max={0.8} step={0.05} value={estilo.escurecer}
+                            onChange={(e) => alterarEstilo({ escurecer: Number(e.target.value) })}
+                            className="w-full accent-[var(--acao)]" />
+                        </label>
+                      </div>
+                    )}
+
+                    <div>
+                      <span className="mb-2 block text-sm font-semibold text-texto-2">Cor do texto</span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {CORES_TEXTO.map((c) => (
+                          <button key={c} onClick={() => alterarEstilo({ cor: c })} style={{ background: c }}
+                            aria-label={`Texto na cor ${c}`}
+                            className={`h-8 w-8 rounded-full ${estilo.cor === c ? 'ring-2 ring-acao ring-offset-2 ring-offset-superficie' : 'ring-1 ring-borda'}`} />
+                        ))}
+                        <input type="color" value={estilo.cor} onChange={(e) => alterarEstilo({ cor: e.target.value })}
+                          aria-label="Cor personalizada do texto" className="h-8 w-10 cursor-pointer rounded bg-transparent" />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-x-5 gap-y-4">
+                      <div>
+                        <span className="mb-2 block text-sm font-semibold text-texto-2">Alinhamento</span>
+                        <Segmentos valor={estilo.alinhamento}
+                          opcoes={[{ valor: 'center', rotulo: 'Centro' }, { valor: 'left', rotulo: 'Esquerda' }]}
+                          onChange={(v) => alterarEstilo({ alinhamento: v })} />
+                      </div>
+                      <div>
+                        <span className="mb-2 block text-sm font-semibold text-texto-2">Tamanho</span>
+                        <Segmentos valor={estilo.tamanho}
+                          opcoes={[{ valor: 'p', rotulo: 'P' }, { valor: 'm', rotulo: 'M' }, { valor: 'g', rotulo: 'G' }]}
+                          onChange={(v) => alterarEstilo({ tamanho: v })} />
+                      </div>
+                      <div>
+                        <span className="mb-2 block text-sm font-semibold text-texto-2">Fonte</span>
+                        <Segmentos valor={estilo.fonte}
+                          opcoes={[{ valor: 'sans', rotulo: 'Moderna' }, { valor: 'serif', rotulo: 'Clássica' }]}
+                          onChange={(v) => alterarEstilo({ fonte: v })} />
+                      </div>
+                    </div>
+
+                    <button onClick={aplicarATodos} className={`${botaoPequeno} w-full`}>
+                      Aplicar este fundo e estilo a todos os slides
+                    </button>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-borda bg-superficie p-4">{blocoGerar}</div>
+              </section>
+            )}
+          </div>
+        </>
       )}
     </div>
   )
