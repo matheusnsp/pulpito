@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, MapPin, Play, Plus, Trash2, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { OPCOES_LEMBRETE, type Evento } from '../lib/tipos'
-import CartaoNotificacoes from '../components/CartaoNotificacoes'
 import CartaoCalendario from '../components/CartaoCalendario'
 
 const pad = (n: number) => String(n).padStart(2, '0')
@@ -358,7 +357,6 @@ export default function Agenda() {
           <p className="text-sm text-texto-2">Escolha como quer ser avisado dos seus compromissos.</p>
         </div>
         <CartaoCalendario />
-        <CartaoNotificacoes />
       </section>
 
       {form && (
