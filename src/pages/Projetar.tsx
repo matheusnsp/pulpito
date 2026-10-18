@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
-import { Maximize } from 'lucide-react'
+import { BookOpen, Maximize } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { canalTelao, codigoValido, gerarCodigo, type SlideTelao } from '../lib/telao'
 import SlideVisual from '../components/SlideVisual'
@@ -16,14 +16,27 @@ function Slide({ slide }: { slide: SlideTelao }) {
 
   if (slide.tipo === 'personalizado') return <SlideVisual slide={slide} preencher />
 
-  if (slide.tipo === 'versiculo') return (
-    <div className="flex h-full flex-col items-center justify-center gap-[4vh] px-[8vw] text-center">
-      <p className={`${porTamanho(slide.texto, 'text-[4.4vw]', 'text-[3.6vw]', 'text-[2.9vw]')} font-escritura leading-snug`}>
-        {slide.texto}
-      </p>
-      <p className="text-[2.4vw] font-bold text-tinta">{slide.referencia}</p>
-    </div>
-  )
+  if (slide.tipo === 'versiculo') {
+    const versos = slide.versos?.length ? slide.versos : null
+    const tamanho = porTamanho(slide.texto, 'text-[4.2vw]', 'text-[3.4vw]', 'text-[2.7vw]')
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-[4vh] px-[8vw] text-center">
+        <p className="flex items-center gap-[1vw] text-[2.4vw] font-extrabold text-tinta">
+          <BookOpen className="h-[2.6vw] w-[2.6vw]" /> {slide.referencia}
+        </p>
+        <p className={`${tamanho} font-escritura leading-snug`}>
+          {versos
+            ? versos.map((v) => (
+                <span key={v.n}>
+                  {versos.length > 1 && <sup className="mr-[0.3vw] font-sans text-[0.5em] font-bold text-tinta">{v.n}</sup>}
+                  {v.t}{' '}
+                </span>
+              ))
+            : slide.texto}
+        </p>
+      </div>
+    )
+  }
 
   const texto = slide.textoVersiculo
   return (

@@ -10,7 +10,7 @@ export type SlideTelao =
       tipo: 'topico'; titulo: string; numero: number; total: number
       referencia?: string; textoVersiculo?: string; frase?: string
     }
-  | { tipo: 'versiculo'; referencia: string; texto: string }
+  | { tipo: 'versiculo'; referencia: string; texto: string; versos?: { n: number; t: string }[] }
   | {
       tipo: 'personalizado'; titulo?: string | null; subtitulo?: string | null
       texto?: string | null; fundo?: string | null; estilo?: Partial<EstiloSlide> | null

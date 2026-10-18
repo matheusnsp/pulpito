@@ -33,7 +33,7 @@ function BibliaSobreposta({ inicial, podeProjetar, projetado, onProjetar, onFech
   inicial: string
   podeProjetar: boolean
   projetado: string | null
-  onProjetar: (referencia: string, texto: string) => void
+  onProjetar: (referencia: string, texto: string, versos: { n: number; t: string }[]) => void
   onFechar: () => void
 }) {
   const versao = versaoAtual()
@@ -74,7 +74,11 @@ function BibliaSobreposta({ inicial, podeProjetar, projetado, onProjetar, onFech
   }
 
   const trecho = podeProjetar && carregado && inicio && fim && fim > inicio
-    ? { referencia: `${nomeCap}:${inicio}-${fim}`, texto: versos.slice(inicio - 1, fim).join(' ') }
+    ? {
+        referencia: `${nomeCap}:${inicio}-${fim}`,
+        texto: versos.slice(inicio - 1, fim).join(' '),
+        versos: versos.slice(inicio - 1, fim).map((t, i) => ({ n: inicio + i, t })),
+      }
     : null
 
   return (
@@ -101,7 +105,7 @@ function BibliaSobreposta({ inicial, podeProjetar, projetado, onProjetar, onFech
                 <h3 className="font-display text-2xl font-bold">{nomeCap}</h3>
                 <span className="text-sm text-texto-2">{versao}</span>
                 {trecho && (
-                  <button onClick={() => onProjetar(trecho.referencia, trecho.texto)}
+                  <button onClick={() => onProjetar(trecho.referencia, trecho.texto, trecho.versos)}
                     className="botao ml-auto bg-acao/15 px-3 py-1.5 text-sm text-tinta">
                     <MonitorPlay size={16} /> Projetar {inicio}-{fim}
                   </button>
@@ -121,7 +125,7 @@ function BibliaSobreposta({ inicial, podeProjetar, projetado, onProjetar, onFech
                   const noTelao = projetado === rotulo
                   return (
                     <p key={n} id={`sv-${n}`}
-                      onClick={() => podeProjetar && onProjetar(rotulo, texto)}
+                      onClick={() => podeProjetar && onProjetar(rotulo, texto, [{ n, t: texto }])}
                       className={`rounded-xl px-3 py-1.5 text-lg leading-relaxed
                         ${podeProjetar ? 'cursor-pointer hover:bg-superficie-2' : ''}
                         ${destaque ? 'bg-acao/15 text-texto' : 'text-texto-2'}
@@ -197,6 +201,37 @@ function PainelTelao({ codigo, online, apagado, onConectar, onDesconectar, onAlt
   )
 }
 
+/* Texto com marcadores: linhas que começam com "-", "•" ou "*" viram lista; com aspas viram citação */
+function TextoRico({ texto, className }: { texto: string; className: string }) {
+  const blocos: ({ tipo: 'lista'; itens: string[] } | { tipo: 'citacao' | 'paragrafo'; t: string })[] = []
+  for (const linha of texto.split('\n')) {
+    const l = linha.trim()
+    const item = l.match(/^[-•*]\s+(.*)$/)
+    const ultimo = blocos[blocos.length - 1]
+    if (item) {
+      if (ultimo?.tipo === 'lista') ultimo.itens.push(item[1])
+      else blocos.push({ tipo: 'lista', itens: [item[1]] })
+    } else if (/^["“]/.test(l)) blocos.push({ tipo: 'citacao', t: l })
+    else if (ultimo?.tipo === 'paragrafo' && l) ultimo.t += '\n' + l
+    else if (l) blocos.push({ tipo: 'paragrafo', t: l })
+  }
+  return (
+    <div className={`space-y-3 leading-relaxed ${className}`}>
+      {blocos.map((b, i) => b.tipo === 'lista' ? (
+        <ul key={i} className="space-y-1.5">
+          {b.itens.map((it, k) => (
+            <li key={k} className="flex gap-3"><span aria-hidden className="mt-[0.6em] h-1.5 w-1.5 shrink-0 rounded-full bg-acao" />{it}</li>
+          ))}
+        </ul>
+      ) : b.tipo === 'citacao' ? (
+        <p key={i} className="border-l-2 border-acao/60 pl-4 font-escritura italic text-tinta">{b.t}</p>
+      ) : (
+        <p key={i} className="whitespace-pre-wrap">{b.t}</p>
+      ))}
+    </div>
+  )
+}
+
 /* ── Versículo base fixo embaixo, com o texto (recolhível) ── */
 const CHAVE_VERSICULO_ABERTO = 'pulpito-pregar-versiculo-aberto'
 
@@ -263,6 +298,7 @@ export default function Pregar() {
   const [subEstado, setSubEstado] = useState({ pagina: 0, sub: 0 })
   const [biblia, setBiblia] = useState<string | null>(null)
   const [painelTexto, setPainelTexto] = useState(false)
+  const [listaTopicos, setListaTopicos] = useState(false)
   const [escala, setEscala] = useState(() => {
     const salvo = Number(localStorage.getItem(CHAVE_ESCALA))
     return salvo >= ESCALA_MIN && salvo <= ESCALA_MAX ? salvo : 1
@@ -493,7 +529,6 @@ export default function Pregar() {
   const noFim = indice === topicos.length && sub >= slidesDaPagina.length - 1
   const proximoESlide = sub < slidesDaPagina.length - 1
   const rotuloProximo = noFim ? 'Fim da mensagem' : proximoESlide ? 'Próximo slide' : 'Próximo tópico'
-  const proximoTopico = !proximoESlide && indice < topicos.length ? topicos[indice] : null
 
   function irParaTopico(n: number) {
     setIndice(n)
@@ -585,22 +620,36 @@ export default function Pregar() {
           <div className={`h-full rounded-full ${corBarra} transition-all`} style={{ width: `${Math.min(fracao, 1) * 100}%` }} />
         </div>
 
-        {/* Mapa dos tópicos: toque para pular */}
+        {/* Próximo tópico, com lista para pular para qualquer um */}
         {topicos.length > 0 && (
-          <nav aria-label="Tópicos" className="sem-barra mx-auto mt-4 flex max-w-md gap-1.5 overflow-x-auto">
-            {[null, ...topicos].map((t, n) => (
-              <button key={t?.id ?? 'capa'} onClick={() => irParaTopico(n)}
-                aria-label={t ? `Tópico ${n}: ${t.titulo || 'Sem título'}` : 'Capa'}
-                aria-current={indice === n ? 'step' : undefined}
-                title={t ? t.titulo || 'Sem título' : mensagem.titulo}
-                className={`h-7 min-w-7 flex-1 rounded-lg text-xs font-bold tabular-nums transition-colors ${indice === n
-                  ? 'bg-acao text-acao-texto'
-                  : n < indice ? 'bg-superficie-2 text-texto-2' : 'border border-borda text-texto-2 hover:text-texto'}`}>
-                {n === 0 ? '•' : n}
-              </button>
-            ))}
-          </nav>
+          <div className="relative mx-auto mt-3 max-w-md">
+            <button onClick={() => setListaTopicos((v) => !v)} aria-expanded={listaTopicos}
+              className="flex w-full items-center gap-2 rounded-full border border-borda bg-superficie px-4 py-2 text-left text-sm">
+              <span className="shrink-0 text-texto-2">{indice < topicos.length ? 'Próximo:' : 'Último tópico'}</span>
+              <span className="min-w-0 flex-1 truncate font-bold">{indice < topicos.length ? topicos[indice].titulo || 'Sem título' : ''}</span>
+              <ChevronDown size={16} className={`shrink-0 text-texto-2 transition-transform ${listaTopicos ? 'rotate-180' : ''}`} />
+            </button>
+            {listaTopicos && (
+              <>
+                <div className="fixed inset-0 z-30" onClick={() => setListaTopicos(false)} />
+                <ol className="absolute inset-x-0 top-full z-40 mt-2 max-h-[50vh] animate-entrar overflow-y-auto rounded-2xl border border-borda bg-superficie p-1.5 shadow-2xl">
+                  {[null, ...topicos].map((t, n) => (
+                    <li key={t?.id ?? 'capa'}>
+                      <button onClick={() => { irParaTopico(n); setListaTopicos(false) }}
+                        className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left ${indice === n ? 'bg-ouro-suave' : 'hover:bg-superficie-2'}`}>
+                        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-extrabold ${indice === n ? 'bg-acao text-acao-texto' : 'bg-superficie-2 text-texto-2'}`}>
+                          {n === 0 ? '•' : n}
+                        </span>
+                        <span className="min-w-0 flex-1 truncate font-semibold">{t ? t.titulo || 'Sem título' : `Capa · ${mensagem.titulo}`}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ol>
+              </>
+            )}
+          </div>
         )}
+
       </div>
 
       {/* Conteúdo */}
@@ -623,19 +672,19 @@ export default function Pregar() {
                 {topicos.length} {topicos.length === 1 ? 'tópico' : 'tópicos'}, {mensagem.tempo_minutos} min
                 {slidesDaPagina.length > 1 && `, slide ${sub + 1} de ${slidesDaPagina.length}`}
               </p>
-              <h1 className={`${tam.titulo} font-display font-bold leading-[1.1]`}>{mensagem.titulo}</h1>
+              <h1 className={`${tam.titulo} font-display font-extrabold uppercase leading-[1.05] tracking-tight text-tinta`}>{mensagem.titulo}</h1>
             </div>
           )}
 
           {topico && (
             <div className="space-y-7">
               <div className="space-y-4">
-                <p className="text-texto-2">
+                <p className="rotulo">
                   Tópico {indice} de {topicos.length}
-                  {slidesDaPagina.length > 1 && `, slide ${sub + 1} de ${slidesDaPagina.length}`}
+                  {slidesDaPagina.length > 1 && ` · slide ${sub + 1} de ${slidesDaPagina.length}`}
                 </p>
-                <h1 className={`${tam.titulo} font-display font-bold leading-[1.1]`}>
-                  {topico.titulo || 'Sem título'}
+                <h1 className={`${tam.titulo} font-display font-extrabold uppercase leading-[1.05] tracking-tight`}>
+                  <span className="text-tinta">{indice}.</span> {topico.titulo || 'Sem título'}
                 </h1>
               </div>
 
@@ -648,9 +697,7 @@ export default function Pregar() {
               {secoes.map(([rotulo, valor]) => (
                 <section key={rotulo}>
                   <h2 className="rotulo mb-1.5">{rotulo}</h2>
-                  <p className={`${tam.corpo} whitespace-pre-wrap leading-relaxed ${rotulo === 'Notas' ? 'text-texto-2' : 'text-texto/90'}`}>
-                    {valor}
-                  </p>
+                  <TextoRico texto={valor ?? ''} className={`${tam.corpo} ${rotulo === 'Notas' ? 'text-texto-2' : 'text-texto/90'}`} />
                 </section>
               ))}
             </div>
@@ -664,11 +711,7 @@ export default function Pregar() {
           <VersiculoBase key={topico?.id ?? 'capa'} referencia={(topico ? topico.versiculo : mensagem.texto_base) ?? ''}
             onAbrir={() => setBiblia((topico ? topico.versiculo : mensagem.texto_base) || '')} />
         )}
-        {proximoTopico && (
-          <p className="col-span-2 truncate text-center text-sm text-texto-2">
-            A seguir: <b className="text-texto">{proximoTopico.titulo || 'Sem título'}</b>
-          </p>
-        )}
+
         <button onClick={() => ir(-1)} disabled={noInicio} aria-label="Voltar"
           className="flex h-16 w-16 items-center justify-center rounded-2xl border border-borda text-texto-2 hover:text-texto disabled:opacity-30">
           <ChevronLeft size={28} />
@@ -689,9 +732,9 @@ export default function Pregar() {
         <BibliaSobreposta inicial={biblia} onFechar={fecharBiblia}
           podeProjetar={!!codigoTelao}
           projetado={versiculoProjetado?.referencia ?? null}
-          onProjetar={(referencia, texto) => {
+          onProjetar={(referencia, texto, versos) => {
             setTelaoApagado(false)
-            setVersiculoProjetado({ tipo: 'versiculo', referencia, texto })
+            setVersiculoProjetado({ tipo: 'versiculo', referencia, texto, versos })
           }} />
       )}
 

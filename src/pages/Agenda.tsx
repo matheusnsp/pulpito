@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, MapPin, Play, Plus, Trash2, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { OPCOES_LEMBRETE, type Evento } from '../lib/tipos'
@@ -204,6 +204,12 @@ export default function Agenda() {
   const [eventos, setEventos] = useState<Evento[] | null>(null)
   const [mensagens, setMensagens] = useState<MensagemCurta[]>([])
   const [form, setForm] = useState<Rascunho | null>(null)
+  const [params, setParams] = useSearchParams()
+  const [mensagemInicial] = useState(() => params.get('mensagem'))
+
+  useEffect(() => {
+    if (params.has('mensagem')) setParams({}, { replace: true })
+  }, [params, setParams])
   const [erro, setErro] = useState('')
 
   useEffect(() => {
@@ -215,10 +221,14 @@ export default function Agenda() {
       if (!ativo) return
       if (ev.error) setErro('Não foi possível carregar a agenda. Verifique a internet.')
       setEventos((ev.data as Evento[]) ?? [])
-      setMensagens((ms.data as MensagemCurta[]) ?? [])
+      const lista = (ms.data as MensagemCurta[]) ?? []
+      setMensagens(lista)
+      // Vindo do editor: abre um compromisso novo já ligado à mensagem
+      if (mensagemInicial && lista.some((x) => x.id === mensagemInicial))
+        setForm({ titulo: '', local: '', data: chaveDia(new Date()), hora: '19:00', mensagem_id: mensagemInicial, lembretes: [1440, 60] })
     })
     return () => { ativo = false }
-  }, [])
+  }, [mensagemInicial])
 
   const porDia = useMemo(() => {
     const mapa = new Map<string, Evento[]>()

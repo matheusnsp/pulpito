@@ -5,7 +5,7 @@ import {
 } from '@dnd-kit/core'
 import { Link, useParams } from 'react-router-dom'
 import {
-  BookOpen, Check, ChevronDown, GripVertical, ChevronLeft, ChevronUp, CircleAlert, ClipboardCopy, Clock, LoaderCircle,
+  BookOpen, CalendarDays, Check, ChevronDown, GripVertical, ChevronLeft, ChevronUp, CircleAlert, ClipboardCopy, Clock, LoaderCircle,
   Play, Plus, Presentation, Redo2, Share2, Trash2, Undo2,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
@@ -16,6 +16,7 @@ import { parseReferencia, formatarReferencia, lerReferencia, type VersaoId } fro
 import { esbocoEmTexto } from '../lib/mensagens'
 
 type Foto = { mensagem: Mensagem; topicos: Topico[] }
+type EventoCurto = { id: string; titulo: string; inicio: string; local: string | null }
 
 const CAMPOS_MSG = ['titulo', 'texto_base', 'tempo_minutos', 'pasta_id'] as const
 const CAMPOS_TOP = ['titulo', 'versiculo', 'observacao', 'aplicacao', 'ilustracao', 'frase_chave', 'notas', 'ordem'] as const
@@ -104,6 +105,7 @@ export default function EditorMensagem() {
   const [aberto, setAberto] = useState<string | null>(null)
   const [erro, setErro] = useState('')
   const [copiado, setCopiado] = useState(false)
+  const [eventos, setEventos] = useState<EventoCurto[]>([])
 
   useEffect(() => {
     let ativo = true
@@ -111,11 +113,14 @@ export default function EditorMensagem() {
       supabase.from('mensagens').select('*').eq('id', id!).maybeSingle(),
       supabase.from('topicos').select('*').eq('mensagem_id', id!).order('ordem'),
       supabase.from('pastas').select('id, nome').order('nome'),
-    ]).then(([m, t, p]) => {
+      supabase.from('eventos').select('id, titulo, inicio, local').eq('mensagem_id', id!)
+        .gte('inicio', new Date(Date.now() - 86_400_000).toISOString()).order('inicio'),
+    ]).then(([m, t, p, ev]) => {
       if (!ativo) return
       setMensagem((m.data as Mensagem) ?? null)
       setTopicos((t.data as Topico[]) ?? [])
       setPastas((p.data as Pasta[]) ?? [])
+      setEventos((ev.data as EventoCurto[]) ?? [])
     })
     return () => { ativo = false }
   }, [id])
@@ -369,6 +374,20 @@ export default function EditorMensagem() {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Compromissos ligados a esta mensagem */}
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <span className="flex items-center gap-1.5 text-sm font-semibold text-texto-2"><CalendarDays size={16} /> Agenda:</span>
+        {eventos.map((e) => (
+          <Link key={e.id} to="/agenda" className="rounded-full bg-ouro-suave px-3 py-1 text-sm font-bold text-tinta">
+            {e.titulo} · {new Date(e.inicio).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }).replace('.', '')}
+            {' '}{new Date(e.inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+          </Link>
+        ))}
+        <Link to={`/agenda?mensagem=${mensagem.id}`} className="inline-flex items-center gap-1 rounded-full border border-dashed border-borda px-3 py-1 text-sm font-bold text-texto-2 hover:border-acao hover:text-texto">
+          <Plus size={14} /> {eventos.length ? 'Marcar outro' : 'Marcar na agenda'}
+        </Link>
       </div>
 
       {/* Tópicos */}

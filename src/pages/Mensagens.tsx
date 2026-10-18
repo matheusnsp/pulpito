@@ -5,7 +5,7 @@ import {
   type DragEndEvent, type DragStartEvent,
 } from '@dnd-kit/core'
 import {
-  BookOpen, Check, ChevronRight, Copy, Ellipsis, NotebookPen, FolderInput, GripVertical, Pencil, Play, Plus, Search, Trash2, X,
+  BookOpen, CalendarDays, Check, ChevronRight, Copy, Ellipsis, MonitorPlay, NotebookPen, FolderInput, GripVertical, Pencil, Play, Plus, Search, Trash2, X,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
@@ -178,6 +178,7 @@ export default function Mensagens() {
   const [mensagens, setMensagens] = useState<Mensagem[] | null>(null)
   const [pastas, setPastas] = useState<Pasta[]>([])
   const [proximo, setProximo] = useState<Proximo | null>(null)
+  const [outrosEventos, setOutrosEventos] = useState<Proximo[]>([])
   const [filtro, setFiltro] = useState<Filtro>(() => localStorage.getItem(CHAVE_FILTRO) || 'todas')
   const [novaPasta, setNovaPasta] = useState<string | null>(null)
   const [menu, setMenu] = useState<string | null>(null)
@@ -215,13 +216,15 @@ export default function Mensagens() {
       supabase.from('pastas').select('id, nome'),
       supabase.from('eventos')
         .select('id, titulo, inicio, local, mensagem:mensagens(id, titulo, texto_base, tempo_minutos, topicos(count))')
-        .gte('inicio', new Date().toISOString()).order('inicio').limit(1).maybeSingle(),
+        .gte('inicio', new Date().toISOString()).order('inicio').limit(4),
     ]).then(([m, p, e]) => {
       if (!ativo) return
       if (m.error) setErro('Não foi possível carregar suas mensagens. Verifique a internet.')
       setMensagens((m.data as Mensagem[]) ?? [])
       setPastas(ordenar((p.data as Pasta[]) ?? []))
-      setProximo((e.data as unknown as Proximo) ?? null)
+      const evs = (e.data as unknown as Proximo[]) ?? []
+      setProximo(evs[0] ?? null)
+      setOutrosEventos(evs.slice(1))
     })
     return () => { ativo = false }
   }, [])
@@ -360,7 +363,7 @@ export default function Mensagens() {
   const msgProxima = proximo?.mensagem ?? null
   const qtdTopicos = msgProxima?.topicos?.[0]?.count ?? 0
 
-  const qtdPastas = pastas.length
+  const qtdMarcados = (() => { try { return JSON.parse(localStorage.getItem('pulpito-marcados') || '[]').length as number } catch { return 0 } })()
   const ultima = !termo && todas[0] && todas[0].id !== msgProxima?.id ? todas[0] : null
 
   return (
@@ -378,12 +381,6 @@ export default function Mensagens() {
               {saudacao(hoje.getHours())}, {primeiroNome}
             </h1>
           </div>
-          {mensagens && mensagens.length > 0 && (
-            <p className="hidden text-sm text-texto-2 sm:block">
-              <b className="font-display text-texto">{mensagens.length}</b> {mensagens.length === 1 ? 'mensagem' : 'mensagens'}
-              {qtdPastas > 0 && <> · <b className="font-display text-texto">{qtdPastas}</b> {qtdPastas === 1 ? 'pasta' : 'pastas'}</>}
-            </p>
-          )}
         </header>
 
         {/* Próxima pregação */}
@@ -441,6 +438,81 @@ export default function Mensagens() {
             </span>
             <ChevronRight size={20} className="shrink-0 text-texto-2 transition group-hover:translate-x-0.5" />
           </Link>
+        )}
+
+        {/* Painel: resumo, próximos compromissos e acesso rápido */}
+        {mensagens && mensagens.length > 0 && !termo && (
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            <section className="cartao p-4">
+              <h2 className="rotulo">Resumo</h2>
+              <div className="mt-3 grid grid-cols-4 gap-2 text-center">
+                {[
+                  { n: todas.length, r: todas.length === 1 ? 'mensagem' : 'mensagens' },
+                  { n: (proximo ? 1 : 0) + outrosEventos.length, r: 'na agenda' },
+                  { n: pastas.length, r: pastas.length === 1 ? 'pasta' : 'pastas' },
+                  { n: qtdMarcados, r: qtdMarcados === 1 ? 'marcação' : 'marcações' },
+                ].map(({ n, r }) => (
+                  <div key={r} className="rounded-xl bg-superficie-2 px-1 py-2.5">
+                    <p className="font-display text-2xl font-extrabold tabular-nums">{n}</p>
+                    <p className="truncate text-[11px] font-semibold text-texto-2">{r}</p>
+                  </div>
+                ))}
+              </div>
+              <h2 className="rotulo mt-4">Acesso rápido</h2>
+              <div className="mt-2 grid grid-cols-4 gap-2">
+                {[
+                  { r: 'Nova', Icone: Plus, acao: criar },
+                  { r: 'Bíblia', Icone: BookOpen, para: '/biblia' },
+                  { r: 'Agenda', Icone: CalendarDays, para: '/agenda' },
+                  { r: 'Telão', Icone: MonitorPlay, para: '/projetar' },
+                ].map(({ r, Icone, acao, para }) => {
+                  const cls = 'flex flex-col items-center gap-1 rounded-xl border border-borda py-2.5 text-xs font-bold text-texto-2 transition-colors hover:border-acao hover:text-texto'
+                  const miolo = <><Icone size={20} className="text-tinta" />{r}</>
+                  return para
+                    ? <Link key={r} to={para} target={para === '/projetar' ? '_blank' : undefined} className={cls}>{miolo}</Link>
+                    : <button key={r} onClick={acao} disabled={criando} className={cls}>{miolo}</button>
+                })}
+              </div>
+            </section>
+
+            <section className="cartao p-4">
+              <div className="flex items-center justify-between">
+                <h2 className="rotulo">Próximos compromissos</h2>
+                <Link to="/agenda" className="text-xs font-bold text-tinta hover:underline">Ver agenda</Link>
+              </div>
+              {(proximo ? [proximo, ...outrosEventos] : []).length === 0 ? (
+                <div className="mt-3 rounded-xl border border-dashed border-borda px-4 py-6 text-center text-sm text-texto-2">
+                  Nada marcado. <Link to="/agenda" className="font-bold text-tinta">Marcar um compromisso</Link>
+                </div>
+              ) : (
+                <ul className="mt-2 divide-y divide-borda">
+                  {[proximo!, ...outrosEventos].map((ev) => {
+                    const d = new Date(ev.inicio)
+                    return (
+                      <li key={ev.id} className="flex items-center gap-3 py-2.5">
+                        <div className="w-11 shrink-0 rounded-lg bg-superficie-2 py-1 text-center">
+                          <p className="text-[10px] font-bold uppercase text-texto-2">{d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')}</p>
+                          <p className="font-display text-lg font-extrabold leading-none">{d.getDate()}</p>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-bold">{ev.titulo}</p>
+                          <p className="truncate text-xs text-texto-2">
+                            {quandoEvento(ev.inicio, hoje)}{ev.mensagem ? ` · ${ev.mensagem.titulo}` : ''}
+                          </p>
+                        </div>
+                        {ev.mensagem && (
+                          <Link to={`/pregar/${ev.mensagem.id}`} aria-label={`Pregar ${ev.mensagem.titulo}`}
+                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-acao text-acao-texto">
+                            <Play size={14} fill="currentColor" />
+                          </Link>
+                        )}
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </section>
+          </div>
         )}
 
         {/* Busca */}
