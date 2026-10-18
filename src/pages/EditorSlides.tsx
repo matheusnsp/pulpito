@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
-  ArrowDown, ArrowUp, Check, ChevronLeft, CircleAlert, CircleCheck, Copy, ImagePlus, ListChecks,
-  ListPlus, LoaderCircle, Play, Plus, Redo2, Trash2, Undo2, Upload, X,
+  ArrowDown, ArrowUp, Check, ChevronLeft, CircleAlert, CircleCheck, Copy, Download, FileText, ImagePlus, ListChecks,
+  ListPlus, LoaderCircle, Play, Plus, Presentation, Redo2, Trash2, Undo2, Upload, X,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
@@ -96,6 +96,8 @@ export default function EditorSlides() {
   const [gerando, setGerando] = useState(false)
   const [enviando, setEnviando] = useState(false)
   const [painelImportar, setPainelImportar] = useState(false)
+  const [menuExportar, setMenuExportar] = useState(false)
+  const [exportando, setExportando] = useState('')
   const [destinoImport, setDestinoImport] = useState('')
   const [importando, setImportando] = useState<string | null>(null)
   const [erro, setErro] = useState('')
@@ -248,6 +250,23 @@ export default function EditorSlides() {
     const lista = [...slides]
     ;[lista[iSel], lista[j]] = [lista[j], lista[iSel]]
     setSlides(salvarOrdem(lista))
+  }
+
+  async function exportar(formato: 'pptx' | 'pdf') {
+    if (!mensagem || !slides.length) return
+    setMenuExportar(false)
+    setErro('')
+    const progresso = (feito: number, total: number) => setExportando(`${feito} de ${total}`)
+    setExportando('Preparando…')
+    try {
+      const { exportarPdf, exportarPowerPoint } = await import('../lib/exportar')
+      if (formato === 'pptx') await exportarPowerPoint(mensagem.titulo, slides, topicos, progresso)
+      else await exportarPdf(mensagem.titulo, slides, progresso)
+    } catch {
+      setErro('Não foi possível exportar. Se algum slide usa foto, confira a internet e tente de novo.')
+    } finally {
+      setExportando('')
+    }
   }
 
   async function gerar() {
@@ -481,10 +500,33 @@ export default function EditorSlides() {
           <h1 className="font-display text-3xl font-bold">Slides</h1>
           <p className="truncate text-texto-2">{mensagem.titulo}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button onClick={() => setPainelImportar((v) => !v)} className="botao-secundario">
             <Upload size={18} /> Importar
           </button>
+          <div className="relative">
+            <button onClick={() => setMenuExportar((v) => !v)} disabled={!slides.length || !!exportando}
+              aria-expanded={menuExportar} className="botao-secundario">
+              {exportando
+                ? <><LoaderCircle size={18} className="animate-spin" /> {exportando}</>
+                : <><Download size={18} /> Exportar</>}
+            </button>
+            {menuExportar && (
+              <>
+                <div className="fixed inset-0 z-30" onClick={() => setMenuExportar(false)} />
+                <div className="absolute right-0 top-full z-40 mt-2 w-64 animate-entrar rounded-2xl border border-borda bg-superficie p-1.5 shadow-xl">
+                  <button onClick={() => exportar('pptx')} className="flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-superficie-2">
+                    <Presentation size={18} className="mt-0.5 shrink-0 text-tinta" />
+                    <span><b className="block text-sm">PowerPoint (.pptx)</b><span className="text-xs text-texto-2">Com suas anotações nas notas do apresentador</span></span>
+                  </button>
+                  <button onClick={() => exportar('pdf')} className="flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-superficie-2">
+                    <FileText size={18} className="mt-0.5 shrink-0 text-tinta" />
+                    <span><b className="block text-sm">PDF</b><span className="text-xs text-texto-2">Bom para mandar no WhatsApp</span></span>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
           <Link to={`/pregar/${mensagem.id}`} className="botao-primario">
             <Play size={18} /> Pregar
           </Link>
