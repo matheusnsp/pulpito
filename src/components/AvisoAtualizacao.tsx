@@ -1,3 +1,4 @@
+import { RefreshCw } from 'lucide-react'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 
 export default function AvisoAtualizacao() {
@@ -5,13 +6,12 @@ export default function AvisoAtualizacao() {
   if (!precisa) return null
 
   return (
-    <div className="fixed bottom-24 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-xl bg-neutral-900 px-4 py-3 shadow-lg ring-1 ring-neutral-700">
-      <span className="text-sm">Nova versão disponível</span>
-      <button onClick={() => updateServiceWorker(true)}
-        className="rounded-lg bg-neutral-100 px-3 py-1.5 text-sm font-medium text-neutral-900">
-        Atualizar
-      </button>
-      <button onClick={() => setPrecisa(false)} className="text-sm text-neutral-500">Depois</button>
+    <div role="status"
+      className="fixed inset-x-4 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-50 mx-auto flex max-w-md items-center gap-3 rounded-2xl border border-borda bg-superficie p-3 pl-4 shadow-xl md:bottom-6">
+      <RefreshCw size={18} className="shrink-0 text-acao" />
+      <span className="flex-1 text-sm font-semibold">Nova versão disponível</span>
+      <button onClick={() => setPrecisa(false)} className="botao-fantasma px-3 py-1.5 text-sm">Depois</button>
+      <button onClick={() => updateServiceWorker(true)} className="botao-primario px-3 py-1.5 text-sm">Atualizar</button>
     </div>
   )
 }

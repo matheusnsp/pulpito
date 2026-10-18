@@ -1,8 +1,13 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import {
+  ArrowDown, ArrowUp, Check, ChevronLeft, CircleAlert, Copy, ImagePlus, ListPlus, LoaderCircle,
+  Play, Plus, Redo2, Trash2, Undo2, Upload, X,
+} from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { useSalvamento } from '../lib/salvamento'
+import { useHistorico } from '../lib/historico'
 import { lerArquivos } from '../lib/importar'
 import SlideVisual from '../components/SlideVisual'
 import {
@@ -10,11 +15,12 @@ import {
 } from '../lib/tipos'
 import { formatarReferencia, lerReferencia, parseReferencia, type VersaoId } from '../lib/biblia'
 
-const campo = 'w-full rounded-lg bg-neutral-900 px-3 py-2 ring-1 ring-neutral-800 outline-none focus:ring-neutral-600'
-const botao = 'rounded-lg px-3 py-1.5 text-sm ring-1 ring-neutral-700 hover:bg-neutral-900 disabled:opacity-30'
 const CORES_TEXTO = ['#ffffff', '#000000', '#fde68a', '#7dd3fc', '#fca5a5']
-
+const CAMPOS_SLIDE = ['topico_id', 'ordem', 'titulo', 'subtitulo', 'texto', 'fundo', 'estilo'] as const
 const versaoAtual = () => (localStorage.getItem('pulpito-versao') as VersaoId) || 'ARA'
+const botaoPequeno = 'botao-secundario px-3 py-1.5 text-sm'
+const iconeBotao = 'flex h-9 w-9 items-center justify-center rounded-xl text-texto-2 hover:bg-superficie-2 hover:text-texto disabled:opacity-25'
+const diferente = (a: unknown, b: unknown) => JSON.stringify(a) !== JSON.stringify(b)
 
 function referenciaBonita(ref: string | null) {
   const r = ref ? parseReferencia(ref) : null
@@ -34,12 +40,28 @@ async function textoDoVersiculo(ref: string | null) {
   }
 }
 
-function Opcao({ ativo, onClick, children }: { ativo: boolean; onClick: () => void; children: React.ReactNode }) {
+function Campo({ rotulo, children }: { rotulo: string; children: ReactNode }) {
   return (
-    <button onClick={onClick}
-      className={`rounded-lg px-3 py-1.5 text-sm ring-1 ${ativo ? 'bg-neutral-100 text-neutral-900 ring-neutral-100' : 'ring-neutral-700 hover:bg-neutral-900'}`}>
+    <label className="block">
+      <span className="mb-1.5 block text-sm font-semibold text-texto-2">{rotulo}</span>
       {children}
-    </button>
+    </label>
+  )
+}
+
+function Segmentos<T extends string>({ valor, opcoes, onChange }: {
+  valor: T; opcoes: { valor: T; rotulo: string }[]; onChange: (v: T) => void
+}) {
+  return (
+    <div className="inline-flex rounded-xl border border-borda bg-superficie p-1">
+      {opcoes.map((o) => (
+        <button key={o.valor} onClick={() => onChange(o.valor)} aria-pressed={valor === o.valor}
+          className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${valor === o.valor
+            ? 'bg-acao text-acao-texto' : 'text-texto-2 hover:text-texto'}`}>
+          {o.rotulo}
+        </button>
+      ))}
+    </div>
   )
 }
 
@@ -47,6 +69,7 @@ export default function EditorSlides() {
   const { id } = useParams()
   const { sessao } = useAuth()
   const { status, agendar, cancelar } = useSalvamento()
+  const historico = useHistorico<Slide[]>()
   const [mensagem, setMensagem] = useState<Mensagem | null | undefined>(undefined)
   const [topicos, setTopicos] = useState<Topico[]>([])
   const [slides, setSlides] = useState<Slide[]>([])
@@ -78,6 +101,18 @@ export default function EditorSlides() {
     return () => { ativo = false }
   }, [id])
 
+  // Atalhos de teclado: Cmd/Ctrl + Z desfaz; com Shift (ou Ctrl + Y) refaz
+  useEffect(() => {
+    function tecla(e: KeyboardEvent) {
+      if (!(e.metaKey || e.ctrlKey)) return
+      const k = e.key.toLowerCase()
+      if (k === 'z' && !e.shiftKey) { e.preventDefault(); desfazerAgora() }
+      else if ((k === 'z' && e.shiftKey) || k === 'y') { e.preventDefault(); refazerAgora() }
+    }
+    window.addEventListener('keydown', tecla)
+    return () => window.removeEventListener('keydown', tecla)
+  })
+
   const sel = slides.find((s) => s.id === selId) ?? slides[0] ?? null
   const iSel = sel ? slides.findIndex((s) => s.id === sel.id) : -1
   const estilo = { ...ESTILO_PADRAO, ...(sel?.estilo ?? {}) }
@@ -90,9 +125,10 @@ export default function EditorSlides() {
   }
 
   function alterar(sid: string, campos: Partial<Slide>) {
+    const chave = `s:${sid}:${Object.keys(campos).join(',')}`
+    historico.registrar(slides, chave)
     setSlides((lista) => lista.map((s) => (s.id === sid ? { ...s, ...campos } : s)))
-    agendar(`s:${sid}:${Object.keys(campos).join(',')}`, () =>
-      supabase.from('slides').update(campos).eq('id', sid))
+    agendar(chave, () => supabase.from('slides').update(campos).eq('id', sid))
   }
 
   function alterarEstilo(campos: Partial<EstiloSlide>) {
@@ -100,7 +136,6 @@ export default function EditorSlides() {
     alterar(sel.id, { estilo: { ...sel.estilo, ...campos } })
   }
 
-  // Renumera a ordem e salva só o que mudou
   function salvarOrdem(nova: Slide[]) {
     const renumerada = nova.map((s, k) => ({ ...s, ordem: k }))
     renumerada.forEach((s) => {
@@ -112,6 +147,7 @@ export default function EditorSlides() {
   }
 
   async function inserirDepois(base: Partial<Slide>) {
+    const antes = slides
     const pos = iSel >= 0 ? iSel + 1 : slides.length
     setErro('')
     const { data, error } = await supabase.from('slides').insert({
@@ -125,6 +161,7 @@ export default function EditorSlides() {
       estilo: base.estilo ?? sel?.estilo ?? {},
     }).select().single()
     if (error || !data) { setErro('Não foi possível criar o slide.'); return }
+    historico.registrar(antes)
     const lista = [...slides]
     lista.splice(pos, 0, data as Slide)
     setSlides(salvarOrdem(lista))
@@ -132,18 +169,20 @@ export default function EditorSlides() {
   }
 
   async function excluir() {
-    if (!sel || !confirm('Excluir este slide?')) return
+    if (!sel) return
+    historico.registrar(slides)
     cancelar(`s:${sel.id}:`)
-    const { error } = await supabase.from('slides').delete().eq('id', sel.id)
-    if (error) { setErro('Não foi possível excluir.'); return }
     const restantes = slides.filter((s) => s.id !== sel.id)
     setSlides(salvarOrdem(restantes))
     setSelId(restantes[Math.min(iSel, restantes.length - 1)]?.id ?? null)
+    const { error } = await supabase.from('slides').delete().eq('id', sel.id)
+    if (error) setErro('Não foi possível excluir.')
   }
 
   function mover(dir: -1 | 1) {
     const j = iSel + dir
     if (iSel < 0 || j < 0 || j >= slides.length) return
+    historico.registrar(slides)
     const lista = [...slides]
     ;[lista[iSel], lista[j]] = [lista[j], lista[iSel]]
     setSlides(salvarOrdem(lista))
@@ -151,7 +190,7 @@ export default function EditorSlides() {
 
   async function gerar() {
     if (!mensagem) return
-    if (slides.length && !confirm('Isso vai substituir os slides atuais. Continuar?')) return
+    const antes = slides
     setGerando(true)
     setErro('')
     const fundo = sel?.fundo ?? '#000000'
@@ -183,6 +222,7 @@ export default function EditorSlides() {
     const { data, error } = await supabase.from('slides').insert(linhas).select()
     setGerando(false)
     if (error || !data) { setErro('Não foi possível gerar os slides.'); return }
+    historico.registrar(antes)
     const lista = (data as Slide[]).sort((a, b) => a.ordem - b.ordem)
     setSlides(lista)
     setSelId(lista[0]?.id ?? null)
@@ -190,6 +230,7 @@ export default function EditorSlides() {
 
   async function aplicarATodos() {
     if (!sel || !mensagem) return
+    historico.registrar(slides)
     const { fundo, estilo: est } = sel
     slides.forEach((s) => { cancelar(`s:${s.id}:fundo`); cancelar(`s:${s.id}:estilo`) })
     setSlides((lista) => lista.map((s) => ({ ...s, fundo, estilo: est })))
@@ -200,7 +241,7 @@ export default function EditorSlides() {
   async function enviarImagem(file: File) {
     if (!sel || !sessao) return
     if (!file.type.startsWith('image/')) { setErro('Escolha um arquivo de imagem.'); return }
-    if (file.size > 5 * 1024 * 1024) { setErro('Imagem muito grande (máximo 5 MB).'); return }
+    if (file.size > 5 * 1024 * 1024) { setErro('Imagem muito grande. O máximo é 5 MB.'); return }
     setEnviando(true)
     setErro('')
     const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
@@ -213,9 +254,9 @@ export default function EditorSlides() {
     alterar(sel.id, { fundo: `img:${data.publicUrl}` })
   }
 
-  /* Importa PDF, imagens ou .pptx como novos slides no fim da lista */
   async function importar(lista: FileList | null) {
     if (!lista?.length || !mensagem || !sessao) return
+    const antes = slides
     setErro('')
     try {
       setImportando('Lendo arquivos…')
@@ -245,6 +286,7 @@ export default function EditorSlides() {
       setImportando('Salvando slides…')
       const { data, error } = await supabase.from('slides').insert(linhas).select()
       if (error || !data) throw new Error('Não foi possível salvar os slides.')
+      historico.registrar(antes)
       const novos = (data as Slide[]).sort((a, b) => a.ordem - b.ordem)
       setSlides((atual) => [...atual, ...novos])
       setSelId(novos[0].id)
@@ -256,232 +298,327 @@ export default function EditorSlides() {
     }
   }
 
-  if (mensagem === undefined) return <p className="p-6 text-neutral-500">Carregando…</p>
+  /* Leva a tela e o banco para uma foto anterior (ou posterior) */
+  async function aplicar(destino: Slide[]) {
+    const atual = slides
+    setSlides(destino)
+    if (!destino.some((s) => s.id === selId)) setSelId(destino[0]?.id ?? null)
+
+    const antes = new Map(atual.map((s) => [s.id, s]))
+    const depois = new Set(destino.map((s) => s.id))
+
+    for (const s of destino) {
+      const a = antes.get(s.id)
+      if (!a) continue
+      for (const k of CAMPOS_SLIDE) {
+        if (diferente(s[k], a[k])) {
+          const valor = s[k]
+          agendar(`s:${s.id}:${k}`, () => supabase.from('slides').update({ [k]: valor }).eq('id', s.id))
+        }
+      }
+    }
+
+    const recriar = destino.filter((s) => !antes.has(s.id))
+    const remover = atual.filter((s) => !depois.has(s.id)).map((s) => s.id)
+    remover.forEach((sid) => cancelar(`s:${sid}:`))
+
+    if (recriar.length) {
+      const { error } = await supabase.from('slides').upsert(recriar)
+      if (error) setErro('Não foi possível restaurar os slides. Verifique a internet.')
+    }
+    if (remover.length) {
+      const { error } = await supabase.from('slides').delete().in('id', remover)
+      if (error) setErro('Não foi possível desfazer. Verifique a internet.')
+    }
+  }
+
+  function desfazerAgora() {
+    const f = historico.desfazer(slides)
+    if (f) aplicar(f)
+  }
+
+  function refazerAgora() {
+    const f = historico.refazer(slides)
+    if (f) aplicar(f)
+  }
+
+  if (mensagem === undefined) return <p className="p-6 text-texto-2">Carregando…</p>
   if (mensagem === null) return (
     <div className="p-6">
-      <p className="mb-2">Mensagem não encontrada.</p>
-      <Link to="/" className="text-sky-400">Voltar</Link>
+      <p className="mb-3">Mensagem não encontrada.</p>
+      <Link to="/" className="botao-secundario">Voltar para mensagens</Link>
     </div>
   )
 
-  const textoStatus = { salvo: 'Salvo', salvando: 'Salvando…', erro: 'Erro ao salvar' }[status]
+  const indicador = {
+    salvo: <><Check size={16} /> Salvo</>,
+    salvando: <><LoaderCircle size={16} className="animate-spin" /> Salvando</>,
+    erro: <><CircleAlert size={16} /> Não salvou</>,
+  }[status]
+
+  const opcoesTopico = (
+    <>
+      <option value="">Capa</option>
+      {topicos.map((t, i) => <option key={t.id} value={t.id}>{i + 1}. {t.titulo || 'Sem título'}</option>)}
+    </>
+  )
 
   const blocoGerar = (
     <div className="space-y-3">
-      <label className="flex items-center gap-2 text-sm text-neutral-300">
-        <input type="checkbox" checked={comFrase} onChange={(e) => setComFrase(e.target.checked)} />
+      <label className="flex items-center gap-2.5 text-sm">
+        <input type="checkbox" checked={comFrase} onChange={(e) => setComFrase(e.target.checked)}
+          className="h-4 w-4 accent-[var(--acao)]" />
         Criar também um slide com a frase-chave de cada tópico
       </label>
-      <button onClick={gerar} disabled={gerando}
-        className="rounded-lg bg-neutral-100 px-4 py-2 font-medium text-neutral-900 disabled:opacity-50">
+      <button onClick={gerar} disabled={gerando} className={slides.length ? 'botao-secundario' : 'botao-primario'}>
+        <ListPlus size={18} />
         {gerando ? 'Gerando…' : slides.length ? 'Gerar de novo a partir dos tópicos' : 'Gerar a partir dos tópicos'}
       </button>
     </div>
   )
 
   return (
-    <div className="mx-auto max-w-6xl space-y-4 p-4 pb-24">
-      <div className="flex flex-wrap items-center gap-3">
-        <Link to={`/mensagem/${mensagem.id}`} className="text-neutral-400 hover:text-neutral-200">← Mensagem</Link>
-        <h1 className="truncate text-lg font-semibold">Slides · {mensagem.titulo}</h1>
-        <span className={`ml-auto text-sm ${status === 'erro' ? 'text-red-400' : 'text-neutral-500'}`}>{textoStatus}</span>
-        <button onClick={() => setPainelImportar((v) => !v)} className={botao}>⬆ Importar</button>
-        <Link to={`/pregar/${mensagem.id}`} className="rounded-lg bg-neutral-100 px-4 py-2 font-medium text-neutral-900">
-          Pregar
+    <div className="mx-auto max-w-6xl px-4 pb-28 pt-4 md:pt-8">
+      {/* Barra do topo */}
+      <div className="flex items-center gap-1">
+        <Link to={`/mensagem/${mensagem.id}`} className="botao-fantasma -ml-2 px-2">
+          <ChevronLeft size={20} /> Mensagem
         </Link>
+        <span className={`ml-auto mr-2 flex items-center gap-1.5 text-sm ${status === 'erro' ? 'text-perigo' : 'text-texto-2'}`}>
+          {indicador}
+        </span>
+        <button onClick={desfazerAgora} disabled={!historico.podeDesfazer}
+          aria-label="Desfazer" title="Desfazer (Cmd + Z)" className={iconeBotao}>
+          <Undo2 size={18} />
+        </button>
+        <button onClick={refazerAgora} disabled={!historico.podeRefazer}
+          aria-label="Refazer" title="Refazer (Cmd + Shift + Z)" className={iconeBotao}>
+          <Redo2 size={18} />
+        </button>
       </div>
 
-      {erro && <p className="text-sm text-red-400">{erro}</p>}
+      <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="font-escritura text-3xl font-semibold">Slides</h1>
+          <p className="truncate text-texto-2">{mensagem.titulo}</p>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={() => setPainelImportar((v) => !v)} className="botao-secundario">
+            <Upload size={18} /> Importar
+          </button>
+          <Link to={`/pregar/${mensagem.id}`} className="botao-primario">
+            <Play size={18} /> Pregar
+          </Link>
+        </div>
+      </div>
+
+      {erro && <p role="alert" className="mt-4 text-sm text-perigo">{erro}</p>}
 
       {painelImportar && (
-        <div className="space-y-3 rounded-2xl p-4 ring-1 ring-neutral-800">
-          <p className="font-medium">Importar apresentação</p>
-          <p className="text-sm text-neutral-400">
-            <b className="text-neutral-200">PDF ou imagens:</b> cada página vira um slide idêntico ao original.
-            No PowerPoint, Keynote ou Google Slides, use <b className="text-neutral-200">Arquivo → Salvar como PDF</b>.
-            <br />
-            <b className="text-neutral-200">PowerPoint (.pptx):</b> importa só os textos, para você aplicar o visual do Pulpito.
-          </p>
-          <label className="flex flex-wrap items-center gap-2 text-sm text-neutral-400">
-            Os slides vão aparecer em
-            <select value={destinoImport} onChange={(e) => setDestinoImport(e.target.value)}
-              className="rounded-lg bg-neutral-900 px-2 py-1.5 ring-1 ring-neutral-800">
-              <option value="">Capa</option>
-              {topicos.map((t, i) => <option key={t.id} value={t.id}>{i + 1}. {t.titulo || 'Sem título'}</option>)}
-            </select>
-          </label>
-          <input ref={arquivoImport} type="file" multiple accept=".pdf,.pptx,image/*" className="hidden"
-            onChange={(e) => { importar(e.target.files); e.target.value = '' }} />
-          <button onClick={() => arquivoImport.current?.click()} disabled={!!importando}
-            className="rounded-lg bg-neutral-100 px-4 py-2 font-medium text-neutral-900 disabled:opacity-60">
-            {importando ?? 'Escolher arquivos'}
-          </button>
-        </div>
+        <section className="mt-6 space-y-4 rounded-3xl border border-borda bg-superficie p-5">
+          <div className="flex items-start justify-between gap-3">
+            <h2 className="font-escritura text-xl font-semibold">Importar apresentação</h2>
+            <button onClick={() => setPainelImportar(false)} aria-label="Fechar" className={iconeBotao}>
+              <X size={18} />
+            </button>
+          </div>
+          <div className="grid gap-3 text-sm sm:grid-cols-2">
+            <div className="rounded-2xl bg-superficie-2 p-4">
+              <p className="font-semibold">PDF ou imagens</p>
+              <p className="mt-1 text-texto-2">
+                Cada página vira um slide idêntico ao original. No PowerPoint, Keynote ou Google Slides,
+                use Arquivo e depois Salvar como PDF.
+              </p>
+            </div>
+            <div className="rounded-2xl bg-superficie-2 p-4">
+              <p className="font-semibold">PowerPoint (.pptx)</p>
+              <p className="mt-1 text-texto-2">Traz só os textos, para você aplicar o visual do Pulpito.</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-end gap-3">
+            <Campo rotulo="Os slides vão aparecer em">
+              <select value={destinoImport} onChange={(e) => setDestinoImport(e.target.value)} className="campo w-auto">
+                {opcoesTopico}
+              </select>
+            </Campo>
+            <input ref={arquivoImport} type="file" multiple accept=".pdf,.pptx,image/*" className="hidden"
+              onChange={(e) => { importar(e.target.files); e.target.value = '' }} />
+            <button onClick={() => arquivoImport.current?.click()} disabled={!!importando} className="botao-primario">
+              {importando ? <LoaderCircle size={18} className="animate-spin" /> : <Upload size={18} />}
+              {importando ?? 'Escolher arquivos'}
+            </button>
+          </div>
+        </section>
       )}
 
       {slides.length === 0 ? (
-        <div className="space-y-4 rounded-2xl p-6 ring-1 ring-neutral-800">
-          <p className="text-lg">Esta mensagem ainda não tem slides.</p>
-          <p className="text-neutral-400">
-            Gere automaticamente uma capa e um slide por tópico, com título e versículo, e depois personalize.
-            Ou use <b className="text-neutral-200">⬆ Importar</b> para trazer uma apresentação pronta.
-            Enquanto não houver slides, o telão usa o visual automático.
-          </p>
+        <section className="mt-6 space-y-5 rounded-3xl border border-borda bg-superficie p-6">
+          <div>
+            <h2 className="font-escritura text-2xl font-semibold">Monte os slides desta mensagem</h2>
+            <p className="mt-1 max-w-xl text-texto-2">
+              Gere uma capa e um slide por tópico, com título e versículo, e depois personalize.
+              Ou importe uma apresentação pronta. Enquanto não houver slides, o telão usa o visual automático.
+            </p>
+          </div>
           {blocoGerar}
           <button onClick={() => inserirDepois({ topico_id: null, titulo: mensagem.titulo })}
-            className="text-sm text-sky-400">ou começar com um slide em branco</button>
-        </div>
+            className="botao-fantasma -ml-2 px-2 text-sm">
+            <Plus size={16} /> Começar com um slide em branco
+          </button>
+        </section>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
+        <div className="mt-6 grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
           {/* Miniaturas */}
-          <aside className="flex gap-2 overflow-x-auto pb-2 lg:max-h-[78dvh] lg:flex-col lg:overflow-y-auto lg:overflow-x-visible">
+          <aside className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2 lg:mx-0 lg:max-h-[80dvh] lg:flex-col lg:overflow-y-auto lg:overflow-x-visible lg:px-0">
             {slides.map((s, i) => (
               <button key={s.id} onClick={() => setSelId(s.id)}
-                className={`w-40 shrink-0 rounded-lg p-1 text-left lg:w-full ${s.id === sel?.id ? 'ring-2 ring-sky-500' : 'ring-1 ring-neutral-800'}`}>
-                <SlideVisual slide={s} className="rounded-md" />
-                <p className="mt-1 truncate px-1 text-xs text-neutral-500">{i + 1} · {rotuloTopico(s.topico_id)}</p>
+                className={`w-40 shrink-0 rounded-xl p-1 text-left transition lg:w-full ${s.id === sel?.id
+                  ? 'bg-superficie ring-2 ring-acao' : 'ring-1 ring-borda hover:ring-texto-2'}`}>
+                <SlideVisual slide={s} className="rounded-lg" />
+                <p className="mt-1.5 truncate px-1 pb-0.5 text-xs text-texto-2">
+                  <b className="text-texto">{i + 1}</b> {rotuloTopico(s.topico_id)}
+                </p>
               </button>
             ))}
             <button onClick={() => inserirDepois({})}
-              className="w-40 shrink-0 rounded-lg border border-dashed border-neutral-700 py-3 text-sm text-neutral-400 hover:bg-neutral-900 lg:w-full">
-              + Slide
+              className="flex w-40 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-dashed border-borda py-4 text-sm font-semibold text-texto-2 hover:border-acao hover:text-acao lg:w-full">
+              <Plus size={16} /> Slide
             </button>
           </aside>
 
           {sel && (
-            <section className="min-w-0 space-y-4">
-              <SlideVisual slide={sel} className="rounded-xl ring-1 ring-neutral-800" />
+            <section className="min-w-0 space-y-5">
+              <SlideVisual slide={sel} className="rounded-2xl ring-1 ring-borda" />
 
               <div className="flex flex-wrap items-center gap-2">
-                <button onClick={() => mover(-1)} disabled={iSel === 0} className={botao}>↑ Antes</button>
-                <button onClick={() => mover(1)} disabled={iSel === slides.length - 1} className={botao}>↓ Depois</button>
-                <button onClick={() => inserirDepois({ ...sel })} className={botao}>Duplicar</button>
-                <button onClick={excluir} className={`${botao} text-red-400`}>Excluir</button>
-                <label className="ml-auto flex items-center gap-2 text-sm text-neutral-400">
+                <button onClick={() => mover(-1)} disabled={iSel === 0} className={botaoPequeno}>
+                  <ArrowUp size={16} /> Antes
+                </button>
+                <button onClick={() => mover(1)} disabled={iSel === slides.length - 1} className={botaoPequeno}>
+                  <ArrowDown size={16} /> Depois
+                </button>
+                <button onClick={() => inserirDepois({ ...sel })} className={botaoPequeno}>
+                  <Copy size={16} /> Duplicar
+                </button>
+                <button onClick={excluir} className={`${botaoPequeno} hover:text-perigo`}>
+                  <Trash2 size={16} /> Excluir
+                </button>
+                <label className="ml-auto flex items-center gap-2 text-sm text-texto-2">
                   Aparece em
-                  <select value={sel.topico_id ?? ''} className="rounded-lg bg-neutral-900 px-2 py-1.5 ring-1 ring-neutral-800"
+                  <select value={sel.topico_id ?? ''} className="campo w-auto py-1.5"
                     onChange={(e) => alterar(sel.id, { topico_id: e.target.value || null })}>
-                    <option value="">Capa</option>
-                    {topicos.map((t, i) => (
-                      <option key={t.id} value={t.id}>{i + 1}. {t.titulo || 'Sem título'}</option>
-                    ))}
+                    {opcoesTopico}
                   </select>
                 </label>
               </div>
 
               <div className="grid gap-6 md:grid-cols-2">
                 {/* Textos */}
-                <div className="space-y-3">
-                  <div>
-                    <label className="mb-1 block text-sm text-neutral-400">Título</label>
-                    <input value={sel.titulo ?? ''} className={campo}
+                <div className="space-y-4">
+                  <Campo rotulo="Título">
+                    <input value={sel.titulo ?? ''} className="campo"
                       onChange={(e) => alterar(sel.id, { titulo: e.target.value })} />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-sm text-neutral-400">Subtítulo</label>
-                    <input value={sel.subtitulo ?? ''} className={campo}
+                  </Campo>
+                  <Campo rotulo="Subtítulo">
+                    <input value={sel.subtitulo ?? ''} className="campo"
                       onChange={(e) => alterar(sel.id, { subtitulo: e.target.value })} />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-sm text-neutral-400">Texto</label>
-                    <textarea rows={5} value={sel.texto ?? ''} className={`${campo} resize-y`}
+                  </Campo>
+                  <Campo rotulo="Texto">
+                    <textarea rows={6} value={sel.texto ?? ''} className="campo resize-y leading-relaxed"
                       onChange={(e) => alterar(sel.id, { texto: e.target.value })} />
-                  </div>
+                  </Campo>
                 </div>
 
                 {/* Visual */}
-                <div className="space-y-4">
+                <div className="space-y-5 rounded-2xl border border-borda bg-superficie p-4">
                   <div>
-                    <label className="mb-2 block text-sm text-neutral-400">Fundo</label>
+                    <span className="mb-2 block text-sm font-semibold text-texto-2">Fundo</span>
                     <div className="flex flex-wrap items-center gap-2">
                       {FUNDOS_PRONTOS.map((f) => (
-                        <button key={f.nome} title={f.nome} onClick={() => alterar(sel.id, { fundo: f.valor })}
-                          style={{ background: f.valor }}
-                          className={`h-9 w-9 rounded-lg ${sel.fundo === f.valor ? 'ring-2 ring-sky-400' : 'ring-1 ring-neutral-700'}`} />
+                        <button key={f.nome} title={f.nome} aria-label={f.nome}
+                          onClick={() => alterar(sel.id, { fundo: f.valor })} style={{ background: f.valor }}
+                          className={`h-9 w-9 rounded-xl ${sel.fundo === f.valor ? 'ring-2 ring-acao ring-offset-2 ring-offset-superficie' : 'ring-1 ring-borda'}`} />
                       ))}
                       <label title="Cor personalizada"
-                        className="relative h-9 w-9 cursor-pointer overflow-hidden rounded-lg ring-1 ring-neutral-700"
+                        className="relative h-9 w-9 cursor-pointer overflow-hidden rounded-xl ring-1 ring-borda"
                         style={{ background: 'conic-gradient(red, yellow, lime, cyan, blue, magenta, red)' }}>
                         <input type="color" className="absolute inset-0 cursor-pointer opacity-0"
                           value={sel.fundo?.startsWith('#') ? sel.fundo : '#000000'}
                           onChange={(e) => alterar(sel.id, { fundo: e.target.value })} />
                       </label>
                     </div>
-                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <div className="mt-3 flex flex-wrap gap-2">
                       <input ref={arquivo} type="file" accept="image/*" className="hidden"
                         onChange={(e) => { const f = e.target.files?.[0]; if (f) enviarImagem(f); e.target.value = '' }} />
-                      <button onClick={() => arquivo.current?.click()} disabled={enviando} className={botao}>
-                        {enviando ? 'Enviando…' : '🖼 Usar foto de fundo'}
+                      <button onClick={() => arquivo.current?.click()} disabled={enviando} className={botaoPequeno}>
+                        <ImagePlus size={16} /> {enviando ? 'Enviando…' : 'Usar foto de fundo'}
                       </button>
                       {imagemAtual && (
-                        <button onClick={() => alterar(sel.id, { fundo: '#000000' })} className={`${botao} text-neutral-400`}>
+                        <button onClick={() => alterar(sel.id, { fundo: '#000000' })} className="botao-fantasma px-3 py-1.5 text-sm">
                           Remover foto
                         </button>
                       )}
                     </div>
-                    {imagemAtual && (
-                      <div className="mt-3 space-y-3">
-                        <div className="flex flex-wrap items-center gap-2 text-sm text-neutral-400">
-                          Encaixe da foto
-                          <Opcao ativo={estilo.ajuste === 'cobrir'} onClick={() => alterarEstilo({ ajuste: 'cobrir' })}>Preencher</Opcao>
-                          <Opcao ativo={estilo.ajuste === 'conter'} onClick={() => alterarEstilo({ ajuste: 'conter' })}>Mostrar inteira</Opcao>
-                        </div>
-                        <label className="block text-sm text-neutral-400">
-                          Escurecer a foto
-                          <input type="range" min={0} max={0.8} step={0.05} value={estilo.escurecer}
-                            onChange={(e) => alterarEstilo({ escurecer: Number(e.target.value) })}
-                            className="mt-1 block w-full" />
-                        </label>
-                      </div>
-                    )}
                   </div>
 
+                  {imagemAtual && (
+                    <div className="space-y-4">
+                      <div>
+                        <span className="mb-2 block text-sm font-semibold text-texto-2">Encaixe da foto</span>
+                        <Segmentos valor={estilo.ajuste}
+                          opcoes={[{ valor: 'cobrir', rotulo: 'Preencher' }, { valor: 'conter', rotulo: 'Mostrar inteira' }]}
+                          onChange={(v) => alterarEstilo({ ajuste: v })} />
+                      </div>
+                      <label className="block">
+                        <span className="mb-2 block text-sm font-semibold text-texto-2">Escurecer a foto</span>
+                        <input type="range" min={0} max={0.8} step={0.05} value={estilo.escurecer}
+                          onChange={(e) => alterarEstilo({ escurecer: Number(e.target.value) })}
+                          className="w-full accent-[var(--acao)]" />
+                      </label>
+                    </div>
+                  )}
+
                   <div>
-                    <label className="mb-2 block text-sm text-neutral-400">Cor do texto</label>
+                    <span className="mb-2 block text-sm font-semibold text-texto-2">Cor do texto</span>
                     <div className="flex flex-wrap items-center gap-2">
                       {CORES_TEXTO.map((c) => (
                         <button key={c} onClick={() => alterarEstilo({ cor: c })} style={{ background: c }}
-                          className={`h-8 w-8 rounded-full ${estilo.cor === c ? 'ring-2 ring-sky-400' : 'ring-1 ring-neutral-700'}`} />
+                          aria-label={`Texto na cor ${c}`}
+                          className={`h-8 w-8 rounded-full ${estilo.cor === c ? 'ring-2 ring-acao ring-offset-2 ring-offset-superficie' : 'ring-1 ring-borda'}`} />
                       ))}
                       <input type="color" value={estilo.cor} onChange={(e) => alterarEstilo({ cor: e.target.value })}
-                        className="h-8 w-10 cursor-pointer rounded bg-transparent" />
+                        aria-label="Cor personalizada do texto" className="h-8 w-10 cursor-pointer rounded bg-transparent" />
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap gap-4">
+                  <div className="flex flex-wrap gap-x-5 gap-y-4">
                     <div>
-                      <label className="mb-2 block text-sm text-neutral-400">Alinhamento</label>
-                      <div className="flex gap-1">
-                        <Opcao ativo={estilo.alinhamento === 'center'} onClick={() => alterarEstilo({ alinhamento: 'center' })}>Centro</Opcao>
-                        <Opcao ativo={estilo.alinhamento === 'left'} onClick={() => alterarEstilo({ alinhamento: 'left' })}>Esquerda</Opcao>
-                      </div>
+                      <span className="mb-2 block text-sm font-semibold text-texto-2">Alinhamento</span>
+                      <Segmentos valor={estilo.alinhamento}
+                        opcoes={[{ valor: 'center', rotulo: 'Centro' }, { valor: 'left', rotulo: 'Esquerda' }]}
+                        onChange={(v) => alterarEstilo({ alinhamento: v })} />
                     </div>
                     <div>
-                      <label className="mb-2 block text-sm text-neutral-400">Tamanho</label>
-                      <div className="flex gap-1">
-                        {(['p', 'm', 'g'] as const).map((t) => (
-                          <Opcao key={t} ativo={estilo.tamanho === t} onClick={() => alterarEstilo({ tamanho: t })}>
-                            {t.toUpperCase()}
-                          </Opcao>
-                        ))}
-                      </div>
+                      <span className="mb-2 block text-sm font-semibold text-texto-2">Tamanho</span>
+                      <Segmentos valor={estilo.tamanho}
+                        opcoes={[{ valor: 'p', rotulo: 'P' }, { valor: 'm', rotulo: 'M' }, { valor: 'g', rotulo: 'G' }]}
+                        onChange={(v) => alterarEstilo({ tamanho: v })} />
                     </div>
                     <div>
-                      <label className="mb-2 block text-sm text-neutral-400">Fonte</label>
-                      <div className="flex gap-1">
-                        <Opcao ativo={estilo.fonte === 'sans'} onClick={() => alterarEstilo({ fonte: 'sans' })}>Moderna</Opcao>
-                        <Opcao ativo={estilo.fonte === 'serif'} onClick={() => alterarEstilo({ fonte: 'serif' })}>Clássica</Opcao>
-                      </div>
+                      <span className="mb-2 block text-sm font-semibold text-texto-2">Fonte</span>
+                      <Segmentos valor={estilo.fonte}
+                        opcoes={[{ valor: 'sans', rotulo: 'Moderna' }, { valor: 'serif', rotulo: 'Clássica' }]}
+                        onChange={(v) => alterarEstilo({ fonte: v })} />
                     </div>
                   </div>
 
-                  <button onClick={aplicarATodos} className={botao}>
+                  <button onClick={aplicarATodos} className={`${botaoPequeno} w-full`}>
                     Aplicar este fundo e estilo a todos os slides
                   </button>
                 </div>
               </div>
 
-              <div className="border-t border-neutral-800 pt-4">{blocoGerar}</div>
+              <div className="rounded-2xl border border-borda bg-superficie p-4">{blocoGerar}</div>
             </section>
           )}
         </div>

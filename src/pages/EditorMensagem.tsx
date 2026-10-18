@@ -2,12 +2,18 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
   BookOpen, Check, ChevronDown, ChevronLeft, ChevronUp, CircleAlert, Clock, LoaderCircle,
-  Play, Plus, Presentation, Trash2,
+  Play, Plus, Presentation, Redo2, Trash2, Undo2,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useSalvamento } from '../lib/salvamento'
+import { useHistorico } from '../lib/historico'
 import { CAMPOS_TOPICO, type Mensagem, type Pasta, type Topico } from '../lib/tipos'
 import { parseReferencia, formatarReferencia, lerReferencia, type VersaoId } from '../lib/biblia'
+
+type Foto = { mensagem: Mensagem; topicos: Topico[] }
+
+const CAMPOS_MSG = ['titulo', 'texto_base', 'tempo_minutos', 'pasta_id'] as const
+const CAMPOS_TOP = ['titulo', 'versiculo', 'observacao', 'aplicacao', 'ilustracao', 'frase_chave', 'notas', 'ordem'] as const
 
 /* Mostra o texto do versículo enquanto a pessoa digita a referência */
 function PreviaVersiculo({ texto }: { texto: string }) {
@@ -62,6 +68,7 @@ const iconeBotao = 'flex h-9 w-9 items-center justify-center rounded-xl text-tex
 export default function EditorMensagem() {
   const { id } = useParams()
   const { status, agendar, cancelar } = useSalvamento()
+  const historico = useHistorico<Foto>()
   const [mensagem, setMensagem] = useState<Mensagem | null | undefined>(undefined)
   const [topicos, setTopicos] = useState<Topico[]>([])
   const [pastas, setPastas] = useState<Pasta[]>([])
@@ -83,14 +90,30 @@ export default function EditorMensagem() {
     return () => { ativo = false }
   }, [id])
 
+  // Atalhos de teclado: Cmd/Ctrl + Z desfaz; com Shift (ou Ctrl + Y) refaz
+  useEffect(() => {
+    function tecla(e: KeyboardEvent) {
+      if (!(e.metaKey || e.ctrlKey)) return
+      const k = e.key.toLowerCase()
+      if (k === 'z' && !e.shiftKey) { e.preventDefault(); desfazerAgora() }
+      else if ((k === 'z' && e.shiftKey) || k === 'y') { e.preventDefault(); refazerAgora() }
+    }
+    window.addEventListener('keydown', tecla)
+    return () => window.removeEventListener('keydown', tecla)
+  })
+
+  const foto = (): Foto => ({ mensagem: mensagem!, topicos })
+
   function alterarMensagem(campos: Partial<Mensagem>) {
     if (!mensagem) return
+    historico.registrar(foto(), `m:${Object.keys(campos).join(',')}`)
     setMensagem({ ...mensagem, ...campos })
     agendar(`m:${Object.keys(campos).join(',')}`, () =>
       supabase.from('mensagens').update(campos).eq('id', mensagem.id))
   }
 
   function alterarTopico(tid: string, campos: Partial<Topico>) {
+    historico.registrar(foto(), `t:${tid}:${Object.keys(campos).join(',')}`)
     setTopicos((lista) => lista.map((t) => (t.id === tid ? { ...t, ...campos } : t)))
     agendar(`t:${tid}:${Object.keys(campos).join(',')}`, () =>
       supabase.from('topicos').update(campos).eq('id', tid))
@@ -98,18 +121,18 @@ export default function EditorMensagem() {
 
   async function adicionarTopico() {
     setErro('')
+    const antes = foto()
     const ordem = topicos.length ? Math.max(...topicos.map((t) => t.ordem)) + 1 : 0
     const { data, error } = await supabase.from('topicos')
       .insert({ mensagem_id: id, ordem }).select().single()
     if (error || !data) { setErro('Não foi possível criar o tópico. Verifique a internet.'); return }
+    historico.registrar(antes)
     setTopicos((lista) => [...lista, data as Topico])
     setAberto(data.id)
   }
 
   async function excluirTopico(t: Topico) {
-    const temConteudo = [t.titulo, t.versiculo, ...CAMPOS_TOPICO.map((c) => t[c.chave])]
-      .some((v) => v?.trim())
-    if (temConteudo && !confirm('Excluir este tópico?')) return
+    historico.registrar(foto())
     cancelar(`t:${t.id}:`)
     setTopicos((lista) => lista.filter((x) => x.id !== t.id))
     const { error } = await supabase.from('topicos').delete().eq('id', t.id)
@@ -119,6 +142,7 @@ export default function EditorMensagem() {
   function mover(i: number, dir: -1 | 1) {
     const j = i + dir
     if (j < 0 || j >= topicos.length) return
+    historico.registrar(foto())
     const lista = [...topicos]
     ;[lista[i], lista[j]] = [lista[j], lista[i]]
     const renumerada = lista.map((t, k) => ({ ...t, ordem: k }))
@@ -127,6 +151,60 @@ export default function EditorMensagem() {
       if (topicos.find((o) => o.id === t.id)?.ordem !== k)
         agendar(`t:${t.id}:ordem`, () => supabase.from('topicos').update({ ordem: k }).eq('id', t.id))
     })
+  }
+
+  /* Leva a tela e o banco para uma foto anterior (ou posterior) */
+  async function aplicar(destino: Foto) {
+    if (!mensagem) return
+    const atual = foto()
+    setMensagem(destino.mensagem)
+    setTopicos(destino.topicos)
+
+    for (const k of CAMPOS_MSG) {
+      if (destino.mensagem[k] !== atual.mensagem[k]) {
+        const valor = destino.mensagem[k]
+        agendar(`m:${k}`, () => supabase.from('mensagens').update({ [k]: valor }).eq('id', destino.mensagem.id))
+      }
+    }
+
+    const antes = new Map(atual.topicos.map((t) => [t.id, t]))
+    const depois = new Set(destino.topicos.map((t) => t.id))
+
+    for (const t of destino.topicos) {
+      const a = antes.get(t.id)
+      if (!a) continue
+      for (const k of CAMPOS_TOP) {
+        if (t[k] !== a[k]) {
+          const valor = t[k]
+          agendar(`t:${t.id}:${k}`, () => supabase.from('topicos').update({ [k]: valor }).eq('id', t.id))
+        }
+      }
+    }
+
+    const recriar = destino.topicos.filter((t) => !antes.has(t.id))
+    const remover = atual.topicos.filter((t) => !depois.has(t.id)).map((t) => t.id)
+    remover.forEach((tid) => cancelar(`t:${tid}:`))
+
+    if (recriar.length) {
+      const { error } = await supabase.from('topicos').upsert(recriar)
+      if (error) setErro('Não foi possível restaurar o tópico. Verifique a internet.')
+    }
+    if (remover.length) {
+      const { error } = await supabase.from('topicos').delete().in('id', remover)
+      if (error) setErro('Não foi possível desfazer. Verifique a internet.')
+    }
+  }
+
+  function desfazerAgora() {
+    if (!mensagem) return
+    const f = historico.desfazer(foto())
+    if (f) aplicar(f)
+  }
+
+  function refazerAgora() {
+    if (!mensagem) return
+    const f = historico.refazer(foto())
+    if (f) aplicar(f)
   }
 
   if (mensagem === undefined) return <p className="p-6 text-texto-2">Carregando…</p>
@@ -140,19 +218,27 @@ export default function EditorMensagem() {
   const indicador = {
     salvo: <><Check size={16} /> Salvo</>,
     salvando: <><LoaderCircle size={16} className="animate-spin" /> Salvando</>,
-    erro: <><CircleAlert size={16} /> Não salvou. Verifique a internet.</>,
+    erro: <><CircleAlert size={16} /> Não salvou</>,
   }[status]
 
   return (
     <div className="mx-auto max-w-3xl px-4 pb-28 pt-4 md:pt-8">
       {/* Barra do topo */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
         <Link to="/" className="botao-fantasma -ml-2 px-2">
           <ChevronLeft size={20} /> Mensagens
         </Link>
-        <span className={`ml-auto flex items-center gap-1.5 text-sm ${status === 'erro' ? 'text-perigo' : 'text-texto-2'}`}>
+        <span className={`ml-auto mr-2 flex items-center gap-1.5 text-sm ${status === 'erro' ? 'text-perigo' : 'text-texto-2'}`}>
           {indicador}
         </span>
+        <button onClick={desfazerAgora} disabled={!historico.podeDesfazer}
+          aria-label="Desfazer" title="Desfazer (Cmd + Z)" className={iconeBotao}>
+          <Undo2 size={18} />
+        </button>
+        <button onClick={refazerAgora} disabled={!historico.podeRefazer}
+          aria-label="Refazer" title="Refazer (Cmd + Shift + Z)" className={iconeBotao}>
+          <Redo2 size={18} />
+        </button>
       </div>
 
       {/* Título */}
