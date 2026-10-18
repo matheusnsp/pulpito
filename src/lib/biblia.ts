@@ -134,3 +134,29 @@ export async function lerReferencia(versao: VersaoId, r: Referencia) {
     .slice(de - 1, ate)
     .map((texto, i) => ({ numero: de + i, texto }))
 }
+/* ── Busca por palavras em toda a versão (funciona sem internet depois de baixada) ── */
+
+export type Achado = { livro: string; capitulo: number; versiculo: number; texto: string }
+
+const normalizar = (s: string) => semAcento(s.toLowerCase())
+
+export async function buscarTexto(versao: VersaoId, consulta: string, limite = 300) {
+  const palavras = normalizar(consulta).split(/\s+/).filter((p) => p.length > 1)
+  if (!palavras.length) return { achados: [] as Achado[], total: 0 }
+  const dados = await carregarVersao(versao)
+  const achados: Achado[] = []
+  let total = 0
+  LIVROS.forEach((l) => {
+    const livro = acharLivro(dados, l.usfm)
+    livro?.chapters.forEach((versos, c) => {
+      versos.forEach((texto, v) => {
+        const t = normalizar(texto)
+        if (palavras.every((p) => t.includes(p))) {
+          total++
+          if (achados.length < limite) achados.push({ livro: l.usfm, capitulo: c + 1, versiculo: v + 1, texto })
+        }
+      })
+    })
+  })
+  return { achados, total }
+}

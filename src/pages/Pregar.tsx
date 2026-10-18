@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
-  BookOpen, ChevronLeft, ChevronRight, Minus, MonitorPlay, Plus, RotateCcw, Type, X,
+  BookOpen, ChevronDown, ChevronLeft, ChevronRight, Maximize, Minus, MonitorPlay, Pause, Play, Plus, RotateCcw, Type, X,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Mensagem, Slide, Topico } from '../lib/tipos'
@@ -9,17 +9,15 @@ import {
   parseReferencia, formatarReferencia, lerCapitulo, lerReferencia, nomeDoLivro, type VersaoId,
 } from '../lib/biblia'
 import { CHAVE_TELAO, codigoValido, useEmissorTelao, type SlideTelao } from '../lib/telao'
+import { usePinca } from '../lib/pinca'
 
 type SlideVersiculo = Extract<SlideTelao, { tipo: 'versiculo' }>
 
-const TAMANHOS = [
-  { titulo: 'text-3xl', corpo: 'text-lg' },
-  { titulo: 'text-4xl', corpo: 'text-xl' },
-  { titulo: 'text-[2.6rem]', corpo: 'text-[1.4rem]' },
-  { titulo: 'text-5xl', corpo: 'text-2xl' },
-  { titulo: 'text-6xl', corpo: 'text-3xl' },
-]
-const CHAVE_ESCALA = 'pulpito-escala-pregacao'
+/* Tamanho da letra: escala contínua (pinça ou botões) aplicada por variáveis CSS */
+const tam = { titulo: 'text-[length:var(--fs-titulo)]', corpo: 'text-[length:var(--fs-corpo)]' }
+const CHAVE_ESCALA = 'pulpito-escala-pregacao-v2'
+const ESCALA_MIN = 0.6
+const ESCALA_MAX = 2
 
 function fmt(ms: number) {
   const s = Math.floor(Math.abs(ms) / 1000)
@@ -199,14 +197,59 @@ function PainelTelao({ codigo, online, apagado, onConectar, onDesconectar, onAlt
   )
 }
 
-function ChipVersiculo({ texto, classe, onAbrir }: { texto: string; classe: string; onAbrir: () => void }) {
-  const ref = parseReferencia(texto)
-  if (!ref) return <p className={`${classe} text-texto-2`}>{texto}</p>
+/* ── Versículo base fixo embaixo, com o texto (recolhível) ── */
+const CHAVE_VERSICULO_ABERTO = 'pulpito-pregar-versiculo-aberto'
+
+function VersiculoBase({ referencia, onAbrir }: { referencia: string; onAbrir: () => void }) {
+  const ref = parseReferencia(referencia)
+  const chave = ref ? `${versaoAtual()}:${formatarReferencia(ref)}` : ''
+  const [res, setRes] = useState<{ chave: string; texto: string } | null>(null)
+  const [aberto, setAberto] = useState(() => localStorage.getItem(CHAVE_VERSICULO_ABERTO) !== 'nao')
+
+  useEffect(() => {
+    const r = parseReferencia(referencia)
+    if (!r) return
+    let ativo = true
+    const k = `${versaoAtual()}:${formatarReferencia(r)}`
+    lerReferencia(versaoAtual(), r.inicio ? r : { ...r, inicio: 1, fim: 3 })
+      .then((vs) => { if (ativo) setRes({ chave: k, texto: vs.map((v) => `${vs.length > 1 ? `${v.numero} ` : ''}${v.texto}`).join(' ') }) })
+      .catch(() => { if (ativo) setRes({ chave: k, texto: '' }) })
+    return () => { ativo = false }
+  }, [referencia])
+
+  if (!ref) return (
+    <p className="col-span-2 truncate rounded-2xl border border-borda bg-superficie px-4 py-2.5 text-texto-2">
+      <BookOpen size={16} className="mr-2 inline text-tinta" />{referencia}
+    </p>
+  )
+  const texto = res?.chave === chave ? res.texto : ''
+
+  function alternar() {
+    setAberto((a) => {
+      localStorage.setItem(CHAVE_VERSICULO_ABERTO, a ? 'nao' : 'sim')
+      return !a
+    })
+  }
+
   return (
-    <button onClick={onAbrir}
-      className={`${classe} inline-flex items-center gap-2 rounded-full bg-acao/15 px-4 py-2 font-semibold text-tinta hover:bg-acao/25`}>
-      <BookOpen size={20} /> {formatarReferencia(ref)}
-    </button>
+    <div className="col-span-2 rounded-2xl border border-borda bg-superficie">
+      <div className="flex items-center gap-2 px-4 pt-2.5">
+        <button onClick={onAbrir} className="flex min-w-0 flex-1 items-center gap-2 text-left">
+          <BookOpen size={16} className="shrink-0 text-tinta" />
+          <span className="min-w-0">
+            <span className="block text-[10px] font-bold uppercase tracking-[0.12em] text-texto-2">Versículo base</span>
+            <span className="block truncate font-bold text-tinta">{formatarReferencia(ref)}</span>
+          </span>
+        </button>
+        <button onClick={alternar} aria-label={aberto ? 'Recolher versículo' : 'Mostrar versículo'} aria-expanded={aberto}
+          className="rounded-xl p-2 text-texto-2 hover:bg-superficie-2 hover:text-texto">
+          <ChevronDown size={18} className={`transition-transform ${aberto ? '' : 'rotate-180'}`} />
+        </button>
+      </div>
+      <p className={`px-4 pb-3 font-escritura text-[15px] leading-relaxed text-texto/85 ${aberto ? 'max-h-[20vh] overflow-y-auto' : 'truncate'}`}>
+        {texto || '…'}
+      </p>
+    </div>
   )
 }
 
@@ -221,8 +264,8 @@ export default function Pregar() {
   const [biblia, setBiblia] = useState<string | null>(null)
   const [painelTexto, setPainelTexto] = useState(false)
   const [escala, setEscala] = useState(() => {
-    const salvo = localStorage.getItem(CHAVE_ESCALA)
-    return salvo !== null && TAMANHOS[Number(salvo)] ? Number(salvo) : 2
+    const salvo = Number(localStorage.getItem(CHAVE_ESCALA))
+    return salvo >= ESCALA_MIN && salvo <= ESCALA_MAX ? salvo : 1
   })
 
   // Telão
@@ -241,6 +284,18 @@ export default function Pregar() {
   const [iniciadoEm, setIniciadoEm] = useState<number | null>(null)
   const [agora, setAgora] = useState(() => Date.now())
   const toqueX = useRef<number | null>(null)
+  const multitoque = useRef(false)
+  const areaTexto = useRef<HTMLElement>(null)
+  const [indicador, setIndicador] = useState(false)
+  const timerIndicador = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
+  function mudarEscala(n: number) {
+    setEscala(Math.round(Math.min(ESCALA_MAX, Math.max(ESCALA_MIN, n)) * 100) / 100)
+    setIndicador(true)
+    clearTimeout(timerIndicador.current)
+    timerIndicador.current = setTimeout(() => setIndicador(false), 900)
+  }
+  usePinca(areaTexto, escala, mudarEscala, { min: ESCALA_MIN, max: ESCALA_MAX, pronto: !!mensagem })
 
   useEffect(() => {
     let ativo = true
@@ -365,6 +420,13 @@ export default function Pregar() {
       if (['ArrowRight', 'PageDown'].includes(e.key)) ir(1)
       if (['ArrowLeft', 'PageUp'].includes(e.key)) ir(-1)
       if (e.key === ' ' && !(e.target as HTMLElement).closest('button, input')) { e.preventDefault(); alternarCronometro() }
+      if ((e.target as HTMLElement).closest('input, textarea') || e.metaKey || e.ctrlKey || e.altKey) return
+      const k = e.key.toLowerCase()
+      if (k === 'f') alternarTelaCheia()
+      if (k === 'b') setBiblia(topicos[indice - 1]?.versiculo || mensagem?.texto_base || '')
+      if (k === 't') setPainelTelao(true)
+      if (e.key === '+' || e.key === '=') mudarEscala(escala + 0.1)
+      if (e.key === '-') mudarEscala(escala - 0.1)
     }
     window.addEventListener('keydown', tecla)
     return () => window.removeEventListener('keydown', tecla)
@@ -393,6 +455,11 @@ export default function Pregar() {
     }
   }
 
+  function alternarTelaCheia() {
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {})
+    else document.documentElement.requestFullscreen?.().catch(() => {})
+  }
+
   function zerar() {
     setRodando(false)
     setAcumulado(0)
@@ -411,10 +478,15 @@ export default function Pregar() {
   const decorrido = acumulado + (rodando && iniciadoEm !== null ? agora - iniciadoEm : 0)
   const restante = total - decorrido
   const fracao = decorrido / total
-  const corTempo = decorrido === 0 ? 'text-texto'
-    : fracao >= 1 ? 'text-perigo' : fracao >= 0.8 ? 'text-perigo' : fracao >= 0.5 ? 'text-aviso' : 'text-texto'
   const corBarra = fracao >= 0.8 ? 'bg-perigo' : fracao >= 0.5 ? 'bg-aviso' : 'bg-sucesso'
-  const tam = TAMANHOS[escala]
+  const fase = decorrido === 0 ? 'parado' : fracao >= 1 ? 'estourou' : fracao >= 0.8 ? 'final' : fracao >= 0.5 ? 'metade' : 'normal'
+  const pilulaTempo = {
+    parado: 'bg-superficie-2 text-texto',
+    normal: 'bg-superficie-2 text-sucesso',
+    metade: 'bg-aviso text-[#1A1200]',
+    final: 'bg-perigo text-white',
+    estourou: 'bg-perigo text-white animate-pulse',
+  }[fase]
   const hora = new Date(agora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
   const topico = indice > 0 ? topicos[indice - 1] : null
   const noInicio = indice === 0 && sub === 0
@@ -439,7 +511,12 @@ export default function Pregar() {
 
   return (
     <div className="escuro flex h-dvh flex-col bg-fundo text-texto">
-      {fracao >= 1 && (
+      {/* Tela avermelha perto do fim e pisca quando o tempo estoura */}
+      {(fase === 'final' || fase === 'estourou') && (
+        <div aria-hidden className={`pointer-events-none fixed inset-0 z-0 transition-opacity duration-700 ${fase === 'estourou' ? 'opacity-100' : 'opacity-60'}`}
+          style={{ background: 'radial-gradient(120% 70% at 50% 100%, rgb(255 60 50 / 0.28), transparent 70%)' }} />
+      )}
+      {fase === 'estourou' && (
         <div className="pointer-events-none fixed inset-0 z-30 animate-pulse border-[6px] border-perigo" />
       )}
 
@@ -456,46 +533,55 @@ export default function Pregar() {
         </button>
 
         <div className="flex">
-          <button onClick={() => setPainelTexto((v) => !v)} aria-label="Tamanho do texto" className={iconeBotao}>
+          <button onClick={alternarTelaCheia} aria-label="Tela cheia" title="Tela cheia (F)" className={`${iconeBotao} max-md:hidden`}>
+            <Maximize size={20} />
+          </button>
+          <button onClick={() => setPainelTexto((v) => !v)} aria-label="Tamanho do texto" title="Tamanho do texto (+ e −, ou pinça)" className={iconeBotao}>
             <Type size={20} />
           </button>
           <button onClick={() => setBiblia(topico?.versiculo || mensagem.texto_base || '')}
-            aria-label="Abrir Bíblia" className={iconeBotao}>
+            aria-label="Abrir Bíblia" title="Bíblia (B)" className={iconeBotao}>
             <BookOpen size={20} />
           </button>
         </div>
 
         {painelTexto && (
           <div className="absolute right-3 top-full z-20 mt-2 flex items-center gap-1 rounded-2xl border border-borda bg-superficie p-1.5 shadow-xl">
-            <button onClick={() => setEscala((e) => Math.max(0, e - 1))} disabled={escala === 0}
+            <button onClick={() => mudarEscala(escala - 0.1)} disabled={escala <= ESCALA_MIN}
               aria-label="Diminuir texto" className={`${iconeBotao} disabled:opacity-30`}><Minus size={20} /></button>
-            <span className="w-12 text-center text-sm tabular-nums text-texto-2">{escala + 1} de {TAMANHOS.length}</span>
-            <button onClick={() => setEscala((e) => Math.min(TAMANHOS.length - 1, e + 1))}
-              disabled={escala === TAMANHOS.length - 1}
+            <span className="w-14 text-center text-sm font-bold tabular-nums text-texto-2">{Math.round(escala * 100)}%</span>
+            <button onClick={() => mudarEscala(escala + 0.1)}
+              disabled={escala >= ESCALA_MAX}
               aria-label="Aumentar texto" className={`${iconeBotao} disabled:opacity-30`}><Plus size={20} /></button>
           </div>
         )}
       </header>
 
-      {/* Cronômetro */}
-      <div className="px-5 pt-2 text-center">
-        <button onClick={alternarCronometro} className="leading-none"
-          aria-label={rodando ? 'Pausar cronômetro' : 'Iniciar cronômetro'}>
-          <span className={`block font-display text-6xl font-extrabold tabular-nums tracking-tight transition-colors md:text-7xl ${corTempo}`}>
-            {restante >= 0 ? fmt(restante) : `+${fmt(restante)}`}
-          </span>
-        </button>
-        <p className="mt-2 flex items-center justify-center gap-2 text-sm text-texto-2">
-          <span>são {hora}</span>
-          <span aria-hidden>·</span>
-          <span>{rodando ? 'toque para pausar' : decorrido ? 'pausado' : 'toque para iniciar'}</span>
+      {/* Cronômetro: hora atual + tempo de mensagem (toque para iniciar/pausar) */}
+      <div className="relative px-4 pt-2">
+        <div className="mx-auto flex max-w-md items-stretch gap-2">
+          <div className="flex flex-1 flex-col items-center justify-center rounded-2xl bg-superficie-2 px-3 py-2">
+            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-texto-2">Hora atual</span>
+            <span className="font-display text-2xl font-extrabold tabular-nums">{hora}</span>
+          </div>
+          <button onClick={alternarCronometro} aria-label={rodando ? 'Pausar cronômetro' : 'Iniciar cronômetro'}
+            className={`flex flex-[1.3] flex-col items-center justify-center rounded-2xl px-3 py-2 transition-colors ${pilulaTempo}`}>
+            <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.12em] opacity-80">
+              {rodando ? <Pause size={10} fill="currentColor" /> : <Play size={10} fill="currentColor" />}
+              {fase === 'estourou' ? 'Tempo estourado' : 'Tempo de mensagem'}
+            </span>
+            <span className="font-display text-2xl font-extrabold tabular-nums">
+              {restante >= 0 ? fmt(restante) : `+${fmt(restante)}`}
+            </span>
+          </button>
           {!rodando && decorrido > 0 && (
-            <button onClick={zerar} className="ml-1 inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-texto hover:bg-superficie-2">
-              <RotateCcw size={14} /> zerar
+            <button onClick={zerar} aria-label="Zerar cronômetro" title="Zerar"
+              className="flex w-11 items-center justify-center rounded-2xl bg-superficie-2 text-texto-2 hover:text-texto">
+              <RotateCcw size={18} />
             </button>
           )}
-        </p>
-        <div className="mx-auto mt-4 h-1 max-w-md overflow-hidden rounded-full bg-superficie-2">
+        </div>
+        <div className="mx-auto mt-3 h-1 max-w-md overflow-hidden rounded-full bg-superficie-2">
           <div className={`h-full rounded-full ${corBarra} transition-all`} style={{ width: `${Math.min(fracao, 1) * 100}%` }} />
         </div>
 
@@ -518,10 +604,14 @@ export default function Pregar() {
       </div>
 
       {/* Conteúdo */}
-      <main className="flex-1 overflow-y-auto" onClick={() => setPainelTexto(false)}
-        onTouchStart={(e) => { toqueX.current = e.touches[0].clientX }}
+      <main ref={areaTexto} className="flex-1 touch-pan-y overflow-y-auto" onClick={() => setPainelTexto(false)}
+        style={{ '--fs-titulo': `${2.6 * escala}rem`, '--fs-corpo': `${1.4 * escala}rem` } as CSSProperties}
+        onTouchStart={(e) => {
+          if (e.touches.length > 1) multitoque.current = true
+          else { multitoque.current = false; toqueX.current = e.touches[0].clientX }
+        }}
         onTouchEnd={(e) => {
-          if (toqueX.current === null) return
+          if (toqueX.current === null || multitoque.current || e.touches.length > 0) { if (!e.touches.length) toqueX.current = null; return }
           const dx = e.changedTouches[0].clientX - toqueX.current
           toqueX.current = null
           if (Math.abs(dx) > 70) ir(dx < 0 ? 1 : -1)
@@ -534,10 +624,6 @@ export default function Pregar() {
                 {slidesDaPagina.length > 1 && `, slide ${sub + 1} de ${slidesDaPagina.length}`}
               </p>
               <h1 className={`${tam.titulo} font-display font-bold leading-[1.1]`}>{mensagem.titulo}</h1>
-              {mensagem.texto_base && (
-                <ChipVersiculo texto={mensagem.texto_base} classe={tam.corpo}
-                  onAbrir={() => setBiblia(mensagem.texto_base)} />
-              )}
             </div>
           )}
 
@@ -551,10 +637,6 @@ export default function Pregar() {
                 <h1 className={`${tam.titulo} font-display font-bold leading-[1.1]`}>
                   {topico.titulo || 'Sem título'}
                 </h1>
-                {topico.versiculo && (
-                  <ChipVersiculo texto={topico.versiculo} classe={tam.corpo}
-                    onAbrir={() => setBiblia(topico.versiculo)} />
-                )}
               </div>
 
               {topico.frase_chave?.trim() && (
@@ -578,6 +660,10 @@ export default function Pregar() {
 
       {/* Navegação */}
       <footer className="mx-auto grid w-full max-w-3xl grid-cols-[auto_1fr] gap-3 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
+        {(topico?.versiculo || (!topico && mensagem.texto_base)) && (
+          <VersiculoBase key={topico?.id ?? 'capa'} referencia={(topico ? topico.versiculo : mensagem.texto_base) ?? ''}
+            onAbrir={() => setBiblia((topico ? topico.versiculo : mensagem.texto_base) || '')} />
+        )}
         {proximoTopico && (
           <p className="col-span-2 truncate text-center text-sm text-texto-2">
             A seguir: <b className="text-texto">{proximoTopico.titulo || 'Sem título'}</b>
@@ -592,6 +678,12 @@ export default function Pregar() {
           {rotuloProximo} {!noFim && <ChevronRight size={22} />}
         </button>
       </footer>
+
+      {indicador && (
+        <div aria-hidden className="pointer-events-none fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-superficie/90 px-5 py-3 font-display text-2xl font-extrabold tabular-nums text-texto shadow-xl">
+          {Math.round(escala * 100)}%
+        </div>
+      )}
 
       {biblia !== null && (
         <BibliaSobreposta inicial={biblia} onFechar={fecharBiblia}

@@ -5,7 +5,7 @@ import {
   type DragEndEvent, type DragStartEvent,
 } from '@dnd-kit/core'
 import {
-  BookOpen, Check, Copy, Ellipsis, FolderInput, GripVertical, Pencil, Play, Plus, Search, Trash2, X,
+  BookOpen, Check, ChevronRight, Copy, Ellipsis, NotebookPen, FolderInput, GripVertical, Pencil, Play, Plus, Search, Trash2, X,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
@@ -361,6 +361,7 @@ export default function Mensagens() {
   const qtdTopicos = msgProxima?.topicos?.[0]?.count ?? 0
 
   const qtdPastas = pastas.length
+  const ultima = !termo && todas[0] && todas[0].id !== msgProxima?.id ? todas[0] : null
 
   return (
     <DndContext sensors={sensores} onDragStart={aoComecar} onDragEnd={aoSoltar}
@@ -424,6 +425,22 @@ export default function Mensagens() {
               )}
             </div>
           </section>
+        )}
+
+        {/* Continue de onde parou */}
+        {ultima && (
+          <Link to={`/mensagem/${ultima.id}`}
+            className="cartao group mt-4 flex items-center gap-4 p-4 transition hover:border-texto-2/40">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-ouro-suave text-tinta">
+              <NotebookPen size={20} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="rotulo block">Continue de onde parou</span>
+              <span className="mt-0.5 block truncate font-display text-lg font-bold">{ultima.titulo || 'Sem título'}</span>
+              <span className="block truncate text-sm text-texto-2">{quandoEditada(ultima.atualizado_em, hoje)}</span>
+            </span>
+            <ChevronRight size={20} className="shrink-0 text-texto-2 transition group-hover:translate-x-0.5" />
+          </Link>
         )}
 
         {/* Busca */}

@@ -1,7 +1,11 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import {
+  DndContext, PointerSensor, TouchSensor, pointerWithin, useDraggable, useDroppable, useSensor, useSensors, type DragEndEvent,
+  type DraggableAttributes, type DraggableSyntheticListeners,
+} from '@dnd-kit/core'
 import { Link, useParams } from 'react-router-dom'
 import {
-  BookOpen, Check, ChevronDown, ChevronLeft, ChevronUp, CircleAlert, ClipboardCopy, Clock, LoaderCircle,
+  BookOpen, Check, ChevronDown, GripVertical, ChevronLeft, ChevronUp, CircleAlert, ClipboardCopy, Clock, LoaderCircle,
   Play, Plus, Presentation, Redo2, Share2, Trash2, Undo2,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
@@ -70,6 +74,24 @@ function Campo({ rotulo, children }: { rotulo: string; children: ReactNode }) {
   )
 }
 
+/* Tópico arrastável: a alça é o número; solta em cima de outro tópico para trocar de lugar */
+function Arrastavel({ id, children }: {
+  id: string
+  children: (p: {
+    alca: { attributes: DraggableAttributes; listeners: DraggableSyntheticListeners }
+    sobre: boolean; arrastando: boolean
+  }) => ReactNode
+}) {
+  const { attributes, listeners, setNodeRef: refArrasto, transform, isDragging } = useDraggable({ id })
+  const { setNodeRef: refAlvo, isOver } = useDroppable({ id })
+  return (
+    <div ref={(n) => { refArrasto(n); refAlvo(n) }}
+      style={transform ? { transform: `translate3d(0, ${transform.y}px, 0)`, zIndex: 30, position: 'relative' } : undefined}>
+      {children({ alca: { attributes, listeners }, sobre: isOver && !isDragging, arrastando: isDragging })}
+    </div>
+  )
+}
+
 const iconeBotao = 'flex h-9 w-9 items-center justify-center rounded-xl text-texto-2 hover:bg-superficie-2 hover:text-texto disabled:opacity-25'
 
 export default function EditorMensagem() {
@@ -112,6 +134,18 @@ export default function EditorMensagem() {
 
   const foto = (): Foto => ({ mensagem: mensagem!, topicos })
 
+  const sensores = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 6 } }),
+  )
+
+  function aoSoltar(e: DragEndEvent) {
+    if (!e.over) return
+    const i = topicos.findIndex((t) => t.id === e.active.id)
+    const j = topicos.findIndex((t) => t.id === e.over!.id)
+    if (i >= 0 && j >= 0) moverPara(i, j)
+  }
+
   function alterarMensagem(campos: Partial<Mensagem>) {
     if (!mensagem) return
     historico.registrar(foto(), `m:${Object.keys(campos).join(',')}`)
@@ -148,11 +182,15 @@ export default function EditorMensagem() {
   }
 
   function mover(i: number, dir: -1 | 1) {
-    const j = i + dir
-    if (j < 0 || j >= topicos.length) return
+    moverPara(i, i + dir)
+  }
+
+  function moverPara(i: number, j: number) {
+    if (j < 0 || j >= topicos.length || i === j) return
     historico.registrar(foto())
     const lista = [...topicos]
-    ;[lista[i], lista[j]] = [lista[j], lista[i]]
+    const [item] = lista.splice(i, 1)
+    lista.splice(j, 0, item)
     const renumerada = lista.map((t, k) => ({ ...t, ordem: k }))
     setTopicos(renumerada)
     renumerada.forEach((t, k) => {
@@ -321,6 +359,16 @@ export default function EditorMensagem() {
             {pastas.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
           </select>
         </Campo>
+        <div className="col-span-2 -mt-1 flex flex-wrap gap-1.5" role="group" aria-label="Tempo rápido">
+          {[20, 30, 40, 50, 60, 90].map((n) => (
+            <button key={n} type="button" onClick={() => alterarMensagem({ tempo_minutos: n })}
+              aria-pressed={mensagem.tempo_minutos === n}
+              className={`rounded-full border px-3 py-1 text-sm font-bold tabular-nums transition-colors ${mensagem.tempo_minutos === n
+                ? 'border-acao bg-acao text-acao-texto' : 'border-borda text-texto-2 hover:border-texto-2 hover:text-texto'}`}>
+              {n} min
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Tópicos */}
@@ -338,15 +386,21 @@ export default function EditorMensagem() {
       )}
       {erro && <p role="alert" className="mt-3 text-sm text-perigo">{erro}</p>}
 
+      <DndContext sensors={sensores} onDragEnd={aoSoltar} collisionDetection={pointerWithin}>
       <ol className="mt-4 space-y-3">
         {topicos.map((t, i) => {
           const estaAberto = aberto === t.id
           return (
-            <li key={t.id} className={`rounded-2xl border bg-superficie shadow-cartao transition-colors ${estaAberto ? 'border-acao ring-4 ring-acao/15' : 'border-borda'}`}>
+            <Arrastavel key={t.id} id={t.id}>
+            {({ alca, sobre, arrastando }) => (
+            <li className={`rounded-2xl border bg-superficie shadow-cartao transition-[border-color,box-shadow] ${arrastando ? 'scale-[1.01] shadow-2xl' : ''} ${sobre ? 'border-acao ring-4 ring-acao/30' : estaAberto ? 'border-acao ring-4 ring-acao/15' : 'border-borda'}`}>
               <div className="flex items-center gap-3 p-3 pl-4">
-                <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-display text-sm font-extrabold ${estaAberto ? 'bg-acao text-acao-texto' : 'bg-ouro-suave text-tinta'}`}>
-                  {i + 1}
-                </span>
+                <button type="button" {...alca.attributes} {...alca.listeners}
+                  aria-label={`Arrastar tópico ${i + 1}`} title="Arraste para reordenar"
+                  className={`group/alca relative flex h-8 w-8 shrink-0 cursor-grab touch-none items-center justify-center rounded-full font-display text-sm font-extrabold active:cursor-grabbing ${estaAberto || arrastando ? 'bg-acao text-acao-texto' : 'bg-ouro-suave text-tinta'}`}>
+                  <span className="md:group-hover/alca:opacity-0">{i + 1}</span>
+                  <GripVertical size={16} className="absolute opacity-0 md:group-hover/alca:opacity-100" />
+                </button>
                 <div className="min-w-0 flex-1">
                   <input value={t.titulo} placeholder="Título do tópico"
                     onChange={(e) => alterarTopico(t.id, { titulo: e.target.value })}
@@ -396,9 +450,12 @@ export default function EditorMensagem() {
                 </div>
               )}
             </li>
+            )}
+            </Arrastavel>
           )
         })}
       </ol>
+      </DndContext>
 
       <button onClick={adicionarTopico}
         className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-borda py-4 font-bold text-texto-2 transition-colors hover:border-acao hover:bg-ouro-suave/50 hover:text-tinta">

@@ -9,6 +9,7 @@ import { AuthProvider } from './lib/auth'
 import { iniciarTema } from './lib/tema'
 import App from './App'
 import AvisoAtualizacao from './components/AvisoAtualizacao'
+import AvisoOffline from './components/AvisoOffline'
 import './index.css'
 
 iniciarTema()
@@ -19,6 +20,7 @@ createRoot(document.getElementById('root')!).render(
       <AuthProvider>
         <App />
         <AvisoAtualizacao />
+        <AvisoOffline />
       </AuthProvider>
     </BrowserRouter>
   </StrictMode>

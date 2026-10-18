@@ -4,14 +4,16 @@ import {
   Share2, X,
 } from 'lucide-react'
 import {
-  LIVROS, VERSOES, type VersaoId, lerCapitulo, totalCapitulos, parseReferencia, nomeDoLivro,
+  LIVROS, VERSOES, type VersaoId, type Achado, buscarTexto, lerCapitulo, totalCapitulos, parseReferencia, nomeDoLivro,
 } from '../lib/biblia'
+import { usePinca } from '../lib/pinca'
 
 const CHAVE_VERSAO = 'pulpito-versao'
 const CHAVE_MARCADOS = 'pulpito-marcados'
 const CHAVE_POSICAO = 'pulpito-biblia-posicao'
-const CHAVE_LETRA = 'pulpito-biblia-letra'
-const LETRAS = ['text-base', 'text-lg', 'text-xl', 'text-2xl', 'text-[1.7rem]']
+const CHAVE_ESCALA = 'pulpito-biblia-escala'
+const ESCALA_MIN = 0.8
+const ESCALA_MAX = 2.2
 const AT = LIVROS.slice(0, 39)
 const NT = LIVROS.slice(39)
 
@@ -33,6 +35,85 @@ function faixas(nums: number[]) {
     partes.push(ini === ord[i] ? `${ini}` : `${ini}-${ord[i]}`)
   }
   return partes.join(',')
+}
+
+const semAcento = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+
+/* Destaca as palavras buscadas no texto (ignorando acentos) */
+function Destacado({ texto, palavras }: { texto: string; palavras: string[] }) {
+  const base = semAcento(texto)
+  const marcas = new Array(texto.length).fill(false)
+  for (const p of palavras) {
+    let i = base.indexOf(p)
+    while (i >= 0) { for (let k = i; k < i + p.length; k++) marcas[k] = true; i = base.indexOf(p, i + p.length) }
+  }
+  const partes: { t: string; m: boolean }[] = []
+  for (let i = 0; i < texto.length; i++) {
+    const ultimo = partes[partes.length - 1]
+    if (ultimo && ultimo.m === marcas[i]) ultimo.t += texto[i]
+    else partes.push({ t: texto[i], m: marcas[i] })
+  }
+  return <>{partes.map((p, i) => p.m ? <mark key={i} className="rounded bg-acao/35 px-0.5 text-texto">{p.t}</mark> : p.t)}</>
+}
+
+/* ── Resultados da busca por palavras ── */
+function Resultados({ versao, consulta, onEscolher, onFechar }: {
+  versao: VersaoId
+  consulta: string
+  onEscolher: (a: Achado) => void
+  onFechar: () => void
+}) {
+  const [res, setRes] = useState<{ achados: Achado[]; total: number } | null>(null)
+  const [erro, setErro] = useState(false)
+  const palavras = semAcento(consulta).split(/\s+/).filter((p) => p.length > 1)
+
+  useEffect(() => {
+    let ativo = true
+    buscarTexto(versao, consulta)
+      .then((r) => { if (ativo) setRes(r) })
+      .catch(() => { if (ativo) setErro(true) })
+    return () => { ativo = false }
+  }, [versao, consulta])
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-[2px] md:items-center" onClick={onFechar}>
+      <div onClick={(e) => e.stopPropagation()}
+        className="flex max-h-[88dvh] w-full max-w-2xl animate-subir flex-col rounded-t-3xl border border-borda bg-superficie md:animate-entrar md:rounded-3xl">
+        <div className="flex items-center gap-3 border-b border-borda p-4">
+          <div className="min-w-0 flex-1">
+            <p className="rotulo">Busca em {versao}</p>
+            <h2 className="truncate font-display text-xl font-extrabold">“{consulta}”</h2>
+          </div>
+          <button onClick={onFechar} aria-label="Fechar" className="rounded-xl p-2 text-texto-2 hover:bg-superficie-2">
+            <X size={20} />
+          </button>
+        </div>
+        <div className="overflow-y-auto p-2 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          {!res && !erro && <p className="py-10 text-center text-texto-2">Procurando…</p>}
+          {erro && <p className="py-10 text-center text-perigo">Não foi possível buscar. Verifique a conexão.</p>}
+          {res && res.total === 0 && <p className="py-10 text-center text-texto-2">Nenhum versículo com essas palavras.</p>}
+          {res && res.total > 0 && (
+            <p className="px-3 pb-2 pt-1 text-sm text-texto-2">
+              {res.total} {res.total === 1 ? 'versículo' : 'versículos'}
+              {res.total > res.achados.length && `, mostrando os ${res.achados.length} primeiros`}
+            </p>
+          )}
+          <ul>
+            {res?.achados.map((a) => (
+              <li key={`${a.livro}.${a.capitulo}.${a.versiculo}`}>
+                <button onClick={() => onEscolher(a)} className="w-full rounded-xl px-3 py-2.5 text-left hover:bg-superficie-2">
+                  <span className="text-sm font-bold text-tinta">{nomeDoLivro(a.livro)} {a.capitulo}:{a.versiculo}</span>
+                  <span className="mt-0.5 line-clamp-3 block font-escritura leading-relaxed text-texto/90">
+                    <Destacado texto={a.texto} palavras={palavras} />
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 /* ── Seletor de livro e capítulo ── */
@@ -127,11 +208,16 @@ export default function Biblia() {
   const [erroBusca, setErroBusca] = useState('')
   const [marcados, setMarcados] = useState<Set<string>>(() => new Set(lerJSON<string[]>(CHAVE_MARCADOS, [])))
   const [selecao, setSelecao] = useState<number[]>([])
-  const [letra, setLetra] = useState(() => Math.min(LETRAS.length - 1, Number(localStorage.getItem(CHAVE_LETRA) ?? 1) || 0))
+  const [escala, setEscala] = useState(() => Number(localStorage.getItem(CHAVE_ESCALA)) || 1)
   const [seletor, setSeletor] = useState(false)
+  const [buscaPalavras, setBuscaPalavras] = useState<string | null>(null)
   const [aviso, setAviso] = useState('')
   const [download, setDownload] = useState<'' | 'baixando' | 'ok' | 'erro'>('')
   const toque = useRef<{ x: number; y: number } | null>(null)
+  const texto = useRef<HTMLElement>(null)
+  const multitoque = useRef(false)
+  const [indicador, setIndicador] = useState(false)
+  const timerIndicador = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const topo = useRef<HTMLDivElement>(null)
 
   const chaveAtual = `${versao}.${livro}.${capitulo}`
@@ -142,7 +228,15 @@ export default function Biblia() {
   const ehUltimo = livro === 'REV' && !!resultado && !carregando && capitulo >= resultado.total
 
   useEffect(() => { localStorage.setItem(CHAVE_VERSAO, versao) }, [versao])
-  useEffect(() => { localStorage.setItem(CHAVE_LETRA, String(letra)) }, [letra])
+  useEffect(() => { localStorage.setItem(CHAVE_ESCALA, String(escala)) }, [escala])
+
+  function mudarEscala(n: number) {
+    setEscala(Math.round(Math.min(ESCALA_MAX, Math.max(ESCALA_MIN, n)) * 100) / 100)
+    setIndicador(true)
+    clearTimeout(timerIndicador.current)
+    timerIndicador.current = setTimeout(() => setIndicador(false), 900)
+  }
+  usePinca(texto, escala, mudarEscala, { min: ESCALA_MIN, max: ESCALA_MAX })
   useEffect(() => { localStorage.setItem(CHAVE_POSICAO, JSON.stringify({ livro, capitulo })) }, [livro, capitulo])
   useEffect(() => { localStorage.setItem(CHAVE_MARCADOS, JSON.stringify([...marcados])) }, [marcados])
 
@@ -173,7 +267,13 @@ export default function Biblia() {
   function irPara(e: FormEvent) {
     e.preventDefault()
     const ref = parseReferencia(busca)
-    if (!ref) { setErroBusca('Não entendi. Tente "Jo 3:16", "1 Co 13" ou "Salmos 23".'); return }
+    if (!ref) {
+      if (busca.trim().length < 3) { setErroBusca('Digite uma referência ("Jo 3:16") ou palavras para buscar.'); return }
+      setErroBusca('')
+      ;(document.activeElement as HTMLElement | null)?.blur()
+      setBuscaPalavras(busca.trim())
+      return
+    }
     setErroBusca('')
     setBusca('')
     ;(document.activeElement as HTMLElement | null)?.blur()
@@ -198,7 +298,7 @@ export default function Biblia() {
   // Setas do teclado mudam de capítulo; Esc limpa a seleção
   useEffect(() => {
     function tecla(e: KeyboardEvent) {
-      if ((e.target as HTMLElement).closest('input, textarea, select') || seletor) return
+      if ((e.target as HTMLElement).closest('input, textarea, select') || seletor || buscaPalavras) return
       if (e.key === 'ArrowRight') proximo()
       if (e.key === 'ArrowLeft') anterior()
       if (e.key === 'Escape') setSelecao([])
@@ -261,7 +361,7 @@ export default function Biblia() {
         <form onSubmit={irPara} className="relative min-w-0 flex-1 basis-56">
           <Search size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-texto-2" />
           <input value={busca} onChange={(e) => setBusca(e.target.value)} enterKeyHint="go"
-            placeholder='Ir para… "Jo 3:16"' className="campo rounded-2xl pl-10" />
+            placeholder='"Jo 3:16" ou palavras' className="campo rounded-2xl pl-10" />
         </form>
         <div role="radiogroup" aria-label="Versão" className="inline-flex rounded-xl border border-borda bg-superficie p-1">
           {VERSOES.map((v) => (
@@ -274,10 +374,10 @@ export default function Biblia() {
           ))}
         </div>
         <div className="inline-flex items-center rounded-xl border border-borda bg-superficie p-1">
-          <button onClick={() => setLetra((l) => Math.max(0, l - 1))} disabled={letra === 0} aria-label="Diminuir letra"
+          <button onClick={() => mudarEscala(escala - 0.1)} disabled={escala <= ESCALA_MIN} aria-label="Diminuir letra"
             className="rounded-lg p-1.5 text-texto-2 hover:text-texto disabled:opacity-30"><Minus size={16} /></button>
           <span className="px-1 font-escritura text-sm font-semibold" aria-hidden>A</span>
-          <button onClick={() => setLetra((l) => Math.min(LETRAS.length - 1, l + 1))} disabled={letra === LETRAS.length - 1}
+          <button onClick={() => mudarEscala(escala + 0.1)} disabled={escala >= ESCALA_MAX}
             aria-label="Aumentar letra" className="rounded-lg p-1.5 text-texto-2 hover:text-texto disabled:opacity-30"><Plus size={16} /></button>
         </div>
       </div>
@@ -301,12 +401,15 @@ export default function Biblia() {
       </div>
 
       {/* Texto: toque nos versículos para selecionar, deslize para trocar de capítulo */}
-      <article className="mt-6"
-        onTouchStart={(e) => { toque.current = { x: e.touches[0].clientX, y: e.touches[0].clientY } }}
+      <article ref={texto} className="mt-6 touch-pan-y"
+        onTouchStart={(e) => {
+          if (e.touches.length > 1) multitoque.current = true
+          else { multitoque.current = false; toque.current = { x: e.touches[0].clientX, y: e.touches[0].clientY } }
+        }}
         onTouchEnd={(e) => {
           const t = toque.current
-          toque.current = null
-          if (!t) return
+          if (e.touches.length === 0) toque.current = null
+          if (!t || multitoque.current || e.touches.length > 0) return
           const dx = e.changedTouches[0].clientX - t.x
           const dy = e.changedTouches[0].clientY - t.y
           if (Math.abs(dx) > 80 && Math.abs(dx) > Math.abs(dy) * 1.5) {
@@ -328,7 +431,7 @@ export default function Biblia() {
           <p className="text-texto-2">Capítulo não encontrado.</p>
         )}
 
-        <div className={`font-escritura leading-[1.85] ${LETRAS[letra]}`}>
+        <div className="font-escritura leading-[1.85]" style={{ fontSize: `${1.125 * escala}rem` }}>
           {versos.map((texto, i) => {
             const n = i + 1
             const id = `${livro}.${capitulo}.${n}`
@@ -385,10 +488,25 @@ export default function Biblia() {
         </div>
       )}
 
+      {indicador && (
+        <div aria-hidden className="pointer-events-none fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-texto/85 px-5 py-3 font-display text-2xl font-extrabold tabular-nums text-fundo shadow-xl">
+          {Math.round(escala * 100)}%
+        </div>
+      )}
+
       {aviso && (
         <div role="status" className="fixed left-1/2 top-6 z-50 -translate-x-1/2 animate-entrar rounded-full bg-texto px-4 py-2 text-sm font-bold text-fundo shadow-xl">
           {aviso}
         </div>
+      )}
+
+      {buscaPalavras && (
+        <Resultados versao={versao} consulta={buscaPalavras} onFechar={() => setBuscaPalavras(null)}
+          onEscolher={(a) => {
+            setBuscaPalavras(null)
+            setBusca('')
+            ir(a.livro, a.capitulo, { inicio: a.versiculo, fim: a.versiculo })
+          }} />
       )}
 
       {seletor && (
