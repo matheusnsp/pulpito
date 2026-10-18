@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   DndContext, DragOverlay, PointerSensor, useDraggable, useDroppable, useSensor, useSensors,
@@ -12,6 +12,7 @@ import { LIVROS, parseReferencia } from '../lib/biblia'
 import type { Mensagem, Pasta } from '../lib/tipos'
 
 const CHAVE_FILTRO = 'pulpito-filtro-pasta'
+const TEMPO_DESFAZER = 6000
 type Filtro = 'todas' | 'sem' | string
 
 type Proximo = {
@@ -29,6 +30,9 @@ const normalizar = (s: string | null) =>
   (s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
 
 const ordenar = (lista: Pasta[]) => [...lista].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+
+const ordenarMensagens = (lista: Mensagem[]) =>
+  [...lista].sort((a, b) => b.atualizado_em.localeCompare(a.atualizado_em))
 
 const maiuscula = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
@@ -165,6 +169,10 @@ export default function Mensagens() {
   const [criando, setCriando] = useState(false)
   const [arrastando, setArrastando] = useState<string | null>(null)
 
+  // Exclusão com "Desfazer": só apaga do banco depois do tempo
+  const pendente = useRef<{ m: Mensagem; timer: ReturnType<typeof setTimeout> } | null>(null)
+  const [excluida, setExcluida] = useState<Mensagem | null>(null)
+
   const sensores = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
   const primeiroNome = nomeDeExibicao(emailParaUsuario(sessao?.user.email)).split(' ')[0]
 
@@ -188,6 +196,15 @@ export default function Mensagens() {
     return () => { ativo = false }
   }, [])
 
+  // Ao sair da tela com uma exclusão pendente, confirma a exclusão
+  useEffect(() => () => {
+    const p = pendente.current
+    if (!p) return
+    clearTimeout(p.timer)
+    pendente.current = null
+    void supabase.from('mensagens').delete().eq('id', p.m.id).then(() => {})
+  }, [])
+
   const filtroValido = filtro === 'todas' || filtro === 'sem' || pastas.some((p) => p.id === filtro)
   const filtroAtivo = mensagens === null || filtroValido ? filtro : 'todas'
   const pastaAtual = pastas.find((p) => p.id === filtroAtivo) ?? null
@@ -201,12 +218,38 @@ export default function Mensagens() {
     navigate(`/mensagem/${data.id}`)
   }
 
-  async function excluir(m: Mensagem) {
-    setMenu(null)
-    if (!confirm(`Excluir "${m.titulo}"? Isso não pode ser desfeito.`)) return
+  async function apagarDeVez(m: Mensagem) {
     const { error } = await supabase.from('mensagens').delete().eq('id', m.id)
-    if (error) { setErro('Não foi possível excluir.'); return }
+    if (error) {
+      setErro('Não foi possível excluir. A mensagem voltou para a lista.')
+      setMensagens((lista) => (lista ? ordenarMensagens([...lista, m]) : lista))
+    }
+  }
+
+  function excluir(m: Mensagem) {
+    setMenu(null)
+    // Se outra exclusão ainda estava esperando, confirma ela agora
+    if (pendente.current) {
+      clearTimeout(pendente.current.timer)
+      apagarDeVez(pendente.current.m)
+    }
     setMensagens((lista) => lista?.filter((x) => x.id !== m.id) ?? null)
+    const timer = setTimeout(() => {
+      pendente.current = null
+      setExcluida(null)
+      apagarDeVez(m)
+    }, TEMPO_DESFAZER)
+    pendente.current = { m, timer }
+    setExcluida(m)
+  }
+
+  function desfazerExclusao() {
+    const p = pendente.current
+    if (!p) return
+    clearTimeout(p.timer)
+    pendente.current = null
+    setExcluida(null)
+    setMensagens((lista) => (lista ? ordenarMensagens([...lista, p.m]) : lista))
   }
 
   async function moverPara(m: Mensagem, destino: string) {
@@ -392,7 +435,7 @@ export default function Mensagens() {
         {erro && <p role="alert" className="mb-3 text-sm text-perigo">{erro}</p>}
         {mensagens === null && !erro && <p className="py-8 text-center text-texto-2">Carregando…</p>}
 
-        {mensagens?.length === 0 && (
+        {mensagens?.length === 0 && !excluida && (
           <div className="rounded-3xl border border-borda bg-superficie px-6 py-10 text-center">
             <h2 className="font-escritura text-2xl font-semibold">Comece sua primeira mensagem</h2>
             <p className="mx-auto mt-2 max-w-sm text-texto-2">
@@ -430,6 +473,20 @@ export default function Mensagens() {
         className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-10 flex h-14 w-14 items-center justify-center rounded-2xl bg-acao text-acao-texto shadow-lg disabled:opacity-60 md:hidden">
         <Plus size={26} />
       </button>
+
+      {/* Aviso de exclusão com Desfazer */}
+      {excluida && (
+        <div role="status"
+          className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] left-4 right-[5.5rem] z-40 flex items-center gap-3 rounded-2xl bg-texto px-4 py-3 text-fundo shadow-xl md:bottom-6 md:left-1/2 md:right-auto md:w-[26rem] md:-translate-x-1/2">
+          <Trash2 size={18} className="shrink-0 opacity-70" />
+          <span className="min-w-0 flex-1 truncate text-sm">
+            <b className="font-escritura">{excluida.titulo}</b> foi excluída
+          </span>
+          <button onClick={desfazerExclusao} className="shrink-0 rounded-lg px-2 py-1 text-sm font-bold underline underline-offset-4 hover:opacity-80">
+            Desfazer
+          </button>
+        </div>
+      )}
 
       <DragOverlay>
         {mensagemArrastada && (
