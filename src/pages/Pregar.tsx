@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
-  BookOpen, Cast, ChevronDown, ChevronLeft, ChevronRight, Maximize, Minus, MonitorPlay, Pause, Play, Plus, RotateCcw, Type, X,
+  BookOpen, Cast, ChevronDown, ChevronLeft, Maximize, Minus, MonitorPlay, Pause, Play, Plus, RotateCcw, Settings, X,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Mensagem, Slide, Topico } from '../lib/tipos'
@@ -253,7 +253,7 @@ function VersiculoBase({ referencia, onAbrir }: { referencia: string; onAbrir: (
   }, [referencia])
 
   if (!ref) return (
-    <p className="col-span-2 truncate rounded-2xl border border-borda bg-superficie px-4 py-2.5 text-texto-2">
+    <p className="truncate rounded-2xl border border-borda bg-superficie px-4 py-2.5 text-texto-2">
       <BookOpen size={16} className="mr-2 inline text-tinta" />{referencia}
     </p>
   )
@@ -267,8 +267,8 @@ function VersiculoBase({ referencia, onAbrir }: { referencia: string; onAbrir: (
   }
 
   return (
-    <div className="col-span-2 rounded-2xl border border-borda bg-superficie">
-      <div className="flex items-center gap-2 px-4 pt-2.5">
+    <div className="rounded-2xl border border-borda bg-superficie">
+      <div className="flex items-center gap-2 px-4 pt-2">
         <button onClick={onAbrir} className="flex min-w-0 flex-1 items-center gap-2 text-left">
           <BookOpen size={16} className="shrink-0 text-tinta" />
           <span className="min-w-0">
@@ -281,7 +281,7 @@ function VersiculoBase({ referencia, onAbrir }: { referencia: string; onAbrir: (
           <ChevronDown size={18} className={`transition-transform ${aberto ? '' : 'rotate-180'}`} />
         </button>
       </div>
-      <p className={`px-4 pb-3 font-escritura text-[15px] leading-relaxed text-texto/85 ${aberto ? 'max-h-[20vh] overflow-y-auto' : 'truncate'}`}>
+      <p className={`px-4 pb-2.5 text-sm leading-relaxed text-texto/80 ${aberto ? 'max-h-[20vh] overflow-y-auto' : 'truncate'}`}>
         {texto || '…'}
       </p>
     </div>
@@ -320,6 +320,7 @@ export default function Pregar() {
   const [iniciadoEm, setIniciadoEm] = useState<number | null>(null)
   const [agora, setAgora] = useState(() => Date.now())
   const toqueX = useRef<number | null>(null)
+  const toqueY = useRef(0)
   const multitoque = useRef(false)
   const areaTexto = useRef<HTMLElement>(null)
   const [indicador, setIndicador] = useState(false)
@@ -525,22 +526,12 @@ export default function Pregar() {
   }[fase]
   const hora = new Date(agora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
   const topico = indice > 0 ? topicos[indice - 1] : null
-  const noInicio = indice === 0 && sub === 0
-  const noFim = indice === topicos.length && sub >= slidesDaPagina.length - 1
-  const proximoESlide = sub < slidesDaPagina.length - 1
-  const rotuloProximo = noFim ? 'Fim da mensagem' : proximoESlide ? 'Próximo slide' : 'Próximo tópico'
 
   function irParaTopico(n: number) {
     setIndice(n)
     setSubEstado({ pagina: n, sub: 0 })
   }
 
-  const secoes = topico ? ([
-    ['Observação', topico.observacao],
-    ['Aplicação', topico.aplicacao],
-    ['Ilustração', topico.ilustracao],
-    ['Notas', topico.notas],
-  ] as const).filter(([, v]) => v?.trim()) : []
 
   const corTelao = !telaoOnline ? 'bg-aviso' : telaoApagado ? 'bg-texto-2' : 'bg-sucesso'
 
@@ -586,12 +577,12 @@ export default function Pregar() {
         </div>
 
         <button onClick={() => setPainelTelao(true)} aria-label="Transmitir para o telão" title="Telão (T)"
-          className={`relative ${iconeBotao} ${codigoTelao && telaoOnline ? 'text-tinta' : ''}`}>
+          className={`relative ${iconeBotao} border border-borda ${codigoTelao && telaoOnline ? 'text-tinta' : ''}`}>
           <Cast size={21} />
           {codigoTelao && <span className={`absolute right-1.5 top-1.5 h-2 w-2 rounded-full ring-2 ring-fundo ${corTelao}`} />}
         </button>
-        <button onClick={() => setPainelTexto((v) => !v)} aria-label="Tamanho do texto" title="Tamanho do texto (+ e −, ou pinça)" className={iconeBotao}>
-          <Type size={20} />
+        <button onClick={() => setPainelTexto((v) => !v)} aria-label="Ajustes da tela" title="Tamanho do texto (+ e −, ou pinça)" className={iconeBotao}>
+          <Settings size={20} />
         </button>
         <button onClick={() => setBiblia(topico?.versiculo || mensagem.texto_base || '')}
           aria-label="Abrir Bíblia" title="Bíblia (B)" className={`${iconeBotao} max-sm:hidden`}>
@@ -626,7 +617,7 @@ export default function Pregar() {
               {slidesDaPagina.length > 1 && ` · slide ${sub + 1}/${slidesDaPagina.length}`}
             </span>
             <button onClick={() => setListaTopicos((v) => !v)} aria-expanded={listaTopicos}
-              className="flex min-w-0 max-w-[65%] items-center gap-1.5 rounded-full border border-borda bg-superficie px-3 py-1.5 text-left text-xs">
+              className="flex min-w-0 max-w-[65%] items-center gap-1.5 rounded-lg px-1 py-1 text-left text-xs hover:bg-superficie-2">
               <span className="shrink-0 text-texto-2">{indice < topicos.length ? 'Próximo:' : 'Último tópico'}</span>
               <span className="min-w-0 flex-1 truncate font-bold">{indice < topicos.length ? topicos[indice].titulo || 'Sem título' : ''}</span>
               <ChevronDown size={16} className={`shrink-0 text-texto-2 transition-transform ${listaTopicos ? 'rotate-180' : ''}`} />
@@ -656,18 +647,19 @@ export default function Pregar() {
 
       {/* Conteúdo */}
       <main ref={areaTexto} className="flex-1 touch-pan-y overflow-y-auto" onClick={() => setPainelTexto(false)}
-        style={{ '--fs-titulo': `${2.1 * escala}rem`, '--fs-sub': `${2.4 * escala}rem`, '--fs-corpo': `${1.3 * escala}rem` } as CSSProperties}
+        style={{ '--fs-titulo': `${2.4 * escala}rem`, '--fs-sub': `${2.4 * escala}rem`, '--fs-topico': `${1.55 * escala}rem`, '--fs-corpo': `${1.2 * escala}rem` } as CSSProperties}
         onTouchStart={(e) => {
           if (e.touches.length > 1) multitoque.current = true
-          else { multitoque.current = false; toqueX.current = e.touches[0].clientX }
+          else { multitoque.current = false; toqueX.current = e.touches[0].clientX; toqueY.current = e.touches[0].clientY }
         }}
         onTouchEnd={(e) => {
           if (toqueX.current === null || multitoque.current || e.touches.length > 0) { if (!e.touches.length) toqueX.current = null; return }
           const dx = e.changedTouches[0].clientX - toqueX.current
+          const dy = e.changedTouches[0].clientY - toqueY.current
           toqueX.current = null
-          if (Math.abs(dx) > 70) ir(dx < 0 ? 1 : -1)
+          if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.4) ir(dx < 0 ? 1 : -1)
         }}>
-        <div className="mx-auto max-w-3xl px-6 pb-8 pt-5">
+        <div key={`${indice}-${sub}`} className="mx-auto max-w-3xl animate-entrar px-6 pb-8 pt-5">
           {!topico && (
             <div className="space-y-4">
               <p className="text-texto-2">
@@ -683,43 +675,46 @@ export default function Pregar() {
                 <p className="font-display text-[length:var(--fs-sub)] font-extrabold uppercase leading-[1.05] tracking-tight text-tinta">
                   {mensagem.titulo}
                 </p>
-                <h1 className={`${tam.titulo} font-display font-extrabold uppercase leading-[1.05] tracking-tight`}>
+                <h1 className="font-display text-[length:var(--fs-topico)] font-extrabold uppercase leading-[1.1] tracking-tight">
                   {indice}. {topico.titulo || 'Sem título'}
                 </h1>
               </div>
 
-              {topico.frase_chave?.trim() && (
-                <p className={`${tam.corpo} whitespace-pre-wrap rounded-r-2xl border-l-4 border-acao bg-ouro-suave py-3 pl-4 pr-3 font-bold leading-relaxed text-texto`}>
-                  {topico.frase_chave}
-                </p>
+              {topico.observacao?.trim() && (
+                <TextoRico texto={topico.observacao} className={`${tam.corpo} text-texto`} />
               )}
 
-              {secoes.map(([rotulo, valor]) => (
-                <section key={rotulo}>
-                  <h2 className="rotulo mb-1.5">{rotulo}</h2>
-                  <TextoRico texto={valor ?? ''} className={`${tam.corpo} ${rotulo === 'Notas' ? 'text-texto-2' : 'text-texto/90'}`} />
-                </section>
-              ))}
+              {topico.frase_chave?.trim() && (
+                <blockquote className={`${tam.corpo} whitespace-pre-wrap border-l-2 border-acao py-1 pl-4 font-escritura italic leading-relaxed text-tinta`}>
+                  “{topico.frase_chave.replace(/^["“]|["”]$/g, '')}”
+                </blockquote>
+              )}
+
+              {([['Aplicação', topico.aplicacao], ['Ilustração', topico.ilustracao]] as const)
+                .filter(([, v]) => v?.trim()).map(([rotulo, valor]) => (
+                  <div key={rotulo} className="rounded-2xl border border-borda bg-superficie px-4 py-3">
+                    <TextoRico texto={`${rotulo}: ${valor}`} className={`${tam.corpo} italic text-texto/85`} />
+                  </div>
+                ))}
+
+              {topico.notas?.trim() && (
+                <TextoRico texto={topico.notas} className="text-base text-texto-2" />
+              )}
             </div>
           )}
         </div>
       </main>
 
       {/* Navegação */}
-      <footer className="mx-auto grid w-full max-w-3xl grid-cols-[auto_1fr] gap-3 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2">
+      {/* Rodapé: versículo base. Para trocar de tópico, deslize a tela para o lado (ou use as setas do teclado) */}
+      <footer className="mx-auto w-full max-w-5xl px-3 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-2">
+        <div>
 
-        <button onClick={() => ir(-1)} disabled={noInicio} aria-label="Voltar"
-          className="flex h-14 w-14 items-center justify-center rounded-2xl border border-borda text-texto-2 hover:text-texto disabled:opacity-30">
-          <ChevronLeft size={28} />
-        </button>
-        <button onClick={() => ir(1)} disabled={noFim}
-          className="flex h-14 items-center justify-center gap-2 rounded-2xl bg-acao font-display text-lg font-extrabold text-acao-texto shadow-[0_10px_30px_-10px_var(--acao)] active:scale-[0.99] disabled:opacity-30 disabled:shadow-none">
-          {rotuloProximo} {!noFim && <ChevronRight size={22} />}
-        </button>
         {(topico?.versiculo || (!topico && mensagem.texto_base)) && (
           <VersiculoBase key={topico?.id ?? 'capa'} referencia={(topico ? topico.versiculo : mensagem.texto_base) ?? ''}
             onAbrir={() => setBiblia((topico ? topico.versiculo : mensagem.texto_base) || '')} />
         )}
+        </div>
       </footer>
 
       {indicador && (
