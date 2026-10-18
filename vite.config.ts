@@ -9,7 +9,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'prompt',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'apple-touch-icon-180x180.png', 'logo.svg'],
+      includeAssets: ['favicon.ico', 'apple-touch-icon-v4.png', 'logo.svg'],
       manifest: {
         name: 'Pulpito',
         short_name: 'Pulpito',
@@ -21,9 +21,9 @@ export default defineConfig({
         background_color: '#0D0C09',
         theme_color: '#0D0C09',
         icons: [
-          { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
-          { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },
-          { src: 'maskable-icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: 'pwa-192x192-v4.png', sizes: '192x192', type: 'image/png' },
+          { src: 'pwa-512x512-v4.png', sizes: '512x512', type: 'image/png' },
+          { src: 'maskable-icon-512x512-v4.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
       workbox: {
