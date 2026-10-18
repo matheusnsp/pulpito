@@ -57,7 +57,11 @@ export type EstiloSlide = {
   fonte: 'sans' | 'serif'
   escurecer: number // 0 a 0.8, usado só com imagem de fundo
   ajuste: 'cobrir' | 'conter' // foto preenche o slide ou aparece inteira
+  layout?: LayoutSlide // como o conteúdo é arrumado (slides gerados a partir dos tópicos)
+  destaque?: string // cor de destaque (referências, faixa, aspas)
 }
+
+export type LayoutSlide = 'livre' | 'capa' | 'topico' | 'versiculo' | 'frase'
 
 export const ESTILO_PADRAO: EstiloSlide = {
   cor: '#ffffff', alinhamento: 'center', tamanho: 'm', fonte: 'sans', escurecer: 0.45, ajuste: 'cobrir',
@@ -76,6 +80,7 @@ export type Slide = {
 }
 
 export const FUNDOS_PRONTOS = [
+  { nome: 'Noite dourada', valor: 'radial-gradient(120% 90% at 85% 110%, #3A2800 0%, #120D02 45%, #050505 100%)' },
   { nome: 'Preto', valor: '#000000' },
   { nome: 'Grafite', valor: '#1c1c1e' },
   { nome: 'Azul noite', valor: 'linear-gradient(135deg, #0f172a, #1e3a8a)' },

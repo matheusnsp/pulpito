@@ -11,7 +11,7 @@ import { useHistorico } from '../lib/historico'
 import { lerArquivos } from '../lib/importar'
 import SlideVisual from '../components/SlideVisual'
 import {
-  ESTILO_PADRAO, FUNDOS_PRONTOS, type EstiloSlide, type Mensagem, type Slide, type Topico,
+  ESTILO_PADRAO, FUNDOS_PRONTOS, type EstiloSlide, type LayoutSlide, type Mensagem, type Slide, type Topico,
 } from '../lib/tipos'
 import { formatarReferencia, lerReferencia, parseReferencia, type VersaoId } from '../lib/biblia'
 
@@ -27,18 +27,34 @@ function referenciaBonita(ref: string | null) {
   return r ? formatarReferencia(r) : ref?.trim() || null
 }
 
-async function textoDoVersiculo(ref: string | null) {
+const SOBRESCRITO = '⁰¹²³⁴⁵⁶⁷⁸⁹'
+const sobrescrito = (n: number) => String(n).split('').map((d) => SOBRESCRITO[Number(d)]).join('')
+
+/* Versículos de uma referência divididos em blocos que cabem bem num slide */
+async function blocosDoVersiculo(ref: string | null, limite = 280) {
   const r = ref ? parseReferencia(ref) : null
-  if (!r?.inicio) return ''
+  if (!r?.inicio) return [] as { referencia: string; texto: string }[]
   try {
     const vs = await lerReferencia(versaoAtual(), r)
-    let t = vs.map((v) => v.texto).join(' ')
-    if (t.length > 400) t = t.slice(0, 400).trimEnd() + '…'
-    return t
+    const varios = vs.length > 1
+    const blocos: { de: number; ate: number; texto: string }[] = []
+    for (const v of vs) {
+      const pedaco = `${varios ? sobrescrito(v.numero) + ' ' : ''}${v.texto}`
+      const ultimo = blocos[blocos.length - 1]
+      if (ultimo && ultimo.texto.length + pedaco.length + 1 <= limite) {
+        ultimo.texto += ' ' + pedaco
+        ultimo.ate = v.numero
+      } else blocos.push({ de: v.numero, ate: v.numero, texto: pedaco })
+    }
+    return blocos.map((b) => ({
+      referencia: formatarReferencia({ ...r, inicio: b.de, fim: b.ate }),
+      texto: b.texto,
+    }))
   } catch {
-    return ''
+    return []
   }
 }
+
 
 function Campo({ rotulo, children }: { rotulo: string; children: ReactNode }) {
   return (
@@ -76,7 +92,7 @@ export default function EditorSlides() {
   const [selId, setSelId] = useState<string | null>(null)
   const [selecao, setSelecao] = useState<Set<string> | null>(null)
   const [ancora, setAncora] = useState<string | null>(null)
-  const [comFrase, setComFrase] = useState(false)
+  const [comFrase, setComFrase] = useState(true)
   const [gerando, setGerando] = useState(false)
   const [enviando, setEnviando] = useState(false)
   const [painelImportar, setPainelImportar] = useState(false)
@@ -239,27 +255,40 @@ export default function EditorSlides() {
     const antes = slides
     setGerando(true)
     setErro('')
-    const fundo = sel?.fundo ?? '#000000'
-    const estiloBase = sel?.estilo ?? {}
+    // Fundo e cores do slide selecionado; se estiver no preto padrão, usa o "Noite dourada"
+    const fundo = !sel?.fundo || sel.fundo === '#000000' ? FUNDOS_PRONTOS[0].valor : sel.fundo
+    const { layout: _l, ...estiloSel } = sel?.estilo ?? {}
+    void _l
+    const estilo = (layout: LayoutSlide) => ({ ...estiloSel, layout })
     const linhas: Omit<Slide, 'id'>[] = []
-
-    linhas.push({
-      mensagem_id: mensagem.id, topico_id: null, ordem: 0, titulo: mensagem.titulo,
-      subtitulo: referenciaBonita(mensagem.texto_base), texto: null, fundo, estilo: estiloBase,
-    })
-    for (const t of topicos) {
-      const textoV = await textoDoVersiculo(t.versiculo)
+    const novo = (topico_id: string | null, layout: LayoutSlide, c: { titulo?: string | null; subtitulo?: string | null; texto?: string | null }) =>
       linhas.push({
-        mensagem_id: mensagem.id, topico_id: t.id, ordem: linhas.length,
-        titulo: t.titulo || 'Sem título', subtitulo: referenciaBonita(t.versiculo),
-        texto: textoV || t.frase_chave?.trim() || null, fundo, estilo: estiloBase,
+        mensagem_id: mensagem.id, topico_id, ordem: linhas.length,
+        titulo: c.titulo ?? null, subtitulo: c.subtitulo ?? null, texto: c.texto ?? null,
+        fundo, estilo: estilo(layout),
       })
-      if (comFrase && textoV && t.frase_chave?.trim()) {
-        linhas.push({
-          mensagem_id: mensagem.id, topico_id: t.id, ordem: linhas.length,
-          titulo: null, subtitulo: null, texto: t.frase_chave.trim(), fundo, estilo: estiloBase,
-        })
-      }
+
+    // O mesmo versículo não é repetido em vários tópicos
+    const usados = new Set<string>()
+    const versiculos = async (topicoId: string | null, ref: string | null) => {
+      const chave = referenciaBonita(ref)
+      if (!chave || usados.has(chave)) return
+      usados.add(chave)
+      for (const b of await blocosDoVersiculo(ref)) novo(topicoId, 'versiculo', { titulo: b.referencia, texto: b.texto })
+    }
+
+    // Capa
+    novo(null, 'capa', { titulo: mensagem.titulo, subtitulo: referenciaBonita(mensagem.texto_base) })
+    await versiculos(null, mensagem.texto_base)
+
+    // Cada tópico: título → versículo(s) → frase-chave
+    for (const [i, t] of topicos.entries()) {
+      novo(t.id, 'topico', {
+        subtitulo: `Tópico ${i + 1}`, titulo: t.titulo || 'Sem título', texto: referenciaBonita(t.versiculo),
+      })
+      await versiculos(t.id, t.versiculo)
+      if (comFrase && t.frase_chave?.trim())
+        novo(t.id, 'frase', { texto: t.frase_chave.trim().replace(/^["“]|["”]$/g, '') })
     }
 
     slides.forEach((s) => cancelar(`s:${s.id}:`))
@@ -279,9 +308,12 @@ export default function EditorSlides() {
     historico.registrar(slides)
     const { fundo, estilo: est } = sel
     slides.forEach((s) => { cancelar(`s:${s.id}:fundo`); cancelar(`s:${s.id}:estilo`) })
-    setSlides((lista) => lista.map((s) => ({ ...s, fundo, estilo: est })))
-    const { error } = await supabase.from('slides').update({ fundo, estilo: est }).eq('mensagem_id', mensagem.id)
-    if (error) setErro('Não foi possível aplicar a todos.')
+    // Copia fundo e cores, mas cada slide mantém o próprio layout (capa, tópico, versículo…)
+    const novos = slides.map((s) => ({ ...s, fundo, estilo: { ...est, layout: s.estilo?.layout } }))
+    setSlides(novos)
+    const res = await Promise.all(novos.map((s) =>
+      supabase.from('slides').update({ fundo: s.fundo, estilo: s.estilo }).eq('id', s.id)))
+    if (res.some((r) => r.error)) setErro('Não foi possível aplicar a todos.')
   }
 
   async function enviarImagem(file: File) {
@@ -685,6 +717,26 @@ export default function EditorSlides() {
                     </div>
 
                     <div className="flex flex-wrap gap-x-5 gap-y-4">
+                      <div className="w-full">
+                        <span className="mb-2 block text-sm font-semibold text-texto-2">Modelo</span>
+                        <Segmentos valor={estilo.layout ?? 'livre'}
+                          opcoes={[
+                            { valor: 'livre', rotulo: 'Livre' }, { valor: 'capa', rotulo: 'Capa' },
+                            { valor: 'topico', rotulo: 'Tópico' }, { valor: 'versiculo', rotulo: 'Versículo' },
+                            { valor: 'frase', rotulo: 'Frase' },
+                          ]}
+                          onChange={(v) => alterarEstilo({ layout: v })} />
+                      </div>
+                      <div>
+                        <span className="mb-2 block text-sm font-semibold text-texto-2">Destaque</span>
+                        <div className="flex items-center gap-1.5">
+                          {['#FFC107', '#E8B44A', '#2DD4BF', '#7dd3fc', '#ffffff'].map((c) => (
+                            <button key={c} onClick={() => alterarEstilo({ destaque: c })} aria-label={`Destaque ${c}`}
+                              style={{ background: c }}
+                              className={`h-8 w-8 rounded-full ${(estilo.destaque ?? '#FFC107') === c ? 'ring-2 ring-acao ring-offset-2 ring-offset-superficie' : 'ring-1 ring-borda'}`} />
+                          ))}
+                        </div>
+                      </div>
                       <div>
                         <span className="mb-2 block text-sm font-semibold text-texto-2">Alinhamento</span>
                         <Segmentos valor={estilo.alinhamento}
