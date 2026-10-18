@@ -4,10 +4,12 @@ export default function Marca({ className = '', icone = false }: { className?: s
       {icone && (
         <svg viewBox="0 0 512 512" aria-hidden className="h-[1.25em] w-[1.25em] shrink-0">
           <rect width="512" height="512" rx="120" fill="var(--texto)" />
-          <path d="M256 176c-38-26-92-34-140-28v208c48-6 102 2 140 28 38-26 92-34 140-28V148c-48-6-102 2-140 28z"
-            fill="none" stroke="var(--fundo)" strokeWidth="28" strokeLinejoin="round" />
-          <path d="M256 176v208" stroke="var(--fundo)" strokeWidth="28" strokeLinecap="round" />
-          <circle cx="256" cy="108" r="26" fill="var(--acao)" />
+          <g transform="rotate(-8 256 200)">
+            <path d="M256 196c-30-20-70-24-104-18v-34c34-6 74-2 104 18 30-20 70-24 104-18v34c-34-6-74-2-104 18z" fill="var(--acao)" />
+            <rect x="128" y="196" width="256" height="32" rx="16" fill="var(--fundo)" />
+          </g>
+          <path d="M204 252h104l-16 128h-72z" fill="var(--fundo)" />
+          <rect x="164" y="384" width="184" height="30" rx="15" fill="var(--fundo)" />
         </svg>
       )}
       <span className="inline-flex items-start">
