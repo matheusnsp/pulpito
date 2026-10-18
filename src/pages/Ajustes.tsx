@@ -3,15 +3,10 @@ import { Check, KeyRound, LogOut } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { sairDaConta } from '../lib/conta'
-import { lerTema, salvarTema, type Tema } from '../lib/tema'
+import { TEMAS, lerTema, salvarTema, type Tema } from '../lib/tema'
 import { VERSOES, type VersaoId } from '../lib/biblia'
 import { emailParaUsuario, nomeDeExibicao } from '../lib/usuario'
 
-const TEMAS: { valor: Tema; rotulo: string }[] = [
-  { valor: 'sistema', rotulo: 'Automático' },
-  { valor: 'claro', rotulo: 'Claro' },
-  { valor: 'escuro', rotulo: 'Escuro' },
-]
 
 function TrocarSenha({ email }: { email: string }) {
   const [atual, setAtual] = useState('')
@@ -128,28 +123,40 @@ export default function Ajustes() {
 
       <section className="space-y-3">
         <div>
+          <h2 className="font-display text-lg font-bold">Aparência</h2>
+          <p className="text-sm text-texto-2">O modo pregação e o telão são sempre escuros, nas cores do tema.</p>
+        </div>
+        <div role="radiogroup" aria-label="Tema" className="grid grid-cols-2 gap-3">
+          {TEMAS.map((t) => {
+            const ativo = tema === t.valor
+            return (
+              <button key={t.valor} role="radio" aria-checked={ativo} onClick={() => mudarTema(t.valor)}
+                className={`overflow-hidden rounded-2xl border-2 text-left transition ${ativo ? 'border-acao' : 'border-borda hover:border-texto-2'}`}>
+                <span className="block p-3" style={{ background: t.fundo, color: t.texto }}>
+                  <span className="block font-display text-sm font-extrabold">Boa noite</span>
+                  <span className="mt-2 flex items-center gap-1.5">
+                    <span className="h-6 flex-1 rounded-md" style={{ background: t.acao }} />
+                    <span className="h-6 w-8 rounded-md opacity-15" style={{ background: t.texto }} />
+                  </span>
+                </span>
+                <span className="flex items-center justify-between gap-2 bg-superficie px-3 py-2 text-sm font-bold">
+                  {t.rotulo}
+                  {ativo && <Check size={16} className="shrink-0 text-tinta" />}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <div>
           <h2 className="font-display text-lg font-bold">Senha</h2>
           <p className="text-sm text-texto-2">Para trocar, confirme primeiro a senha que você usa hoje.</p>
         </div>
         {email && <TrocarSenha email={email} />}
       </section>
 
-      <section className="space-y-3">
-        <div>
-          <h2 className="font-display text-lg font-bold">Aparência</h2>
-          <p className="text-sm text-texto-2">O modo pregação e o telão são sempre escuros.</p>
-        </div>
-        <div role="radiogroup" aria-label="Tema" className="inline-flex rounded-xl border border-borda bg-superficie p-1">
-          {TEMAS.map((t) => (
-            <button key={t.valor} role="radio" aria-checked={tema === t.valor} onClick={() => mudarTema(t.valor)}
-              className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${tema === t.valor
-                ? 'bg-texto text-fundo'
-                : 'text-texto-2 hover:text-texto'}`}>
-              {t.rotulo}
-            </button>
-          ))}
-        </div>
-      </section>
 
       <section className="space-y-3">
         <div>

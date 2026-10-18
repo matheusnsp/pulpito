@@ -1,47 +1,98 @@
 @import "tailwindcss";
 
+/* --acao = preenchimento (botões, seleção)   --tinta = texto de destaque (links, referências) */
 /*
-  Pulpito — sistema visual
-  Papel quente + âmbar. Claro para preparar, escuro para pregar.
-  --acao  = preenchimento (botões, seleção)   --tinta = texto de destaque (links, referências)
+  Temas (escolhidos em Ajustes):
+  - amarelo  (padrão) preto e amarelo
+  - marinho  azul-marinho e dourado
+  - grafite  grafite e verde-água
+  - claro    branco e preto
+  Escuros recebem a classe .escuro no <html>. O modo pregação e o telão forçam .escuro:
+  no tema claro isso vira preto e branco.
 */
 
+/* Claro (branco e preto) */
 :root {
-  --fundo: #F6F4EE;
+  --fundo: #FAFAFA;
   --superficie: #FFFFFF;
-  --superficie-2: #EFECE3;
-  --borda: #E4DFD2;
-  --texto: #1B1912;
-  --texto-2: #6A6557;
-  --acao: #F4B41A;
-  --acao-texto: #1B1300;
-  --tinta: #8A5C00;
-  --ouro: #E0A000;
-  --ouro-suave: #FFF2CC;
-  --perigo: #C2281C;
-  --aviso: #D98A00;
-  --sucesso: #23875A;
-  --sombra: 0 1px 2px rgb(27 25 18 / 0.04), 0 8px 24px -12px rgb(27 25 18 / 0.14);
+  --superficie-2: #F1F1F1;
+  --borda: #E6E6E6;
+  --texto: #111111;
+  --texto-2: #6B6B6B;
+  --acao: #111111;
+  --acao-texto: #FFFFFF;
+  --tinta: #111111;
+  --ouro: #111111;
+  --ouro-suave: #F1F1F1;
+  --perigo: #C62828;
+  --aviso: #E0A400;
+  --sucesso: #2E7D32;
+  --hero: #111111;
+  --sombra: 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 24px -12px rgb(0 0 0 / 0.12);
   color-scheme: light;
 }
 
+/* Preto e amarelo */
 .escuro {
-  --fundo: #0D0C09;
-  --superficie: #17150F;
-  --superficie-2: #221F17;
-  --borda: #2E2A20;
-  --texto: #F4F1E8;
-  --texto-2: #A59F8D;
-  --acao: #FFC233;
-  --acao-texto: #1A1200;
-  --tinta: #FFCB57;
-  --ouro: #FFC233;
-  --ouro-suave: rgb(255 194 51 / 0.12);
-  --perigo: #FF6B5E;
-  --aviso: #FFB020;
-  --sucesso: #4CC38A;
-  --sombra: 0 1px 2px rgb(0 0 0 / 0.3), 0 12px 32px -12px rgb(0 0 0 / 0.6);
+  --fundo: #0A0A0A;
+  --superficie: #151515;
+  --superficie-2: #1F1F1F;
+  --borda: #262626;
+  --texto: #F5F5F5;
+  --texto-2: #9A9A9A;
+  --acao: #FFC107;
+  --acao-texto: #111111;
+  --tinta: #FFC107;
+  --ouro: #FFC107;
+  --ouro-suave: rgb(255 193 7 / 0.14);
+  --perigo: #F44336;
+  --aviso: #FFC107;
+  --sucesso: #4CAF50;
+  --hero: linear-gradient(135deg, #1A1405, #2A1D00);
+  --sombra: 0 1px 2px rgb(0 0 0 / 0.4), 0 12px 32px -12px rgb(0 0 0 / 0.7);
   color-scheme: dark;
+}
+
+/* Azul-marinho e dourado */
+html.tema-marinho.escuro, html.tema-marinho .escuro {
+  --fundo: #0B1220;
+  --superficie: #121B2E;
+  --superficie-2: #1A2540;
+  --borda: #24304D;
+  --texto: #EEF2FA;
+  --texto-2: #93A0BD;
+  --acao: #E8B44A;
+  --acao-texto: #0B1220;
+  --tinta: #F0C46A;
+  --ouro: #E8B44A;
+  --ouro-suave: rgb(232 180 74 / 0.14);
+  --hero: linear-gradient(135deg, #16244A, #0E1A33);
+}
+
+/* Grafite e verde-água */
+html.tema-grafite.escuro, html.tema-grafite .escuro {
+  --fundo: #0F1113;
+  --superficie: #171A1D;
+  --superficie-2: #20242A;
+  --borda: #2A2F36;
+  --texto: #F1F3F5;
+  --texto-2: #98A1AB;
+  --acao: #2DD4BF;
+  --acao-texto: #04211D;
+  --tinta: #5EEAD4;
+  --ouro: #2DD4BF;
+  --ouro-suave: rgb(45 212 191 / 0.14);
+  --hero: linear-gradient(135deg, #0F2A2A, #141A1F);
+}
+
+/* Tema claro: as telas sempre escuras ficam em preto e branco */
+html.tema-claro .escuro {
+  --acao: #FFFFFF;
+  --acao-texto: #111111;
+  --tinta: #FFFFFF;
+  --ouro: #FFFFFF;
+  --ouro-suave: rgb(255 255 255 / 0.1);
+  --hero: #111111;
 }
 
 @theme inline {

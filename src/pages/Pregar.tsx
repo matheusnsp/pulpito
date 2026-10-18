@@ -640,7 +640,7 @@ export default function Pregar() {
               </div>
 
               {topico.frase_chave?.trim() && (
-                <p className={`${tam.corpo} whitespace-pre-wrap rounded-r-2xl border-l-4 border-acao bg-ouro-suave py-3 pl-4 pr-3 font-bold leading-relaxed text-[#FFE7A8]`}>
+                <p className={`${tam.corpo} whitespace-pre-wrap rounded-r-2xl border-l-4 border-acao bg-ouro-suave py-3 pl-4 pr-3 font-bold leading-relaxed text-texto`}>
                   {topico.frase_chave}
                 </p>
               )}

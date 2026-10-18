@@ -388,19 +388,19 @@ export default function Mensagens() {
 
         {/* Próxima pregação */}
         {proximo && (
-          <section className="relative mt-6 overflow-hidden rounded-3xl bg-[#14120D] p-5 text-[#F4F1E8] shadow-cartao md:p-7">
-            <div aria-hidden className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-[#FFC233]/25 blur-3xl" />
+          <section className="escuro relative mt-6 overflow-hidden rounded-3xl border border-borda p-5 text-texto shadow-cartao md:p-7" style={{ background: 'var(--hero)' }}>
+            <div aria-hidden className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-acao/20 blur-3xl" />
             <div className="relative">
-              <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-[#FFCB57]">
-                <span aria-hidden className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#FFC233]" />
+              <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-tinta">
+                <span aria-hidden className="h-1.5 w-1.5 animate-pulse rounded-full bg-acao" />
                 Próxima pregação · {quandoEvento(proximo.inicio, hoje)}
               </p>
               {msgProxima ? (
                 <div className="md:flex md:items-end md:justify-between md:gap-8">
                   <div className="min-w-0">
                     <h2 className="mt-3 font-display text-2xl font-extrabold leading-tight tracking-tight md:text-3xl">{msgProxima.titulo}</h2>
-                    <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm text-white/65">
-                      {refCurta(msgProxima.texto_base) && <span className="font-bold text-[#FFCB57]">{refCurta(msgProxima.texto_base)}</span>}
+                    <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm text-texto-2">
+                      {refCurta(msgProxima.texto_base) && <span className="font-bold text-tinta">{refCurta(msgProxima.texto_base)}</span>}
                       <span>{qtdTopicos} {qtdTopicos === 1 ? 'tópico' : 'tópicos'}</span>
                       <span>{msgProxima.tempo_minutos} min</span>
                       <span>{proximo.titulo}{proximo.local ? ` · ${proximo.local}` : ''}</span>
@@ -408,7 +408,7 @@ export default function Mensagens() {
                   </div>
                   <div className="mt-5 flex shrink-0 gap-2 md:mt-0">
                     <Link to={`/pregar/${msgProxima.id}`}
-                      className="botao flex-1 bg-[#FFC233] px-6 text-[#1A1200] hover:brightness-105 md:flex-none">
+                      className="botao flex-1 bg-acao px-6 text-acao-texto hover:brightness-105 md:flex-none">
                       <Play size={18} fill="currentColor" /> Pregar
                     </Link>
                     <Link to={`/mensagem/${msgProxima.id}`} className="botao bg-white/10 hover:bg-white/20">
@@ -419,7 +419,7 @@ export default function Mensagens() {
               ) : (
                 <>
                   <h2 className="mt-3 font-display text-2xl font-extrabold leading-tight">{proximo.titulo}</h2>
-                  <p className="mt-1 text-sm text-white/65">Nenhuma mensagem ligada a este compromisso.</p>
+                  <p className="mt-1 text-sm text-texto-2">Nenhuma mensagem ligada a este compromisso.</p>
                   <Link to="/agenda" className="botao mt-4 bg-white/10 hover:bg-white/20">Escolher mensagem</Link>
                 </>
               )}

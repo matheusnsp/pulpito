@@ -21,7 +21,7 @@ function Slide({ slide }: { slide: SlideTelao }) {
       <p className={`${porTamanho(slide.texto, 'text-[4.4vw]', 'text-[3.6vw]', 'text-[2.9vw]')} font-escritura leading-snug`}>
         {slide.texto}
       </p>
-      <p className="text-[2.4vw] font-bold text-[#FFCB57]">{slide.referencia}</p>
+      <p className="text-[2.4vw] font-bold text-tinta">{slide.referencia}</p>
     </div>
   )
 
@@ -35,14 +35,14 @@ function Slide({ slide }: { slide: SlideTelao }) {
         {slide.titulo}
       </h1>
       {slide.tipo === 'topico' && slide.frase && (
-        <p className="text-[2.8vw] font-bold leading-snug text-[#FFC233]">{slide.frase}</p>
+        <p className="text-[2.8vw] font-bold leading-snug text-acao">{slide.frase}</p>
       )}
       {texto && (
         <p className={`${porTamanho(texto, 'text-[2.8vw]', 'text-[2.3vw]', 'text-[1.9vw]')} max-w-[80vw] font-escritura leading-snug text-white/85`}>
           “{texto}”
         </p>
       )}
-      {slide.referencia && <p className="text-[2vw] font-bold text-[#FFCB57]">{slide.referencia}</p>}
+      {slide.referencia && <p className="text-[2vw] font-bold text-tinta">{slide.referencia}</p>}
     </div>
   )
 }
