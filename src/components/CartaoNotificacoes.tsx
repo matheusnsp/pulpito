@@ -1,11 +1,34 @@
 import { useEffect, useState } from 'react'
+import { Bell, BellOff, BellRing } from 'lucide-react'
 import {
   ativarNotificacoes, desativarNotificacoes, inscricaoAtual, notificacaoDeTeste, suportaNotificacoes,
 } from '../lib/notificacoes'
 
 type Estado = 'carregando' | 'sem-suporte' | 'negado' | 'desativado' | 'ativado'
 
-const ehIOS = /iPhone|iPad|iPod/.test(navigator.userAgent)
+const ua = navigator.userAgent
+const ehIOS = /iPhone|iPad|iPod/.test(ua) || (ua.includes('Mac') && navigator.maxTouchPoints > 1)
+
+const TEXTOS: Record<Exclude<Estado, 'carregando'>, { titulo: string; texto: string }> = {
+  ativado: {
+    titulo: 'Notificações ativadas',
+    texto: 'Este aparelho recebe os lembretes mesmo com o app fechado.',
+  },
+  desativado: {
+    titulo: 'Notificações do app',
+    texto: 'Receba os lembretes mesmo com o app fechado. Funciona melhor no Android e no computador.',
+  },
+  negado: {
+    titulo: 'Notificações bloqueadas',
+    texto: 'Libere as notificações do Pulpito nas configurações do navegador ou do celular.',
+  },
+  'sem-suporte': {
+    titulo: 'Notificações do app',
+    texto: ehIOS
+      ? 'No iPhone, use o calendário do celular acima, que é mais confiável.'
+      : 'Este navegador não permite notificações.',
+  },
+}
 
 export default function CartaoNotificacoes() {
   const [estado, setEstado] = useState<Estado>('carregando')
@@ -44,38 +67,33 @@ export default function CartaoNotificacoes() {
 
   if (estado === 'carregando') return null
 
+  const { titulo, texto } = TEXTOS[estado]
+  const Icone = estado === 'ativado' ? BellRing : estado === 'negado' ? BellOff : Bell
+
   return (
-    <section className="flex flex-wrap items-center gap-3 rounded-2xl p-4 ring-1 ring-neutral-800">
-      <span className="text-2xl">🔔</span>
-      <div className="min-w-0 flex-1">
-        <p className="font-medium">Lembretes no aparelho</p>
-        <p className="text-sm text-neutral-400">
-          {estado === 'ativado' && 'Ativados neste aparelho.'}
-          {estado === 'desativado' && 'Receba os lembretes dos compromissos mesmo com o app fechado.'}
-          {estado === 'negado' && 'As notificações estão bloqueadas. Libere nas configurações do navegador ou do celular.'}
-          {estado === 'sem-suporte' && (ehIOS
-            ? 'No iPhone, adicione o Pulpito à Tela de Início pelo Safari e abra por lá para ativar.'
-            : 'Este navegador não permite notificações.')}
-        </p>
-        {aviso && <p className="mt-1 text-sm text-red-400">{aviso}</p>}
+    <section className="rounded-2xl border border-borda bg-superficie p-4">
+      <div className="flex items-start gap-3">
+        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${estado === 'ativado' ? 'bg-ouro-suave text-ouro' : 'bg-acao/12 text-acao'}`}>
+          <Icone size={20} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold">{titulo}</p>
+          <p className="text-sm text-texto-2">{texto}</p>
+        </div>
       </div>
+
       {estado === 'desativado' && (
-        <button onClick={ativar} disabled={ocupado}
-          className="rounded-lg bg-neutral-100 px-4 py-2 font-medium text-neutral-900 disabled:opacity-50">
-          {ocupado ? 'Ativando…' : 'Ativar'}
+        <button onClick={ativar} disabled={ocupado} className="botao-secundario mt-4">
+          {ocupado ? 'Ativando…' : 'Ativar notificações'}
         </button>
       )}
       {estado === 'ativado' && (
-        <div className="flex gap-2">
-          <button onClick={() => notificacaoDeTeste()} className="rounded-lg px-3 py-2 text-sm ring-1 ring-neutral-700">
-            Testar
-          </button>
-          <button onClick={desativar} disabled={ocupado}
-            className="rounded-lg px-3 py-2 text-sm text-neutral-400 ring-1 ring-neutral-800">
-            Desativar
-          </button>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button onClick={() => notificacaoDeTeste()} className="botao-secundario text-sm">Enviar um teste</button>
+          <button onClick={desativar} disabled={ocupado} className="botao-fantasma text-sm">Desativar</button>
         </div>
       )}
+      {aviso && <p className="mt-3 text-sm text-perigo">{aviso}</p>}
     </section>
   )
 }
