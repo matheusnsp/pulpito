@@ -47,7 +47,7 @@ function TrocarSenha({ email }: { email: string }) {
   }
 
   return (
-    <form onSubmit={trocar} className="space-y-4 rounded-2xl border border-borda bg-superficie p-4">
+    <form onSubmit={trocar} className="cartao space-y-4 p-4">
       <label className="block">
         <span className="mb-1.5 block text-sm font-semibold text-texto-2">Senha atual</span>
         <input type="password" required autoComplete="current-password" value={atual}
@@ -67,7 +67,7 @@ function TrocarSenha({ email }: { email: string }) {
       </div>
       {erro && <p role="alert" className="text-sm text-perigo">{erro}</p>}
       {pronto && (
-        <p role="status" className="flex items-center gap-1.5 text-sm font-semibold text-acao">
+        <p role="status" className="flex items-center gap-1.5 text-sm font-semibold text-tinta">
           <Check size={16} /> Senha alterada
         </p>
       )}
@@ -106,13 +106,13 @@ export default function Ajustes() {
   }
 
   return (
-    <div className="mx-auto max-w-xl space-y-10 px-4 py-6 md:py-10">
-      <h1 className="font-escritura text-3xl font-semibold">Ajustes</h1>
+    <div className="mx-auto max-w-2xl space-y-10 px-4 pb-10 pt-2 md:px-8 md:pt-10">
+      <h1 className="titulo-pagina">Ajustes</h1>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Conta</h2>
-        <div className="flex items-center gap-4 rounded-2xl border border-borda bg-superficie p-4">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-acao font-semibold text-acao-texto">
+        <h2 className="font-display text-lg font-bold">Conta</h2>
+        <div className="cartao flex items-center gap-4 p-4">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-texto font-display font-bold text-fundo">
             {iniciais}
           </span>
           <div className="min-w-0 flex-1">
@@ -128,7 +128,7 @@ export default function Ajustes() {
 
       <section className="space-y-3">
         <div>
-          <h2 className="text-lg font-semibold">Senha</h2>
+          <h2 className="font-display text-lg font-bold">Senha</h2>
           <p className="text-sm text-texto-2">Para trocar, confirme primeiro a senha que você usa hoje.</p>
         </div>
         {email && <TrocarSenha email={email} />}
@@ -136,14 +136,14 @@ export default function Ajustes() {
 
       <section className="space-y-3">
         <div>
-          <h2 className="text-lg font-semibold">Aparência</h2>
+          <h2 className="font-display text-lg font-bold">Aparência</h2>
           <p className="text-sm text-texto-2">O modo pregação e o telão são sempre escuros.</p>
         </div>
         <div role="radiogroup" aria-label="Tema" className="inline-flex rounded-xl border border-borda bg-superficie p-1">
           {TEMAS.map((t) => (
             <button key={t.valor} role="radio" aria-checked={tema === t.valor} onClick={() => mudarTema(t.valor)}
               className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${tema === t.valor
-                ? 'bg-acao text-acao-texto'
+                ? 'bg-texto text-fundo'
                 : 'text-texto-2 hover:text-texto'}`}>
               {t.rotulo}
             </button>
@@ -153,7 +153,7 @@ export default function Ajustes() {
 
       <section className="space-y-3">
         <div>
-          <h2 className="text-lg font-semibold">Bíblia</h2>
+          <h2 className="font-display text-lg font-bold">Bíblia</h2>
           <p className="text-sm text-texto-2">Versão usada no editor, no modo pregação e no telão.</p>
         </div>
         <select value={versao} onChange={(e) => mudarVersao(e.target.value as VersaoId)} className="campo">

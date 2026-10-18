@@ -446,7 +446,7 @@ export default function EditorSlides() {
 
       <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="font-escritura text-3xl font-semibold">Slides</h1>
+          <h1 className="font-display text-3xl font-bold">Slides</h1>
           <p className="truncate text-texto-2">{mensagem.titulo}</p>
         </div>
         <div className="flex gap-2">
@@ -464,7 +464,7 @@ export default function EditorSlides() {
       {painelImportar && (
         <section className="mt-6 space-y-4 rounded-3xl border border-borda bg-superficie p-5">
           <div className="flex items-start justify-between gap-3">
-            <h2 className="font-escritura text-xl font-semibold">Importar apresentação</h2>
+            <h2 className="font-display text-xl font-bold">Importar apresentação</h2>
             <button onClick={() => setPainelImportar(false)} aria-label="Fechar" className={iconeBotao}>
               <X size={18} />
             </button>
@@ -501,7 +501,7 @@ export default function EditorSlides() {
       {slides.length === 0 ? (
         <section className="mt-6 space-y-5 rounded-3xl border border-borda bg-superficie p-6">
           <div>
-            <h2 className="font-escritura text-2xl font-semibold">Monte os slides desta mensagem</h2>
+            <h2 className="font-display text-2xl font-bold">Monte os slides desta mensagem</h2>
             <p className="mt-1 max-w-xl text-texto-2">
               Gere uma capa e um slide por tópico, com título e versículo, e depois personalize.
               Ou importe uma apresentação pronta. Enquanto não houver slides, o telão usa o visual automático.
@@ -573,7 +573,7 @@ export default function EditorSlides() {
               })}
               {!selecao && (
                 <button onClick={() => inserirDepois({})}
-                  className="flex w-40 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-dashed border-borda py-4 text-sm font-semibold text-texto-2 hover:border-acao hover:text-acao lg:w-full">
+                  className="flex w-40 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-dashed border-borda py-4 text-sm font-semibold text-texto-2 hover:border-acao hover:text-tinta lg:w-full">
                   <Plus size={16} /> Slide
                 </button>
               )}

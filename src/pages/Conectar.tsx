@@ -14,19 +14,19 @@ export default function Conectar() {
   return (
     <div className="flex min-h-full items-center justify-center px-6 py-12">
       <div className="w-full max-w-sm text-center">
-        <span className={`mx-auto flex h-16 w-16 items-center justify-center rounded-2xl ${valido ? 'bg-acao/12 text-acao' : 'bg-perigo/10 text-perigo'}`}>
+        <span className={`mx-auto flex h-16 w-16 items-center justify-center rounded-2xl ${valido ? 'bg-acao/12 text-tinta' : 'bg-perigo/10 text-perigo'}`}>
           {valido ? <MonitorCheck size={32} /> : <CircleAlert size={32} />}
         </span>
         {valido ? (
           <>
-            <h1 className="mt-5 font-escritura text-3xl font-semibold">Telão conectado</h1>
+            <h1 className="mt-5 font-display text-3xl font-bold">Telão conectado</h1>
             <p className="mt-2 text-texto-2">
               Abra uma mensagem e toque em <b className="text-texto">Pregar</b>. O telão {codigo} vai acompanhar seus tópicos.
             </p>
           </>
         ) : (
           <>
-            <h1 className="mt-5 font-escritura text-3xl font-semibold">Código inválido</h1>
+            <h1 className="mt-5 font-display text-3xl font-bold">Código inválido</h1>
             <p className="mt-2 text-texto-2">Escaneie de novo o QR Code que aparece no telão.</p>
           </>
         )}

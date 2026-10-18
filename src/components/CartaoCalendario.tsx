@@ -54,7 +54,7 @@ export default function CartaoCalendario() {
   return (
     <section className="rounded-2xl border border-borda bg-superficie p-4">
       <div className="flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-acao/12 text-acao">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-acao/12 text-tinta">
           <CalendarDays size={20} />
         </span>
         <div className="min-w-0 flex-1">

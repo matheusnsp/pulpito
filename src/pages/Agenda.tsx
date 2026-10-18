@@ -94,7 +94,7 @@ function FormEvento({ inicial, mensagens, onSalvo, onExcluido, onFechar }: {
       <form onSubmit={salvar} onClick={(e) => e.stopPropagation()}
         className="max-h-[92dvh] w-full max-w-md space-y-5 overflow-y-auto rounded-t-3xl border border-borda bg-superficie p-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:rounded-3xl">
         <div className="flex items-center justify-between">
-          <h2 className="font-escritura text-2xl font-semibold">{r.id ? 'Editar compromisso' : 'Novo compromisso'}</h2>
+          <h2 className="font-display text-2xl font-bold">{r.id ? 'Editar compromisso' : 'Novo compromisso'}</h2>
           <button type="button" onClick={onFechar} aria-label="Fechar" className={iconeBotao}><X size={20} /></button>
         </div>
 
@@ -135,7 +135,7 @@ function FormEvento({ inicial, mensagens, onSalvo, onExcluido, onFechar }: {
               return (
                 <button type="button" key={o.minutos} onClick={() => alternarLembrete(o.minutos)} aria-pressed={ativo}
                   className={`rounded-full border px-3.5 py-1.5 text-sm font-semibold transition-colors ${ativo
-                    ? 'border-acao bg-acao/12 text-acao'
+                    ? 'border-acao bg-acao/12 text-tinta'
                     : 'border-borda text-texto-2 hover:text-texto'}`}>
                   {o.rotulo}
                 </button>
@@ -171,7 +171,7 @@ function ItemEvento({ e, mensagens, mostrarData, onEditar }: {
   return (
     <li className="flex gap-4 px-4 py-4">
       <div className="w-14 shrink-0">
-        {mostrarData && <p className="text-xs capitalize text-texto-2">{data}</p>}
+        {mostrarData && <p className="text-xs text-texto-2 first-letter:uppercase">{data}</p>}
         <p className="font-bold tabular-nums">{horaDe(e.inicio)}</p>
       </div>
       <div className="min-w-0 flex-1">
@@ -183,7 +183,7 @@ function ItemEvento({ e, mensagens, mostrarData, onEditar }: {
         </button>
         {msg && (
           <div className="mt-3 flex items-center gap-2 rounded-xl bg-superficie-2 py-2 pl-3 pr-2">
-            <Link to={`/mensagem/${msg.id}`} className="min-w-0 flex-1 truncate font-escritura font-semibold hover:text-acao">
+            <Link to={`/mensagem/${msg.id}`} className="min-w-0 flex-1 truncate font-display font-bold hover:text-tinta">
               {msg.titulo}
             </Link>
             <Link to={`/pregar/${msg.id}`} className="botao-primario px-3 py-1.5 text-sm">
@@ -273,18 +273,19 @@ export default function Agenda() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 pb-12 pt-6 md:pt-10">
+    <div className="mx-auto max-w-5xl px-4 pb-12 pt-2 md:px-8 md:pt-10">
       <header className="flex items-center justify-between gap-3">
-        <h1 className="font-escritura text-3xl font-semibold">Agenda</h1>
+        <h1 className="titulo-pagina">Agenda</h1>
         <button onClick={novo} className="botao-primario"><Plus size={18} /> Novo</button>
       </header>
 
       {erro && <p role="alert" className="mt-4 text-sm text-perigo">{erro}</p>}
 
+      <div className="lg:grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:items-start lg:gap-8">
       {/* Calendário */}
-      <section className="mt-6 rounded-3xl border border-borda bg-superficie p-4">
+      <section className="cartao mt-6 rounded-3xl p-4 lg:sticky lg:top-6">
         <div className="mb-3 flex items-center gap-1">
-          <h2 className="flex-1 pl-1 font-escritura text-xl font-semibold">
+          <h2 className="flex-1 pl-1 font-display text-xl font-bold">
             {maiuscula(mes.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }))}
           </h2>
           <button onClick={irParaHoje} className="botao-fantasma px-3 py-1.5 text-sm">Hoje</button>
@@ -303,8 +304,8 @@ export default function Agenda() {
             return (
               <button key={k} onClick={() => setSelecionado(k)} aria-pressed={sel}
                 className={`flex aspect-square flex-col items-center justify-center rounded-xl text-sm transition-colors
-                  ${sel ? 'bg-acao font-bold text-acao-texto'
-                    : eHoje ? 'font-bold text-acao ring-1 ring-acao/40'
+                  ${sel ? 'bg-acao font-bold text-acao-texto shadow-[0_6px_16px_-8px_var(--acao)]'
+                    : eHoje ? 'font-bold text-tinta ring-2 ring-acao/50'
                       : doMes ? 'hover:bg-superficie-2' : 'text-texto-2/40 hover:bg-superficie-2'}`}>
                 {d.getDate()}
                 <span className="mt-0.5 flex h-1.5 gap-0.5">
@@ -318,9 +319,10 @@ export default function Agenda() {
         </div>
       </section>
 
+      <div>
       {/* Dia selecionado */}
-      <section className="mt-8">
-        <h2 className="text-lg font-semibold">{tituloDia}</h2>
+      <section className="mt-8 lg:mt-6">
+        <h2 className="font-display text-lg font-bold">{tituloDia}</h2>
         {eventos === null && <p className="mt-3 text-texto-2">Carregando…</p>}
         {eventos && doDia.length === 0 && (
           <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-dashed border-borda px-4 py-4">
@@ -329,7 +331,7 @@ export default function Agenda() {
           </div>
         )}
         {doDia.length > 0 && (
-          <ul className="mt-3 divide-y divide-borda rounded-2xl border border-borda bg-superficie">
+          <ul className="cartao mt-3 divide-y divide-borda">
             {doDia.map((e) => (
               <ItemEvento key={e.id} e={e} mensagens={mensagens} onEditar={() => setForm(paraRascunho(e))} />
             ))}
@@ -340,8 +342,8 @@ export default function Agenda() {
       {/* Próximos */}
       {proximos.length > 0 && (
         <section className="mt-8">
-          <h2 className="text-lg font-semibold">Próximos compromissos</h2>
-          <ul className="mt-3 divide-y divide-borda rounded-2xl border border-borda bg-superficie">
+          <h2 className="font-display text-lg font-bold">Próximos compromissos</h2>
+          <ul className="cartao mt-3 divide-y divide-borda">
             {proximos.map((e) => (
               <ItemEvento key={e.id} e={e} mensagens={mensagens} mostrarData
                 onEditar={() => setForm(paraRascunho(e))} />
@@ -350,10 +352,13 @@ export default function Agenda() {
         </section>
       )}
 
+      </div>
+      </div>
+
       {/* Lembretes */}
       <section className="mt-10 space-y-3">
         <div>
-          <h2 className="text-lg font-semibold">Lembretes</h2>
+          <h2 className="font-display text-lg font-bold">Lembretes</h2>
           <p className="text-sm text-texto-2">Escolha como quer ser avisado dos seus compromissos.</p>
         </div>
         <CartaoCalendario />

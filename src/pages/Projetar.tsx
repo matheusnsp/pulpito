@@ -21,7 +21,7 @@ function Slide({ slide }: { slide: SlideTelao }) {
       <p className={`${porTamanho(slide.texto, 'text-[4.4vw]', 'text-[3.6vw]', 'text-[2.9vw]')} font-escritura leading-snug`}>
         {slide.texto}
       </p>
-      <p className="text-[2.4vw] font-bold text-[#AFC0FA]">{slide.referencia}</p>
+      <p className="text-[2.4vw] font-bold text-[#FFCB57]">{slide.referencia}</p>
     </div>
   )
 
@@ -31,18 +31,18 @@ function Slide({ slide }: { slide: SlideTelao }) {
       {slide.tipo === 'topico' && (
         <p className="text-[1.6vw] text-white/50">{slide.numero} de {slide.total}</p>
       )}
-      <h1 className={`${slide.tipo === 'capa' ? 'text-[6vw]' : 'text-[5vw]'} font-escritura font-semibold leading-[1.1]`}>
+      <h1 className={`${slide.tipo === 'capa' ? 'text-[6vw]' : 'text-[5vw]'} font-display font-bold leading-[1.1]`}>
         {slide.titulo}
       </h1>
       {slide.tipo === 'topico' && slide.frase && (
-        <p className="text-[2.8vw] font-bold leading-snug text-[#D9B34A]">{slide.frase}</p>
+        <p className="text-[2.8vw] font-bold leading-snug text-[#FFC233]">{slide.frase}</p>
       )}
       {texto && (
         <p className={`${porTamanho(texto, 'text-[2.8vw]', 'text-[2.3vw]', 'text-[1.9vw]')} max-w-[80vw] font-escritura leading-snug text-white/85`}>
           “{texto}”
         </p>
       )}
-      {slide.referencia && <p className="text-[2vw] font-bold text-[#AFC0FA]">{slide.referencia}</p>}
+      {slide.referencia && <p className="text-[2vw] font-bold text-[#FFCB57]">{slide.referencia}</p>}
     </div>
   )
 }
@@ -98,7 +98,7 @@ export default function Projetar() {
       className={`escuro relative h-dvh select-none text-white ${slide ? 'cursor-none bg-black' : 'bg-fundo'}`}>
       {slide ? <Slide slide={slide} /> : (
         <div className="flex h-full flex-col items-center justify-center gap-10 p-8 text-center">
-          <Marca className="text-5xl" />
+          <Marca icone className="text-5xl" />
           <div className="flex flex-col items-center gap-10 md:flex-row md:gap-16">
             <div>
               <p className="text-lg text-texto-2">Código do telão</p>
@@ -115,7 +115,7 @@ export default function Projetar() {
             <b className="text-texto">Telão</b> para digitar o código. Ou aponte a câmera para o QR Code.
           </p>
           <p className="flex items-center gap-2 text-sm text-texto-2">
-            <span className={`h-2 w-2 rounded-full ${online ? 'bg-[#5DCAA5]' : 'bg-amber-400'}`} />
+            <span className={`h-2 w-2 rounded-full ${online ? 'bg-sucesso' : 'bg-aviso'}`} />
             {online ? 'Pronto, aguardando o celular' : 'Conectando ao servidor…'}
           </p>
         </div>

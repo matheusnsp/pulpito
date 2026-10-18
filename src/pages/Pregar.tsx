@@ -100,11 +100,11 @@ function BibliaSobreposta({ inicial, podeProjetar, projetado, onProjetar, onFech
           {ref && carregado && (
             <>
               <div className="mb-2 flex flex-wrap items-center gap-2">
-                <h3 className="font-escritura text-2xl font-semibold">{nomeCap}</h3>
+                <h3 className="font-display text-2xl font-bold">{nomeCap}</h3>
                 <span className="text-sm text-texto-2">{versao}</span>
                 {trecho && (
                   <button onClick={() => onProjetar(trecho.referencia, trecho.texto)}
-                    className="botao ml-auto bg-acao/15 px-3 py-1.5 text-sm text-acao">
+                    className="botao ml-auto bg-acao/15 px-3 py-1.5 text-sm text-tinta">
                     <MonitorPlay size={16} /> Projetar {inicio}-{fim}
                   </button>
                 )}
@@ -127,7 +127,7 @@ function BibliaSobreposta({ inicial, podeProjetar, projetado, onProjetar, onFech
                       className={`rounded-xl px-3 py-1.5 text-lg leading-relaxed
                         ${podeProjetar ? 'cursor-pointer hover:bg-superficie-2' : ''}
                         ${destaque ? 'bg-acao/15 text-texto' : 'text-texto-2'}
-                        ${noTelao ? 'ring-2 ring-[#5DCAA5]' : ''}`}>
+                        ${noTelao ? 'ring-2 ring-sucesso' : ''}`}>
                       <sup className="mr-1.5 font-sans text-xs text-texto-2">{n}</sup>{texto}
                     </p>
                   )
@@ -177,7 +177,7 @@ function PainelTelao({ codigo, online, apagado, onConectar, onDesconectar, onAlt
         ) : (
           <div className="space-y-3">
             <div className="flex items-center gap-3 rounded-2xl bg-superficie-2 px-4 py-3">
-              <span className={`h-2.5 w-2.5 rounded-full ${online ? 'bg-[#5DCAA5]' : 'bg-amber-400'}`} />
+              <span className={`h-2.5 w-2.5 rounded-full ${online ? 'bg-sucesso' : 'bg-aviso'}`} />
               <span className="font-semibold">{online ? 'Telão conectado' : 'Procurando o telão…'}</span>
               <span className="ml-auto tabular-nums text-texto-2">{codigo}</span>
             </div>
@@ -204,7 +204,7 @@ function ChipVersiculo({ texto, classe, onAbrir }: { texto: string; classe: stri
   if (!ref) return <p className={`${classe} text-texto-2`}>{texto}</p>
   return (
     <button onClick={onAbrir}
-      className={`${classe} inline-flex items-center gap-2 rounded-full bg-acao/15 px-4 py-2 font-semibold text-acao hover:bg-acao/25`}>
+      className={`${classe} inline-flex items-center gap-2 rounded-full bg-acao/15 px-4 py-2 font-semibold text-tinta hover:bg-acao/25`}>
       <BookOpen size={20} /> {formatarReferencia(ref)}
     </button>
   )
@@ -364,10 +364,11 @@ export default function Pregar() {
       }
       if (['ArrowRight', 'PageDown'].includes(e.key)) ir(1)
       if (['ArrowLeft', 'PageUp'].includes(e.key)) ir(-1)
+      if (e.key === ' ' && !(e.target as HTMLElement).closest('button, input')) { e.preventDefault(); alternarCronometro() }
     }
     window.addEventListener('keydown', tecla)
     return () => window.removeEventListener('keydown', tecla)
-  }, [biblia, painelTelao, ir])
+  })
 
   function fecharBiblia() {
     setBiblia(null)
@@ -411,8 +412,8 @@ export default function Pregar() {
   const restante = total - decorrido
   const fracao = decorrido / total
   const corTempo = decorrido === 0 ? 'text-texto'
-    : fracao >= 1 ? 'text-perigo' : fracao >= 0.8 ? 'text-[#F07167]' : fracao >= 0.5 ? 'text-amber-300' : 'text-texto'
-  const corBarra = fracao >= 0.8 ? 'bg-[#F07167]' : fracao >= 0.5 ? 'bg-amber-400' : 'bg-[#5DCAA5]'
+    : fracao >= 1 ? 'text-perigo' : fracao >= 0.8 ? 'text-perigo' : fracao >= 0.5 ? 'text-aviso' : 'text-texto'
+  const corBarra = fracao >= 0.8 ? 'bg-perigo' : fracao >= 0.5 ? 'bg-aviso' : 'bg-sucesso'
   const tam = TAMANHOS[escala]
   const hora = new Date(agora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
   const topico = indice > 0 ? topicos[indice - 1] : null
@@ -420,6 +421,12 @@ export default function Pregar() {
   const noFim = indice === topicos.length && sub >= slidesDaPagina.length - 1
   const proximoESlide = sub < slidesDaPagina.length - 1
   const rotuloProximo = noFim ? 'Fim da mensagem' : proximoESlide ? 'Próximo slide' : 'Próximo tópico'
+  const proximoTopico = !proximoESlide && indice < topicos.length ? topicos[indice] : null
+
+  function irParaTopico(n: number) {
+    setIndice(n)
+    setSubEstado({ pagina: n, sub: 0 })
+  }
 
   const secoes = topico ? ([
     ['Observação', topico.observacao],
@@ -428,7 +435,7 @@ export default function Pregar() {
     ['Notas', topico.notas],
   ] as const).filter(([, v]) => v?.trim()) : []
 
-  const corTelao = !telaoOnline ? 'bg-amber-400' : telaoApagado ? 'bg-texto-2' : 'bg-[#5DCAA5]'
+  const corTelao = !telaoOnline ? 'bg-aviso' : telaoApagado ? 'bg-texto-2' : 'bg-sucesso'
 
   return (
     <div className="escuro flex h-dvh flex-col bg-fundo text-texto">
@@ -474,7 +481,7 @@ export default function Pregar() {
       <div className="px-5 pt-2 text-center">
         <button onClick={alternarCronometro} className="leading-none"
           aria-label={rodando ? 'Pausar cronômetro' : 'Iniciar cronômetro'}>
-          <span className={`block text-6xl font-bold tabular-nums tracking-tight ${corTempo}`}>
+          <span className={`block font-display text-6xl font-extrabold tabular-nums tracking-tight transition-colors md:text-7xl ${corTempo}`}>
             {restante >= 0 ? fmt(restante) : `+${fmt(restante)}`}
           </span>
         </button>
@@ -491,6 +498,23 @@ export default function Pregar() {
         <div className="mx-auto mt-4 h-1 max-w-md overflow-hidden rounded-full bg-superficie-2">
           <div className={`h-full rounded-full ${corBarra} transition-all`} style={{ width: `${Math.min(fracao, 1) * 100}%` }} />
         </div>
+
+        {/* Mapa dos tópicos: toque para pular */}
+        {topicos.length > 0 && (
+          <nav aria-label="Tópicos" className="sem-barra mx-auto mt-4 flex max-w-md gap-1.5 overflow-x-auto">
+            {[null, ...topicos].map((t, n) => (
+              <button key={t?.id ?? 'capa'} onClick={() => irParaTopico(n)}
+                aria-label={t ? `Tópico ${n}: ${t.titulo || 'Sem título'}` : 'Capa'}
+                aria-current={indice === n ? 'step' : undefined}
+                title={t ? t.titulo || 'Sem título' : mensagem.titulo}
+                className={`h-7 min-w-7 flex-1 rounded-lg text-xs font-bold tabular-nums transition-colors ${indice === n
+                  ? 'bg-acao text-acao-texto'
+                  : n < indice ? 'bg-superficie-2 text-texto-2' : 'border border-borda text-texto-2 hover:text-texto'}`}>
+                {n === 0 ? '•' : n}
+              </button>
+            ))}
+          </nav>
+        )}
       </div>
 
       {/* Conteúdo */}
@@ -509,7 +533,7 @@ export default function Pregar() {
                 {topicos.length} {topicos.length === 1 ? 'tópico' : 'tópicos'}, {mensagem.tempo_minutos} min
                 {slidesDaPagina.length > 1 && `, slide ${sub + 1} de ${slidesDaPagina.length}`}
               </p>
-              <h1 className={`${tam.titulo} font-escritura font-semibold leading-[1.1]`}>{mensagem.titulo}</h1>
+              <h1 className={`${tam.titulo} font-display font-bold leading-[1.1]`}>{mensagem.titulo}</h1>
               {mensagem.texto_base && (
                 <ChipVersiculo texto={mensagem.texto_base} classe={tam.corpo}
                   onAbrir={() => setBiblia(mensagem.texto_base)} />
@@ -524,7 +548,7 @@ export default function Pregar() {
                   Tópico {indice} de {topicos.length}
                   {slidesDaPagina.length > 1 && `, slide ${sub + 1} de ${slidesDaPagina.length}`}
                 </p>
-                <h1 className={`${tam.titulo} font-escritura font-semibold leading-[1.1]`}>
+                <h1 className={`${tam.titulo} font-display font-bold leading-[1.1]`}>
                   {topico.titulo || 'Sem título'}
                 </h1>
                 {topico.versiculo && (
@@ -534,14 +558,14 @@ export default function Pregar() {
               </div>
 
               {topico.frase_chave?.trim() && (
-                <p className={`${tam.corpo} whitespace-pre-wrap rounded-none border-l-[3px] border-ouro py-1 pl-4 font-semibold leading-relaxed text-[#F4E7BF]`}>
+                <p className={`${tam.corpo} whitespace-pre-wrap rounded-r-2xl border-l-4 border-acao bg-ouro-suave py-3 pl-4 pr-3 font-bold leading-relaxed text-[#FFE7A8]`}>
                   {topico.frase_chave}
                 </p>
               )}
 
               {secoes.map(([rotulo, valor]) => (
                 <section key={rotulo}>
-                  <h2 className="mb-1.5 text-sm font-semibold text-texto-2">{rotulo}</h2>
+                  <h2 className="rotulo mb-1.5">{rotulo}</h2>
                   <p className={`${tam.corpo} whitespace-pre-wrap leading-relaxed ${rotulo === 'Notas' ? 'text-texto-2' : 'text-texto/90'}`}>
                     {valor}
                   </p>
@@ -553,13 +577,18 @@ export default function Pregar() {
       </main>
 
       {/* Navegação */}
-      <footer className="grid grid-cols-[auto_1fr] gap-3 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
+      <footer className="mx-auto grid w-full max-w-3xl grid-cols-[auto_1fr] gap-3 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
+        {proximoTopico && (
+          <p className="col-span-2 truncate text-center text-sm text-texto-2">
+            A seguir: <b className="text-texto">{proximoTopico.titulo || 'Sem título'}</b>
+          </p>
+        )}
         <button onClick={() => ir(-1)} disabled={noInicio} aria-label="Voltar"
           className="flex h-16 w-16 items-center justify-center rounded-2xl border border-borda text-texto-2 hover:text-texto disabled:opacity-30">
           <ChevronLeft size={28} />
         </button>
         <button onClick={() => ir(1)} disabled={noFim}
-          className="flex h-16 items-center justify-center gap-2 rounded-2xl bg-texto text-lg font-bold text-fundo hover:brightness-95 disabled:opacity-30">
+          className="flex h-16 items-center justify-center gap-2 rounded-2xl bg-acao font-display text-lg font-extrabold text-acao-texto shadow-[0_10px_30px_-10px_var(--acao)] active:scale-[0.99] disabled:opacity-30 disabled:shadow-none">
           {rotuloProximo} {!noFim && <ChevronRight size={22} />}
         </button>
       </footer>

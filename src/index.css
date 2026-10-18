@@ -1,34 +1,46 @@
 @import "tailwindcss";
 
-/* Paleta da preparação (claro) */
+/*
+  Pulpito — sistema visual
+  Papel quente + âmbar. Claro para preparar, escuro para pregar.
+  --acao  = preenchimento (botões, seleção)   --tinta = texto de destaque (links, referências)
+*/
+
 :root {
-  --fundo: #F5F6F8;
+  --fundo: #F6F4EE;
   --superficie: #FFFFFF;
-  --superficie-2: #ECEEF2;
-  --borda: #DDE1E8;
-  --texto: #172033;
-  --texto-2: #5A6478;
-  --acao: #2747B8;
-  --acao-texto: #FFFFFF;
-  --ouro: #B8912E;
-  --ouro-suave: #F4ECD6;
-  --perigo: #B42318;
+  --superficie-2: #EFECE3;
+  --borda: #E4DFD2;
+  --texto: #1B1912;
+  --texto-2: #6A6557;
+  --acao: #F4B41A;
+  --acao-texto: #1B1300;
+  --tinta: #8A5C00;
+  --ouro: #E0A000;
+  --ouro-suave: #FFF2CC;
+  --perigo: #C2281C;
+  --aviso: #D98A00;
+  --sucesso: #23875A;
+  --sombra: 0 1px 2px rgb(27 25 18 / 0.04), 0 8px 24px -12px rgb(27 25 18 / 0.14);
   color-scheme: light;
 }
 
-/* Paleta do púlpito (escuro) */
 .escuro {
-  --fundo: #0E1424;
-  --superficie: #151C30;
-  --superficie-2: #1D2640;
-  --borda: #27324F;
-  --texto: #E8ECF5;
-  --texto-2: #98A2BC;
-  --acao: #7B95F2;
-  --acao-texto: #0E1424;
-  --ouro: #D9B34A;
-  --ouro-suave: rgb(217 179 74 / 0.14);
-  --perigo: #F07167;
+  --fundo: #0D0C09;
+  --superficie: #17150F;
+  --superficie-2: #221F17;
+  --borda: #2E2A20;
+  --texto: #F4F1E8;
+  --texto-2: #A59F8D;
+  --acao: #FFC233;
+  --acao-texto: #1A1200;
+  --tinta: #FFCB57;
+  --ouro: #FFC233;
+  --ouro-suave: rgb(255 194 51 / 0.12);
+  --perigo: #FF6B5E;
+  --aviso: #FFB020;
+  --sucesso: #4CC38A;
+  --sombra: 0 1px 2px rgb(0 0 0 / 0.3), 0 12px 32px -12px rgb(0 0 0 / 0.6);
   color-scheme: dark;
 }
 
@@ -41,25 +53,41 @@
   --color-texto-2: var(--texto-2);
   --color-acao: var(--acao);
   --color-acao-texto: var(--acao-texto);
+  --color-tinta: var(--tinta);
   --color-ouro: var(--ouro);
   --color-ouro-suave: var(--ouro-suave);
   --color-perigo: var(--perigo);
+  --color-aviso: var(--aviso);
+  --color-sucesso: var(--sucesso);
+  --shadow-cartao: var(--sombra);
 }
 
 @theme {
   --font-sans: "Atkinson Hyperlegible Next", system-ui, sans-serif;
+  --font-display: "Plus Jakarta Sans Variable", "Atkinson Hyperlegible Next", system-ui, sans-serif;
   --font-escritura: "Literata Variable", Georgia, serif;
+  --animate-entrar: entrar 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-subir: subir 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+
+  @keyframes entrar {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes subir {
+    from { transform: translateY(100%); }
+    to { transform: none; }
+  }
 }
 
 /* Peças reutilizáveis */
 @utility campo {
-  @apply w-full rounded-xl border border-borda bg-superficie px-3.5 py-2.5 text-texto outline-none transition-colors placeholder:text-texto-2/70 focus:border-acao;
+  @apply w-full rounded-xl border border-borda bg-superficie px-3.5 py-2.5 text-texto outline-none transition-[border-color,box-shadow] placeholder:text-texto-2/70 focus:border-acao focus:ring-4 focus:ring-acao/20;
 }
 @utility botao {
-  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 font-semibold transition disabled:pointer-events-none disabled:opacity-50;
+  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 font-semibold transition active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50;
 }
 @utility botao-primario {
-  @apply botao bg-acao text-acao-texto hover:brightness-110 active:brightness-95;
+  @apply botao bg-acao text-acao-texto shadow-[0_6px_18px_-8px_var(--acao)] hover:brightness-105;
 }
 @utility botao-secundario {
   @apply botao border border-borda bg-superficie text-texto hover:bg-superficie-2;
@@ -67,13 +95,33 @@
 @utility botao-fantasma {
   @apply botao text-texto-2 hover:bg-superficie-2 hover:text-texto;
 }
+@utility cartao {
+  @apply rounded-2xl border border-borda bg-superficie shadow-cartao;
+}
+@utility rotulo {
+  @apply text-xs font-bold uppercase tracking-[0.08em] text-texto-2;
+}
+@utility titulo-pagina {
+  @apply font-display text-3xl font-extrabold tracking-tight md:text-4xl;
+}
 
 html, body, #root { height: 100%; }
 body {
   @apply bg-fundo font-sans text-texto antialiased;
   -webkit-tap-highlight-color: transparent;
 }
+h1, h2, h3 { text-wrap: balance; }
 :focus-visible { outline: 2px solid var(--acao); outline-offset: 2px; }
+::selection { background: color-mix(in srgb, var(--acao) 35%, transparent); }
+
+/* Barra de rolagem discreta no computador */
+@media (pointer: fine) {
+  * { scrollbar-width: thin; scrollbar-color: var(--borda) transparent; }
+}
+
+/* Esconde a barra em faixas de rolagem horizontal (chips, abas) */
+.sem-barra { scrollbar-width: none; }
+.sem-barra::-webkit-scrollbar { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }

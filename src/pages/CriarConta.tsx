@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { normalizarUsuario, usuarioNovoValido, usuarioParaEmail } from '../lib/usuario'
 import Marca from '../components/Marca'
+import TelaEntrada from '../components/TelaEntrada'
 
 export default function CriarConta() {
   const { sessao } = useAuth()
@@ -41,15 +42,15 @@ export default function CriarConta() {
   }
 
   return (
-    <div className="flex min-h-full items-center justify-center px-6 py-10">
-      <div className="w-full max-w-sm">
-        <Marca className="text-4xl" />
-        <h1 className="mt-10 text-2xl font-semibold">Criar conta</h1>
+    <TelaEntrada>
+      <div>
+        <Marca icone className="text-3xl lg:hidden" />
+        <h1 className="mt-8 font-display text-3xl font-extrabold tracking-tight lg:mt-0">Criar conta</h1>
         <p className="mt-1 text-texto-2">Seu usuário é seu nome e sobrenome, separados por ponto.</p>
 
         <form onSubmit={criar} className="mt-6 space-y-4">
           <label className="block">
-            <span className="mb-1.5 block text-sm font-semibold">Usuário</span>
+            <span className="mb-1.5 block text-sm font-bold">Usuário</span>
             <input type="text" required placeholder="maria.souza" value={usuario}
               onChange={(e) => setUsuario(e.target.value)} className="campo"
               autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false} />
@@ -60,12 +61,12 @@ export default function CriarConta() {
             )}
           </label>
           <label className="block">
-            <span className="mb-1.5 block text-sm font-semibold">Senha</span>
+            <span className="mb-1.5 block text-sm font-bold">Senha</span>
             <input type="password" required autoComplete="new-password" placeholder="Pelo menos 6 caracteres"
               value={senha} onChange={(e) => setSenha(e.target.value)} className="campo" />
           </label>
           <label className="block">
-            <span className="mb-1.5 block text-sm font-semibold">Repita a senha</span>
+            <span className="mb-1.5 block text-sm font-bold">Repita a senha</span>
             <input type="password" required autoComplete="new-password"
               value={confirmacao} onChange={(e) => setConfirmacao(e.target.value)} className="campo" />
           </label>
@@ -77,9 +78,9 @@ export default function CriarConta() {
 
         <p className="mt-8 text-center text-sm text-texto-2">
           Já tem conta?{' '}
-          <Link to="/login" className="font-semibold text-acao underline-offset-4 hover:underline">Entrar</Link>
+          <Link to="/login" className="font-semibold text-tinta underline-offset-4 hover:underline">Entrar</Link>
         </p>
       </div>
-    </div>
+    </TelaEntrada>
   )
 }

@@ -1,14 +1,15 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
-  BookOpen, Check, ChevronDown, ChevronLeft, ChevronUp, CircleAlert, Clock, LoaderCircle,
-  Play, Plus, Presentation, Redo2, Trash2, Undo2,
+  BookOpen, Check, ChevronDown, ChevronLeft, ChevronUp, CircleAlert, ClipboardCopy, Clock, LoaderCircle,
+  Play, Plus, Presentation, Redo2, Share2, Trash2, Undo2,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useSalvamento } from '../lib/salvamento'
 import { useHistorico } from '../lib/historico'
 import { CAMPOS_TOPICO, type Mensagem, type Pasta, type Topico } from '../lib/tipos'
 import { parseReferencia, formatarReferencia, lerReferencia, type VersaoId } from '../lib/biblia'
+import { esbocoEmTexto } from '../lib/mensagens'
 
 type Foto = { mensagem: Mensagem; topicos: Topico[] }
 
@@ -21,6 +22,7 @@ function PreviaVersiculo({ texto }: { texto: string }) {
   const ref = parseReferencia(texto)
   const chave = ref ? `${versao}:${formatarReferencia(ref)}` : ''
   const [res, setRes] = useState<{ chave: string; texto: string } | null>(null)
+  const [inteiro, setInteiro] = useState(false)
 
   useEffect(() => {
     const r = parseReferencia(texto)
@@ -41,15 +43,20 @@ function PreviaVersiculo({ texto }: { texto: string }) {
   }, [texto, versao])
 
   if (!texto.trim()) return null
-  if (!ref) return <p className="mt-1.5 text-sm text-amber-600">Referência não reconhecida. Tente Jo 3:16-18.</p>
+  if (!ref) return <p className="mt-1.5 text-sm text-aviso">Referência não reconhecida. Tente Jo 3:16-18.</p>
   if (res?.chave !== chave) return <p className="mt-1.5 text-sm text-texto-2">Buscando {formatarReferencia(ref)}…</p>
-  if (!res.texto) return <p className="mt-1.5 text-sm text-amber-600">Versículo não encontrado.</p>
+  if (!res.texto) return <p className="mt-1.5 text-sm text-aviso">Versículo não encontrado.</p>
   return (
-    <div className="mt-2 rounded-xl bg-superficie-2 px-3.5 py-3">
-      <p className="text-sm font-semibold text-acao">
+    <div className="mt-2 rounded-xl border-l-[3px] border-acao bg-ouro-suave/60 px-3.5 py-3">
+      <p className="text-sm font-bold text-tinta">
         {formatarReferencia(ref)} <span className="font-normal text-texto-2">{versao}</span>
       </p>
-      <p className="mt-1 font-escritura leading-relaxed text-texto/90">{res.texto}</p>
+      <p className={`mt-1 font-escritura leading-relaxed text-texto/90 ${inteiro ? '' : 'line-clamp-4'}`}>{res.texto}</p>
+      {res.texto.length > 220 && (
+        <button type="button" onClick={() => setInteiro((v) => !v)} className="mt-1 text-sm font-bold text-tinta">
+          {inteiro ? 'Mostrar menos' : 'Ler tudo'}
+        </button>
+      )}
     </div>
   )
 }
@@ -74,6 +81,7 @@ export default function EditorMensagem() {
   const [pastas, setPastas] = useState<Pasta[]>([])
   const [aberto, setAberto] = useState<string | null>(null)
   const [erro, setErro] = useState('')
+  const [copiado, setCopiado] = useState(false)
 
   useEffect(() => {
     let ativo = true
@@ -207,7 +215,27 @@ export default function EditorMensagem() {
     if (f) aplicar(f)
   }
 
-  if (mensagem === undefined) return <p className="p-6 text-texto-2">Carregando…</p>
+  async function compartilharEsboco() {
+    if (!mensagem) return
+    const texto = esbocoEmTexto(mensagem, topicos)
+    if (navigator.share && matchMedia('(pointer: coarse)').matches) {
+      try { await navigator.share({ title: mensagem.titulo, text: texto }) } catch { /* cancelado */ }
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(texto)
+      setCopiado(true)
+      setTimeout(() => setCopiado(false), 2200)
+    } catch { setErro('Não foi possível copiar o esboço.') }
+  }
+
+  if (mensagem === undefined) return (
+    <div className="mx-auto max-w-3xl space-y-4 px-4 pt-16 md:px-8" aria-label="Carregando">
+      <div className="h-10 w-2/3 animate-pulse rounded-xl bg-superficie-2" />
+      <div className="h-24 animate-pulse rounded-2xl bg-superficie-2" />
+      <div className="h-16 animate-pulse rounded-2xl bg-superficie-2" />
+    </div>
+  )
   if (mensagem === null) return (
     <div className="p-6">
       <p className="mb-3">Mensagem não encontrada.</p>
@@ -222,13 +250,13 @@ export default function EditorMensagem() {
   }[status]
 
   return (
-    <div className="mx-auto max-w-3xl px-4 pb-28 pt-4 md:pt-8">
-      {/* Barra do topo */}
-      <div className="flex items-center gap-1">
+    <div className="mx-auto max-w-3xl px-4 pb-28 md:px-8">
+      {/* Barra do topo (fixa ao rolar) */}
+      <div className="sticky top-0 z-20 -mx-4 flex items-center gap-1 bg-fundo/90 px-4 py-2 backdrop-blur md:-mx-8 md:px-8 md:py-4">
         <Link to="/" className="botao-fantasma -ml-2 px-2">
-          <ChevronLeft size={20} /> Mensagens
+          <ChevronLeft size={20} /> <span className="hidden sm:inline">Mensagens</span>
         </Link>
-        <span className={`ml-auto mr-2 flex items-center gap-1.5 text-sm ${status === 'erro' ? 'text-perigo' : 'text-texto-2'}`}>
+        <span className={`ml-auto mr-1 flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${status === 'erro' ? 'bg-perigo/10 text-perigo' : 'text-texto-2'}`}>
           {indicador}
         </span>
         <button onClick={desfazerAgora} disabled={!historico.podeDesfazer}
@@ -239,24 +267,32 @@ export default function EditorMensagem() {
           aria-label="Refazer" title="Refazer (Cmd + Shift + Z)" className={iconeBotao}>
           <Redo2 size={18} />
         </button>
+        <Link to={`/pregar/${mensagem.id}`} className="botao-primario ml-1 px-3 py-2 text-sm sm:hidden">
+          <Play size={16} fill="currentColor" /> Pregar
+        </Link>
       </div>
 
       {/* Título */}
       <input value={mensagem.titulo} onChange={(e) => alterarMensagem({ titulo: e.target.value })}
         placeholder="Título da mensagem"
-        className="mt-4 w-full bg-transparent font-escritura text-4xl font-semibold leading-tight outline-none placeholder:text-texto-2/50" />
+        className="mt-2 w-full bg-transparent font-display text-2xl font-extrabold leading-tight tracking-tight outline-none placeholder:text-texto-2/50 sm:text-3xl md:text-4xl" />
 
       <div className="mt-4 flex flex-wrap gap-2">
-        <Link to={`/pregar/${mensagem.id}`} className="botao-primario">
-          <Play size={18} /> Pregar
+        <Link to={`/pregar/${mensagem.id}`} className="botao-primario hidden sm:inline-flex">
+          <Play size={18} fill="currentColor" /> Pregar
         </Link>
         <Link to={`/mensagem/${mensagem.id}/slides`} className="botao-secundario">
           <Presentation size={18} /> Slides
         </Link>
+        <button onClick={compartilharEsboco} disabled={topicos.length === 0 && !mensagem.texto_base} className="botao-secundario">
+          {copiado ? <><Check size={18} className="text-sucesso" /> Copiado</>
+            : <><span className="sm:hidden"><Share2 size={18} /></span><span className="hidden sm:inline"><ClipboardCopy size={18} /></span> Esboço</>}
+        </button>
       </div>
 
       {/* Dados da mensagem */}
-      <div className="mt-8 grid gap-4 sm:grid-cols-[minmax(0,1fr)_8rem_11rem]">
+      <div className="cartao mt-6 grid grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] gap-4 p-4">
+        <div className="col-span-2">
         <Campo rotulo="Texto base">
           <div className="relative">
             <BookOpen size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-texto-2" />
@@ -265,6 +301,7 @@ export default function EditorMensagem() {
           </div>
           <PreviaVersiculo texto={mensagem.texto_base ?? ''} />
         </Campo>
+        </div>
         <Campo rotulo="Tempo">
           <div className="relative">
             <Clock size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-texto-2" />
@@ -288,8 +325,12 @@ export default function EditorMensagem() {
 
       {/* Tópicos */}
       <div className="mt-10 flex items-baseline justify-between">
-        <h2 className="font-escritura text-2xl font-semibold">Tópicos</h2>
-        {topicos.length > 0 && <span className="text-sm text-texto-2">{topicos.length}</span>}
+        <h2 className="font-display text-2xl font-extrabold">Tópicos</h2>
+        {topicos.length > 0 && (
+          <span className="text-sm text-texto-2">
+            {topicos.length} · cerca de {Math.max(1, Math.round(mensagem.tempo_minutos / topicos.length))} min cada
+          </span>
+        )}
       </div>
 
       {topicos.length === 0 && (
@@ -301,28 +342,30 @@ export default function EditorMensagem() {
         {topicos.map((t, i) => {
           const estaAberto = aberto === t.id
           return (
-            <li key={t.id} className={`rounded-2xl border bg-superficie transition-colors ${estaAberto ? 'border-acao/40' : 'border-borda'}`}>
+            <li key={t.id} className={`rounded-2xl border bg-superficie shadow-cartao transition-colors ${estaAberto ? 'border-acao ring-4 ring-acao/15' : 'border-borda'}`}>
               <div className="flex items-center gap-3 p-3 pl-4">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-acao/12 text-sm font-bold text-acao">
+                <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-display text-sm font-extrabold ${estaAberto ? 'bg-acao text-acao-texto' : 'bg-ouro-suave text-tinta'}`}>
                   {i + 1}
                 </span>
                 <div className="min-w-0 flex-1">
                   <input value={t.titulo} placeholder="Título do tópico"
                     onChange={(e) => alterarTopico(t.id, { titulo: e.target.value })}
                     onFocus={() => setAberto(t.id)}
-                    className="w-full bg-transparent font-escritura text-xl font-semibold outline-none placeholder:text-texto-2/50" />
-                  {!estaAberto && t.versiculo && <p className="truncate text-sm text-acao">{t.versiculo}</p>}
+                    className="w-full bg-transparent font-display text-lg font-bold outline-none placeholder:text-texto-2/50 md:text-xl" />
+                  {!estaAberto && t.versiculo && <p className="truncate text-sm font-semibold text-tinta">{t.versiculo}</p>}
                 </div>
                 <div className="flex shrink-0 items-center">
-                  <button onClick={() => mover(i, -1)} disabled={i === 0} aria-label="Subir tópico" className={iconeBotao}>
+                  <button onClick={() => mover(i, -1)} disabled={i === 0} aria-label="Subir tópico" className={`${iconeBotao} ${estaAberto ? '' : 'max-sm:hidden'}`}>
                     <ChevronUp size={18} />
                   </button>
-                  <button onClick={() => mover(i, 1)} disabled={i === topicos.length - 1} aria-label="Descer tópico" className={iconeBotao}>
+                  <button onClick={() => mover(i, 1)} disabled={i === topicos.length - 1} aria-label="Descer tópico" className={`${iconeBotao} ${estaAberto ? '' : 'max-sm:hidden'}`}>
                     <ChevronDown size={18} />
                   </button>
                   <button onClick={() => setAberto(estaAberto ? null : t.id)} aria-expanded={estaAberto}
-                    className="ml-1 rounded-xl border border-borda px-3 py-1.5 text-sm font-semibold text-texto-2 hover:text-texto">
-                    {estaAberto ? 'Fechar' : 'Editar'}
+                    aria-label={estaAberto ? 'Fechar tópico' : 'Editar tópico'}
+                    className="ml-1 rounded-xl border border-borda p-1.5 text-sm font-bold text-texto-2 hover:text-texto sm:px-3">
+                    <span className="hidden sm:inline">{estaAberto ? 'Fechar' : 'Editar'}</span>
+                    <ChevronDown size={18} className={`transition-transform sm:hidden ${estaAberto ? 'rotate-180' : ''}`} />
                   </button>
                 </div>
               </div>
@@ -358,7 +401,7 @@ export default function EditorMensagem() {
       </ol>
 
       <button onClick={adicionarTopico}
-        className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-borda py-4 font-semibold text-texto-2 hover:border-acao hover:text-acao">
+        className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-borda py-4 font-bold text-texto-2 transition-colors hover:border-acao hover:bg-ouro-suave/50 hover:text-tinta">
         <Plus size={18} /> Adicionar tópico
       </button>
     </div>

@@ -8,7 +8,7 @@ export const lerTema = (): Tema => (localStorage.getItem(CHAVE) as Tema) || 'sis
 export function aplicarTema(t: Tema) {
   const escuro = t === 'escuro' || (t === 'sistema' && prefereEscuro().matches)
   document.documentElement.classList.toggle('escuro', escuro)
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', escuro ? '#0E1424' : '#F5F6F8')
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', escuro ? '#0D0C09' : '#F6F4EE')
 }
 
 export function salvarTema(t: Tema) {
