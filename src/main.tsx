@@ -14,6 +14,13 @@ import './index.css'
 
 iniciarTema()
 
+/* Tira o ?v= deixado pelo botão "Carregar última versão" */
+if (new URLSearchParams(window.location.search).has('v')) {
+  const url = new URL(window.location.href)
+  url.searchParams.delete('v')
+  window.history.replaceState(window.history.state, '', url.toString())
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>

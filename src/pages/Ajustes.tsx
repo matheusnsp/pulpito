@@ -1,11 +1,12 @@
 import { useState, type FormEvent } from 'react'
-import { Check, KeyRound, LogOut } from 'lucide-react'
+import { Check, KeyRound, LoaderCircle, LogOut, RefreshCw } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { sairDaConta } from '../lib/conta'
 import { TEMAS, lerTema, salvarTema, type Tema } from '../lib/tema'
 import { VERSOES, type VersaoId } from '../lib/biblia'
 import { emailParaUsuario, nomeDeExibicao } from '../lib/usuario'
+import { VERSAO_APP, carregarUltimaVersao } from '../lib/atualizar'
 
 
 function TrocarSenha({ email }: { email: string }) {
@@ -167,6 +168,35 @@ export default function Ajustes() {
           {VERSOES.map((v) => <option key={v.id} value={v.id}>{v.id}, {v.nome}</option>)}
         </select>
       </section>
+
+      <AtualizarApp />
     </div>
+  )
+}
+
+/* Recarrega a versão mais nova do app, apagando as cópias antigas guardadas no aparelho */
+function AtualizarApp() {
+  const [atualizando, setAtualizando] = useState(false)
+  return (
+    <section className="space-y-3">
+      <div>
+        <h2 className="font-display text-lg font-bold">Atualizar o app</h2>
+        <p className="text-sm text-texto-2">
+          Se algo parece desatualizado, isto apaga as cópias antigas guardadas neste aparelho e baixa a versão mais nova.
+          Você continua logado e suas mensagens não são afetadas.
+        </p>
+      </div>
+      <div className="cartao flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="text-sm">
+          <span className="text-texto-2">Versão deste aparelho</span>
+          <b className="block font-mono">{VERSAO_APP}</b>
+        </div>
+        <button onClick={() => { setAtualizando(true); carregarUltimaVersao() }} disabled={atualizando}
+          className="botao-secundario w-full sm:w-auto">
+          {atualizando ? <LoaderCircle size={18} className="animate-spin" /> : <RefreshCw size={18} />}
+          {atualizando ? 'Atualizando…' : 'Carregar última versão'}
+        </button>
+      </div>
+    </section>
   )
 }

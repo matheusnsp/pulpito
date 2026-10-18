@@ -3,7 +3,13 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
+/* Data e hora do build, mostradas em Ajustes para conferir se o celular está na última versão */
+const VERSAO_APP = new Date().toLocaleString('pt-BR', {
+  timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
+})
+
 export default defineConfig({
+  define: { __VERSAO_APP__: JSON.stringify(VERSAO_APP) },
   plugins: [
     react(),
     tailwindcss(),
