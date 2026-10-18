@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
-  BookOpen, Cast, ChevronDown, Clock, Timer, ChevronLeft, Maximize, Minus, MonitorPlay, Pause, Play, Plus, RotateCcw, Settings, X,
+  BookOpen, Cast, ChartNoAxesColumn, ChevronDown, Clock, Timer, ChevronLeft, Maximize, Minus, MonitorPlay, Pause, Play, Plus, RotateCcw, Settings, X,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Mensagem, Slide, Topico } from '../lib/tipos'
@@ -288,6 +288,81 @@ function VersiculoBase({ referencia, onAbrir }: { referencia: string; onAbrir: (
   )
 }
 
+/* ── Modo ensaio: tempo gasto em cada tópico ── */
+type Ensaio = { quando: string; tempos: number[] }
+const chaveEnsaio = (id: string) => `pulpito-ensaio-${id}`
+
+function ResumoEnsaio({ titulos, tempoTotalMin, tempos, anterior, onFechar, onZerar }: {
+  titulos: string[]
+  tempoTotalMin: number
+  tempos: number[]
+  anterior: Ensaio | null
+  onFechar: () => void
+  onZerar: () => void
+}) {
+  const total = tempos.reduce((a, b) => a + b, 0)
+  const ideal = (tempoTotalMin * 60_000) / Math.max(1, titulos.length - 1) // a capa não conta
+  const maior = Math.max(...tempos, ideal, 1)
+  const totalAnterior = anterior?.tempos.reduce((a, b) => a + b, 0) ?? 0
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center" onClick={onFechar}>
+      <div onClick={(e) => e.stopPropagation()}
+        className="flex max-h-[90dvh] w-full max-w-lg animate-subir flex-col rounded-t-3xl border border-borda bg-superficie sm:animate-entrar sm:rounded-3xl">
+        <div className="flex items-start gap-3 border-b border-borda p-5">
+          <div className="min-w-0 flex-1">
+            <p className="rotulo">Modo ensaio</p>
+            <h2 className="mt-1 font-display text-2xl font-extrabold">Tempo por tópico</h2>
+            <p className="mt-1 text-sm text-texto-2">
+              Total <b className="font-mono text-texto">{fmt(total)}</b> de {tempoTotalMin} min
+              {anterior && <> · ensaio anterior <b className="font-mono text-texto">{fmt(totalAnterior)}</b></>}
+            </p>
+          </div>
+          <button onClick={onFechar} aria-label="Fechar" className={iconeBotao}><X size={20} /></button>
+        </div>
+
+        <ol className="space-y-3 overflow-y-auto p-5">
+          {titulos.map((titulo, i) => {
+            const t = tempos[i] ?? 0
+            const capa = i === 0
+            const passou = !capa && t > ideal * 1.2
+            const folga = !capa && t > 0 && t < ideal * 0.6
+            const antes = anterior?.tempos[i]
+            return (
+              <li key={i}>
+                <div className="flex items-baseline gap-2 text-sm">
+                  <span className="w-5 shrink-0 font-bold text-texto-2">{capa ? '•' : i}</span>
+                  <span className="min-w-0 flex-1 truncate font-semibold">{titulo}</span>
+                  {antes !== undefined && antes !== t && (
+                    <span className={`font-mono text-xs ${t > antes ? 'text-perigo' : 'text-sucesso'}`}>
+                      {t > antes ? '+' : '−'}{fmt(Math.abs(t - antes))}
+                    </span>
+                  )}
+                  <span className={`font-mono font-bold tabular-nums ${passou ? 'text-perigo' : folga ? 'text-aviso' : ''}`}>{fmt(t)}</span>
+                </div>
+                <div className="relative mt-1.5 ml-7 h-2 overflow-hidden rounded-full bg-superficie-2">
+                  <div className={`h-full rounded-full ${passou ? 'bg-perigo' : capa ? 'bg-texto-2' : 'bg-acao'}`}
+                    style={{ width: `${(t / maior) * 100}%` }} />
+                  {!capa && <span aria-hidden className="absolute top-0 h-full w-0.5 bg-texto/60" style={{ left: `${(ideal / maior) * 100}%` }} />}
+                </div>
+              </li>
+            )
+          })}
+        </ol>
+
+        <div className="flex items-center gap-3 border-t border-borda p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+          <p className="min-w-0 flex-1 text-xs text-texto-2">
+            O traço marca o tempo ideal por tópico ({fmt(ideal)}). Tempo em vermelho passou 20% do ideal; em amarelo, ficou bem abaixo.
+          </p>
+          <button onClick={onZerar} className="botao-secundario shrink-0 px-3 py-2 text-sm">
+            <RotateCcw size={16} /> Novo ensaio
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /* ── Tela principal ── */
 export default function Pregar() {
   const { id } = useParams()
@@ -299,6 +374,13 @@ export default function Pregar() {
   const [biblia, setBiblia] = useState<string | null>(null)
   const [painelTexto, setPainelTexto] = useState(false)
   const [listaTopicos, setListaTopicos] = useState(false)
+  // Modo ensaio
+  const [tempos, setTempos] = useState<number[]>([])
+  const [resumo, setResumo] = useState<{ anterior: Ensaio | null } | null>(null)
+  const indiceAtual = useRef(0)
+  const temposRef = useRef<number[]>([])
+  const abrirResumoRef = useRef<() => void>(() => {})
+  const ultimoTique = useRef<number | null>(null)
   const [escala, setEscala] = useState(() => {
     const salvo = Number(localStorage.getItem(CHAVE_ESCALA))
     return salvo >= ESCALA_MIN && salvo <= ESCALA_MAX ? salvo : 1
@@ -365,12 +447,17 @@ export default function Pregar() {
     if (dir === 1 && sub < qtd - 1) { setSubEstado({ pagina: indice, sub: sub + 1 }); return }
     if (dir === -1 && sub > 0) { setSubEstado({ pagina: indice, sub: sub - 1 }); return }
     const novo = Math.min(Math.max(indice + dir, 0), topicos.length)
-    if (novo === indice) return
+    if (novo === indice) {
+      if (dir === 1 && temposRef.current.some((t) => t > 0)) abrirResumoRef.current()
+      return
+    }
     setIndice(novo)
     setSubEstado({ pagina: novo, sub: dir === -1 ? 999 : 0 })
   }, [slidesDaPagina.length, sub, indice, topicos.length])
 
   useEffect(() => { localStorage.setItem(CHAVE_ESCALA, String(escala)) }, [escala])
+  useEffect(() => { indiceAtual.current = indice }, [indice])
+  useEffect(() => { temposRef.current = tempos; abrirResumoRef.current = abrirResumo })
 
   useEffect(() => {
     if (codigoTelao) localStorage.setItem(CHAVE_TELAO, codigoTelao)
@@ -420,7 +507,17 @@ export default function Pregar() {
 
   // Relógio: a cada segundo parado, a cada 250ms com o cronômetro rodando
   useEffect(() => {
-    const intervalo = setInterval(() => setAgora(Date.now()), rodando ? 250 : 1000)
+    ultimoTique.current = rodando ? Date.now() : null
+    const intervalo = setInterval(() => {
+      const t = Date.now()
+      setAgora(t)
+      if (rodando && ultimoTique.current !== null) {
+        const delta = t - ultimoTique.current
+        const i = indiceAtual.current
+        setTempos((lista) => { const n = [...lista]; n[i] = (n[i] ?? 0) + delta; return n })
+      }
+      ultimoTique.current = rodando ? t : null
+    }, rodando ? 250 : 1000)
     return () => clearInterval(intervalo)
   }, [rodando])
 
@@ -501,6 +598,19 @@ export default function Pregar() {
     setRodando(false)
     setAcumulado(0)
     setIniciadoEm(null)
+    setTempos([])
+  }
+
+  /* Abre o resumo e guarda este ensaio para comparar com o próximo */
+  function abrirResumo() {
+    if (!mensagem) return
+    let anterior: Ensaio | null = null
+    try { anterior = JSON.parse(localStorage.getItem(chaveEnsaio(mensagem.id)) || 'null') } catch { /* sem ensaio */ }
+    if (tempos.some((t) => t > 0)) {
+      try { localStorage.setItem(chaveEnsaio(mensagem.id), JSON.stringify({ quando: new Date().toISOString(), tempos })) } catch { /* cheio */ }
+    }
+    setPainelTexto(false)
+    setResumo({ anterior })
   }
 
   if (mensagem === undefined) return <div className="escuro h-dvh bg-fundo p-6 text-texto-2">Carregando…</div>
@@ -610,6 +720,10 @@ export default function Pregar() {
             <button onClick={() => mudarEscala(escala + 0.1)}
               disabled={escala >= ESCALA_MAX}
               aria-label="Aumentar texto" className={`${iconeBotao} disabled:opacity-30`}><Plus size={20} /></button>
+            <span aria-hidden className="mx-1 h-6 w-px bg-borda" />
+            <button onClick={abrirResumo} className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-bold text-texto-2 hover:bg-superficie-2 hover:text-texto">
+              <ChartNoAxesColumn size={18} /> Ensaio
+            </button>
           </div>
         )}
       </header>
@@ -741,6 +855,14 @@ export default function Pregar() {
             setTelaoApagado(false)
             setVersiculoProjetado({ tipo: 'versiculo', referencia, texto, versos })
           }} />
+      )}
+
+      {resumo && (
+        <ResumoEnsaio
+          titulos={[`Capa · ${mensagem.titulo}`, ...topicos.map((t) => t.titulo || 'Sem título')]}
+          tempoTotalMin={mensagem.tempo_minutos} tempos={tempos} anterior={resumo.anterior}
+          onFechar={() => setResumo(null)}
+          onZerar={() => { zerar(); setResumo(null) }} />
       )}
 
       {painelTelao && (
