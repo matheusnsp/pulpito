@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import {
   DndContext, PointerSensor, TouchSensor, pointerWithin, useDraggable, useDroppable, useSensor, useSensors, type DragEndEvent,
   type DraggableAttributes, type DraggableSyntheticListeners,
@@ -90,6 +90,27 @@ function Arrastavel({ id, children }: {
       style={transform ? { transform: `translate3d(0, ${transform.y}px, 0)`, zIndex: 30, position: 'relative' } : undefined}>
       {children({ alca: { attributes, listeners }, sobre: isOver && !isDragging, arrastando: isDragging })}
     </div>
+  )
+}
+
+/* Título que quebra linha em vez de cortar (no celular o texto inteiro aparece). Enter não cria linha nova. */
+function TituloCrescente({ value, onChange, onFocus, placeholder, className = '' }: {
+  value: string; onChange: (v: string) => void; onFocus?: () => void; placeholder?: string; className?: string
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null)
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const ajustar = () => { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px` }
+    ajustar()
+    window.addEventListener('resize', ajustar)
+    return () => window.removeEventListener('resize', ajustar)
+  }, [value])
+  return (
+    <textarea ref={ref} rows={1} value={value} placeholder={placeholder} onFocus={onFocus}
+      onChange={(e) => onChange(e.target.value.replace(/\n/g, ' '))}
+      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur() } }}
+      className={`block resize-none overflow-hidden ${className}`} />
   )
 }
 
@@ -316,11 +337,11 @@ export default function EditorMensagem() {
       </div>
 
       {/* Título */}
-      <input value={mensagem.titulo} onChange={(e) => alterarMensagem({ titulo: e.target.value })}
+      <TituloCrescente value={mensagem.titulo} onChange={(v) => alterarMensagem({ titulo: v })}
         placeholder="Título da mensagem"
         className="mt-2 w-full bg-transparent font-display text-2xl font-extrabold leading-tight tracking-tight outline-none placeholder:text-texto-2/50 sm:text-3xl md:text-4xl" />
 
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="mt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
         <Link to={`/pregar/${mensagem.id}`} className="botao-primario hidden sm:inline-flex">
           <Play size={18} fill="currentColor" /> Pregar
         </Link>
@@ -421,10 +442,10 @@ export default function EditorMensagem() {
                   <GripVertical size={16} className="absolute opacity-0 md:group-hover/alca:opacity-100" />
                 </button>
                 <div className="min-w-0 flex-1">
-                  <input value={t.titulo} placeholder="Título do tópico"
-                    onChange={(e) => alterarTopico(t.id, { titulo: e.target.value })}
+                  <TituloCrescente value={t.titulo} placeholder="Título do tópico"
+                    onChange={(v) => alterarTopico(t.id, { titulo: v })}
                     onFocus={() => setAberto(t.id)}
-                    className="w-full bg-transparent font-display text-lg font-bold outline-none placeholder:text-texto-2/50 md:text-xl" />
+                    className="w-full bg-transparent font-display text-lg font-bold leading-snug outline-none placeholder:text-texto-2/50 md:text-xl" />
                   {!estaAberto && t.versiculo && <p className="truncate text-sm font-semibold text-tinta">{t.versiculo}</p>}
                 </div>
                 <div className="flex shrink-0 items-center">

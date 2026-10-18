@@ -13,7 +13,8 @@ const ITENS = [
   { para: '/ajustes', rotulo: 'Ajustes', Icone: Settings, fim: false },
 ]
 
-/* Telas que já têm a própria barra de topo no celular */
+/* Telas de edição: no celular têm a própria barra de topo e escondem a barra de baixo,
+   para sobrar espaço e os botões da tela não ficarem atrás dela */
 const SEM_TOPO = [/^\/mensagem\//]
 
 export function Avatar({ nome, className = '' }: { nome: string; className?: string }) {
@@ -86,7 +87,7 @@ export default function Layout() {
             <Link to="/ajustes" aria-label="Sua conta"><Avatar nome={nome} className="h-9 w-9 text-sm" /></Link>
           </header>
         )}
-        <main className={`flex-1 overflow-auto pb-28 md:pb-0 ${semTopo ? 'pt-[env(safe-area-inset-top)] md:pt-0' : ''}`}>
+        <main className={`flex-1 overflow-auto md:pb-0 ${semTopo ? 'pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] md:pt-0' : 'pb-28'}`}>
           <Suspense fallback={<div className="flex h-40 items-center justify-center"><span className="h-7 w-7 animate-spin rounded-full border-[3px] border-borda border-t-acao" /></div>}>
             <Outlet />
           </Suspense>
@@ -94,7 +95,7 @@ export default function Layout() {
       </div>
 
       {/* Celular: barra flutuante embaixo, ao alcance do polegar */}
-      <nav className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-20 grid grid-cols-4 gap-1 rounded-[1.4rem] border border-borda bg-superficie/90 p-1.5 shadow-cartao backdrop-blur-xl md:hidden">
+      {!semTopo && <nav className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-20 grid grid-cols-4 gap-1 rounded-[1.4rem] border border-borda bg-superficie/90 p-1.5 shadow-cartao backdrop-blur-xl md:hidden">
         {ITENS.map(({ para, rotulo, Icone, fim }) => (
           <NavLink key={para} to={para} end={fim}
             className={({ isActive }) => `flex flex-col items-center gap-0.5 rounded-2xl py-2 text-[11px] font-bold transition-colors ${isActive ? 'bg-acao text-acao-texto' : 'text-texto-2 active:bg-superficie-2'}`}>
@@ -106,7 +107,7 @@ export default function Layout() {
             )}
           </NavLink>
         ))}
-      </nav>
+      </nav>}
     </div>
   )
 }

@@ -22,6 +22,10 @@ const CORES_TEXTO = ['#ffffff', '#000000', '#fde68a', '#7dd3fc', '#fca5a5']
 const CAMPOS_SLIDE = ['topico_id', 'ordem', 'titulo', 'subtitulo', 'texto', 'fundo', 'estilo'] as const
 const versaoAtual = () => (localStorage.getItem('pulpito-versao') as VersaoId) || 'ARA'
 const botaoPequeno = 'botao-secundario px-3 py-1.5 text-sm'
+/* Ferramentas em linha (rolam para o lado no celular) */
+const ferramenta = 'botao-secundario shrink-0 px-3 py-2 text-sm sm:py-1.5'
+/* Ações empilhadas no celular: ícone em cima, nome embaixo */
+const acaoSlide = 'botao-secundario flex-col gap-0.5 px-1 py-2 text-[11px] sm:flex-row sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm'
 const iconeBotao = 'flex h-9 w-9 items-center justify-center rounded-xl text-texto-2 hover:bg-superficie-2 hover:text-texto disabled:opacity-25'
 const diferente = (a: unknown, b: unknown) => JSON.stringify(a) !== JSON.stringify(b)
 
@@ -611,26 +615,28 @@ export default function EditorSlides() {
         </button>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
+      <div className="mt-3 flex flex-col gap-3 sm:mt-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
-          <h1 className="font-display text-3xl font-bold">Slides</h1>
-          <p className="truncate text-texto-2">{mensagem.titulo}</p>
+          <h1 className="font-display text-2xl font-bold sm:text-3xl">Slides</h1>
+          <p className="truncate text-sm text-texto-2 sm:text-base">{mensagem.titulo}</p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <button onClick={() => setPainelImportar((v) => !v)} className="botao-secundario">
+        <div className="grid grid-cols-3 gap-2 sm:flex">
+          <button onClick={() => setPainelImportar((v) => !v)} className="botao-secundario px-2 sm:px-4">
             <Upload size={18} /> Importar
           </button>
           <div className="relative">
             <button onClick={() => setMenuExportar((v) => !v)} disabled={!slides.length || !!exportando}
-              aria-expanded={menuExportar} className="botao-secundario">
+              aria-expanded={menuExportar} className="botao-secundario w-full px-2 sm:px-4">
               {exportando
                 ? <><LoaderCircle size={18} className="animate-spin" /> {exportando}</>
                 : <><Download size={18} /> Exportar</>}
             </button>
             {menuExportar && (
               <>
-                <div className="fixed inset-0 z-30" onClick={() => setMenuExportar(false)} />
-                <div className="absolute right-0 top-full z-40 mt-2 w-64 animate-entrar rounded-2xl border border-borda bg-superficie p-1.5 shadow-xl">
+                <div className="fixed inset-0 z-30 bg-black/40 sm:bg-transparent" onClick={() => setMenuExportar(false)} />
+                {/* Celular: folha embaixo, ao alcance do polegar. Computador: menu suspenso */}
+                <div className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 animate-subir rounded-3xl border border-borda bg-superficie p-2 shadow-xl sm:absolute sm:inset-x-auto sm:bottom-auto sm:right-0 sm:top-full sm:mt-2 sm:w-64 sm:animate-entrar sm:rounded-2xl sm:p-1.5">
+                  <p className="rotulo px-3 pb-1 pt-2 sm:hidden">Exportar slides</p>
                   <button onClick={() => exportar('pptx')} className="flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-superficie-2">
                     <Presentation size={18} className="mt-0.5 shrink-0 text-tinta" />
                     <span><b className="block text-sm">PowerPoint (.pptx)</b><span className="text-xs text-texto-2">Com suas anotações nas notas do apresentador</span></span>
@@ -643,7 +649,7 @@ export default function EditorSlides() {
               </>
             )}
           </div>
-          <Link to={`/pregar/${mensagem.id}`} className="botao-primario">
+          <Link to={`/pregar/${mensagem.id}`} className="botao-primario px-2 sm:px-4">
             <Play size={18} /> Pregar
           </Link>
         </div>
@@ -672,15 +678,15 @@ export default function EditorSlides() {
               <p className="mt-1 text-texto-2">Traz só os textos, para você aplicar o visual do Pulpito.</p>
             </div>
           </div>
-          <div className="flex flex-wrap items-end gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
             <Campo rotulo="Os slides vão aparecer em">
-              <select value={destinoImport} onChange={(e) => setDestinoImport(e.target.value)} className="campo w-auto">
+              <select value={destinoImport} onChange={(e) => setDestinoImport(e.target.value)} className="campo sm:w-auto">
                 {opcoesTopico}
               </select>
             </Campo>
             <input ref={arquivoImport} type="file" multiple accept=".pdf,.pptx,image/*" className="hidden"
               onChange={(e) => { importar(e.target.files); e.target.value = '' }} />
-            <button onClick={() => arquivoImport.current?.click()} disabled={!!importando} className="botao-primario">
+            <button onClick={() => arquivoImport.current?.click()} disabled={!!importando} className="botao-primario w-full sm:w-auto">
               {importando ? <LoaderCircle size={18} className="animate-spin" /> : <Upload size={18} />}
               {importando ?? 'Escolher arquivos'}
             </button>
@@ -740,13 +746,13 @@ export default function EditorSlides() {
 
           <div className="mt-3 grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
             {/* Miniaturas */}
-            <aside className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2 lg:mx-0 lg:max-h-[80dvh] lg:flex-col lg:overflow-y-auto lg:overflow-x-visible lg:px-0">
+            <aside className="sem-barra -mx-4 flex snap-x gap-2.5 overflow-x-auto px-4 pb-2 sm:gap-3 lg:mx-0 lg:max-h-[80dvh] lg:flex-col lg:overflow-y-auto lg:overflow-x-visible lg:px-0">
               {slides.map((s, i) => {
                 const marcado = !!selecao?.has(s.id)
                 const destaque = selecao ? marcado : s.id === sel?.id
                 return (
                   <button key={s.id} onClick={(e) => clicarMiniatura(s, e)} aria-pressed={selecao ? marcado : undefined}
-                    className={`relative w-40 shrink-0 select-none rounded-xl p-1 text-left transition lg:w-full ${destaque
+                    className={`relative w-32 shrink-0 select-none sm:w-40 rounded-xl p-1 text-left transition lg:w-full ${destaque
                       ? 'bg-superficie ring-2 ring-acao' : 'ring-1 ring-borda hover:ring-texto-2'}`}>
                     <SlideVisual slide={s} className={`rounded-lg ${selecao && !marcado ? 'opacity-60' : ''}`} />
                     {selecao && (
@@ -763,7 +769,7 @@ export default function EditorSlides() {
               })}
               {!selecao && (
                 <button onClick={() => inserirDepois({})}
-                  className="flex w-40 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-dashed border-borda py-4 text-sm font-semibold text-texto-2 hover:border-acao hover:text-tinta lg:w-full">
+                  className="flex w-24 shrink-0 flex-col items-center sm:w-40 sm:flex-row justify-center gap-1.5 rounded-xl border border-dashed border-borda py-4 text-sm font-semibold text-texto-2 hover:border-acao hover:text-tinta lg:w-full">
                   <Plus size={16} /> Slide
                 </button>
               )}
@@ -779,19 +785,45 @@ export default function EditorSlides() {
                     onConfirmar={(el) => salvarElementos(elementos.map((x) => (x.id === el.id ? el : x)))} />
                 </div>
 
+                {/* Ações do slide: no celular, quatro botões iguais logo abaixo da prévia */}
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                  <div className="grid grid-cols-4 gap-1.5 sm:flex sm:gap-2">
+                    <button onClick={() => mover(-1)} disabled={iSel === 0} className={acaoSlide}>
+                      <ArrowUp size={16} /> Antes
+                    </button>
+                    <button onClick={() => mover(1)} disabled={iSel === slides.length - 1} className={acaoSlide}>
+                      <ArrowDown size={16} /> Depois
+                    </button>
+                    <button onClick={() => inserirDepois({ ...sel })} className={acaoSlide}>
+                      <Copy size={16} /> Duplicar
+                    </button>
+                    <button onClick={excluir} className={`${acaoSlide} hover:text-perigo`}>
+                      <Trash2 size={16} /> Excluir
+                    </button>
+                  </div>
+                  <label className="flex items-center gap-2 text-sm text-texto-2 sm:ml-auto">
+                    <span className="shrink-0">Aparece em</span>
+                    <select value={sel.topico_id ?? ''} className="campo min-w-0 flex-1 py-1.5 sm:w-auto sm:flex-none"
+                      onChange={(e) => alterar(sel.id, { topico_id: e.target.value || null })}>
+                      {opcoesTopico}
+                    </select>
+                  </label>
+                </div>
+
                 {/* Elementos: adicionar e editar o selecionado */}
                 <div className="rounded-2xl border border-borda bg-superficie p-3">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="rotulo mr-1">Adicionar</span>
+                  <span className="rotulo mb-2 block sm:hidden">Adicionar ao slide</span>
+                  <div className="sem-barra -mx-3 flex items-center gap-1.5 overflow-x-auto px-3 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
+                    <span className="rotulo mr-1 hidden sm:inline">Adicionar</span>
                     <input ref={arquivoElemento} type="file" accept="image/*" className="hidden"
                       onChange={(e) => { const f = e.target.files?.[0]; if (f) adicionarFotoElemento(f); e.target.value = '' }} />
-                    <button onClick={() => arquivoElemento.current?.click()} disabled={enviando} className={botaoPequeno}><ImagePlus size={15} /> Foto</button>
-                    <button onClick={() => adicionarElemento('seta')} className={botaoPequeno}><MoveRight size={15} /> Seta</button>
-                    <button onClick={() => adicionarElemento('circulo')} className={botaoPequeno}><Circle size={15} /> Círculo</button>
-                    <button onClick={() => adicionarElemento('retangulo')} className={botaoPequeno}><Square size={15} /> Retângulo</button>
-                    <button onClick={() => adicionarElemento('linha')} className={botaoPequeno}><Minus size={15} /> Linha</button>
-                    <button onClick={() => adicionarElemento('icone')} className={botaoPequeno}><Shapes size={15} /> Ícone</button>
-                    <button onClick={() => adicionarElemento('texto')} className={botaoPequeno}><TypeIcon size={15} /> Texto</button>
+                    <button onClick={() => arquivoElemento.current?.click()} disabled={enviando} className={ferramenta}><ImagePlus size={15} /> Foto</button>
+                    <button onClick={() => adicionarElemento('seta')} className={ferramenta}><MoveRight size={15} /> Seta</button>
+                    <button onClick={() => adicionarElemento('circulo')} className={ferramenta}><Circle size={15} /> Círculo</button>
+                    <button onClick={() => adicionarElemento('retangulo')} className={ferramenta}><Square size={15} /> Retângulo</button>
+                    <button onClick={() => adicionarElemento('linha')} className={ferramenta}><Minus size={15} /> Linha</button>
+                    <button onClick={() => adicionarElemento('icone')} className={ferramenta}><Shapes size={15} /> Ícone</button>
+                    <button onClick={() => adicionarElemento('texto')} className={ferramenta}><TypeIcon size={15} /> Texto</button>
                   </div>
 
                   {elAtual && (
@@ -825,17 +857,17 @@ export default function EditorSlides() {
                             opcoes={[{ valor: 'contorno', rotulo: 'Contorno' }, { valor: 'cheio', rotulo: 'Preenchido' }]}
                             onChange={(v) => mudarElemento({ preenchido: v === 'cheio' })} />
                         )}
-                        <label className="flex items-center gap-2 text-sm text-texto-2">
+                        <label className="flex w-full items-center gap-2 text-sm text-texto-2 sm:w-auto">
                           Girar
                           <input type="range" min={-180} max={180} step={5} value={elAtual.rot ?? 0}
-                            onChange={(e) => mudarElemento({ rot: Number(e.target.value) })} className="w-28 accent-[var(--acao)]" />
+                            onChange={(e) => mudarElemento({ rot: Number(e.target.value) })} className="min-w-0 flex-1 accent-[var(--acao)] sm:w-28 sm:flex-none" />
                         </label>
                       </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        <button onClick={() => ordemElemento('frente')} className={botaoPequeno}><ArrowUp size={15} /> Pra frente</button>
-                        <button onClick={() => ordemElemento('tras')} className={botaoPequeno}><ArrowDown size={15} /> Pra trás</button>
-                        <button onClick={() => { const c = { ...elAtual, id: crypto.randomUUID(), x: elAtual.x + 3, y: elAtual.y + 3 }; salvarElementos([...elementos, c]); setElSel(c.id) }} className={botaoPequeno}><Copy size={15} /> Duplicar</button>
-                        <button onClick={() => { salvarElementos(elementos.filter((x) => x.id !== elAtual.id)); setElSel(null) }} className={`${botaoPequeno} hover:text-perigo`}><Trash2 size={15} /> Excluir</button>
+                      <div className="grid grid-cols-4 gap-1.5 sm:flex sm:flex-wrap">
+                        <button onClick={() => ordemElemento('frente')} className={acaoSlide}><ArrowUp size={15} /> Frente</button>
+                        <button onClick={() => ordemElemento('tras')} className={acaoSlide}><ArrowDown size={15} /> Trás</button>
+                        <button onClick={() => { const c = { ...elAtual, id: crypto.randomUUID(), x: elAtual.x + 3, y: elAtual.y + 3 }; salvarElementos([...elementos, c]); setElSel(c.id) }} className={acaoSlide}><Copy size={15} /> Duplicar</button>
+                        <button onClick={() => { salvarElementos(elementos.filter((x) => x.id !== elAtual.id)); setElSel(null) }} className={`${acaoSlide} hover:text-perigo`}><Trash2 size={15} /> Excluir</button>
                       </div>
                     </div>
                   )}
@@ -855,29 +887,8 @@ export default function EditorSlides() {
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                  <button onClick={() => mover(-1)} disabled={iSel === 0} className={botaoPequeno}>
-                    <ArrowUp size={16} /> Antes
-                  </button>
-                  <button onClick={() => mover(1)} disabled={iSel === slides.length - 1} className={botaoPequeno}>
-                    <ArrowDown size={16} /> Depois
-                  </button>
-                  <button onClick={() => inserirDepois({ ...sel })} className={botaoPequeno}>
-                    <Copy size={16} /> Duplicar
-                  </button>
-                  <button onClick={excluir} className={`${botaoPequeno} hover:text-perigo`}>
-                    <Trash2 size={16} /> Excluir
-                  </button>
-                  <label className="ml-auto flex items-center gap-2 text-sm text-texto-2">
-                    Aparece em
-                    <select value={sel.topico_id ?? ''} className="campo w-auto py-1.5"
-                      onChange={(e) => alterar(sel.id, { topico_id: e.target.value || null })}>
-                      {opcoesTopico}
-                    </select>
-                  </label>
-                </div>
 
-                <div className="grid gap-6 md:grid-cols-2">
+                <div className="grid grid-cols-[minmax(0,1fr)] gap-6 md:grid-cols-2">
                   {/* Textos */}
                   <div className="space-y-4">
                     <Campo rotulo="Título">

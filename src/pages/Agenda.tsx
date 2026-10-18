@@ -152,7 +152,7 @@ function FormEvento({ inicial, mensagens, onSalvo, onExcluido, onFechar }: {
               <Trash2 size={18} /> Excluir
             </button>
           )}
-          <button disabled={salvando} className="botao-primario ml-auto px-6">
+          <button disabled={salvando} className="botao-primario flex-1 px-6 py-3 sm:ml-auto sm:flex-none sm:py-2.5">
             {salvando ? 'Salvando…' : 'Salvar'}
           </button>
         </div>
