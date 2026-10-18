@@ -1,3 +1,4 @@
+import AvisoDeslizante from '../components/AvisoDeslizante'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import {
   Check, ChevronDown, ChevronLeft, ChevronRight, CloudDownload, Copy, Highlighter, Minus, Plus, Search,
@@ -495,9 +496,11 @@ export default function Biblia() {
       )}
 
       {aviso && (
-        <div role="status" className="fixed left-1/2 top-6 z-50 -translate-x-1/2 animate-entrar rounded-full bg-texto px-4 py-2 text-sm font-bold text-fundo shadow-xl">
+        <AvisoDeslizante key={aviso} onDispensar={() => setAviso('')}
+          posicao="fixed inset-x-0 top-[max(1.5rem,env(safe-area-inset-top))] z-50 flex justify-center px-4"
+          className="rounded-full bg-texto px-4 py-2 text-sm font-bold text-fundo shadow-xl">
           {aviso}
-        </div>
+        </AvisoDeslizante>
       )}
 
       {buscaPalavras && (

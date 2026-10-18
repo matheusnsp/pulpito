@@ -1,3 +1,4 @@
+import AvisoDeslizante from '../components/AvisoDeslizante'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
@@ -283,6 +284,17 @@ export default function Mensagens() {
     }, TEMPO_DESFAZER)
     pendente.current = { m, timer }
     setExcluida(m)
+  }
+
+  /* Arrastou o aviso para fora: apaga já, sem esperar o tempo */
+  function confirmarExclusao() {
+    const p = pendente.current
+    if (p) {
+      clearTimeout(p.timer)
+      apagarDeVez(p.m)
+    }
+    pendente.current = null
+    setExcluida(null)
   }
 
   function desfazerExclusao() {
@@ -634,8 +646,9 @@ export default function Mensagens() {
 
       {/* Aviso de exclusão com Desfazer */}
       {excluida && (
-        <div role="status"
-          className="fixed bottom-[calc(6.25rem+env(safe-area-inset-bottom))] left-4 right-[5.5rem] z-40 flex animate-entrar items-center gap-3 rounded-2xl bg-texto px-4 py-3 text-fundo shadow-xl md:bottom-6 md:left-1/2 md:right-auto md:w-[26rem] md:-translate-x-1/2">
+        <AvisoDeslizante key={excluida.id} onDispensar={confirmarExclusao}
+          posicao="fixed bottom-[calc(6.25rem+env(safe-area-inset-bottom))] left-4 right-[5.5rem] z-40 md:bottom-6 md:left-1/2 md:right-auto md:w-[26rem] md:-translate-x-1/2"
+          className="flex items-center gap-3 rounded-2xl bg-texto px-4 py-3 text-fundo shadow-xl">
           <Trash2 size={18} className="shrink-0 opacity-70" />
           <span className="min-w-0 flex-1 truncate text-sm">
             <b className="font-display">{excluida.titulo || 'Sem título'}</b> foi excluída
@@ -643,7 +656,7 @@ export default function Mensagens() {
           <button onClick={desfazerExclusao} className="shrink-0 rounded-lg px-2 py-1 text-sm font-bold text-acao hover:opacity-80">
             Desfazer
           </button>
-        </div>
+        </AvisoDeslizante>
       )}
 
       <DragOverlay>

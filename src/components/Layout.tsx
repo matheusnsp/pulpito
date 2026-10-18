@@ -5,6 +5,7 @@ import { useAuth } from '../lib/auth'
 import { emailParaUsuario, nomeDeExibicao } from '../lib/usuario'
 import { criarMensagem } from '../lib/mensagens'
 import Marca from './Marca'
+import Tutorial from './Tutorial'
 
 const ITENS = [
   { para: '/', rotulo: 'Mensagens', Icone: NotebookPen, fim: true },
@@ -95,6 +96,8 @@ export default function Layout() {
       </div>
 
       {/* Celular: barra flutuante embaixo, ao alcance do polegar */}
+      <Tutorial />
+
       {!semTopo && <nav className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-20 grid grid-cols-4 gap-1 rounded-[1.4rem] border border-borda bg-superficie/90 p-1.5 shadow-cartao backdrop-blur-xl md:hidden">
         {ITENS.map(({ para, rotulo, Icone, fim }) => (
           <NavLink key={para} to={para} end={fim}

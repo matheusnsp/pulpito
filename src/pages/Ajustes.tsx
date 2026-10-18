@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Check, KeyRound, LoaderCircle, LogOut, RefreshCw } from 'lucide-react'
+import { Check, GraduationCap, KeyRound, LoaderCircle, LogOut, RefreshCw } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { sairDaConta } from '../lib/conta'
@@ -7,6 +7,7 @@ import { TEMAS, lerTema, salvarTema, type Tema } from '../lib/tema'
 import { VERSOES, type VersaoId } from '../lib/biblia'
 import { emailParaUsuario, nomeDeExibicao } from '../lib/usuario'
 import { VERSAO_APP, carregarUltimaVersao } from '../lib/atualizar'
+import { abrirTutorial } from '../lib/tutorial'
 
 
 function TrocarSenha({ email }: { email: string }) {
@@ -167,6 +168,16 @@ export default function Ajustes() {
         <select value={versao} onChange={(e) => mudarVersao(e.target.value as VersaoId)} className="campo">
           {VERSOES.map((v) => <option key={v.id} value={v.id}>{v.id}, {v.nome}</option>)}
         </select>
+      </section>
+
+      <section className="space-y-3">
+        <div>
+          <h2 className="font-display text-lg font-bold">Tutorial</h2>
+          <p className="text-sm text-texto-2">Reveja como funcionam as mensagens, os slides, o modo pregação e o telão.</p>
+        </div>
+        <button onClick={abrirTutorial} className="botao-secundario w-full sm:w-auto">
+          <GraduationCap size={18} /> Ver tutorial
+        </button>
       </section>
 
       <AtualizarApp />
