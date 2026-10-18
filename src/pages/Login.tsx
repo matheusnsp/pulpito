@@ -59,6 +59,9 @@ export default function Login() {
           Ainda não tem conta?{' '}
           <Link to="/criar-conta" className="font-semibold text-acao underline-offset-4 hover:underline">Criar conta</Link>
         </p>
+        <p className="mt-3 text-center text-sm text-texto-2">
+          Esqueceu a senha? Peça para quem administra o Pulpito redefinir.
+        </p>
       </div>
     </div>
   )

@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import { LogOut } from 'lucide-react'
+import { useState, type FormEvent } from 'react'
+import { Check, KeyRound, LogOut } from 'lucide-react'
+import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { sairDaConta } from '../lib/conta'
 import { lerTema, salvarTema, type Tema } from '../lib/tema'
@@ -12,9 +13,75 @@ const TEMAS: { valor: Tema; rotulo: string }[] = [
   { valor: 'escuro', rotulo: 'Escuro' },
 ]
 
+function TrocarSenha({ email }: { email: string }) {
+  const [atual, setAtual] = useState('')
+  const [nova, setNova] = useState('')
+  const [confirmacao, setConfirmacao] = useState('')
+  const [erro, setErro] = useState('')
+  const [pronto, setPronto] = useState(false)
+  const [enviando, setEnviando] = useState(false)
+
+  async function trocar(e: FormEvent) {
+    e.preventDefault()
+    setErro('')
+    setPronto(false)
+    if (nova.length < 6) { setErro('A nova senha precisa ter pelo menos 6 caracteres.'); return }
+    if (nova !== confirmacao) { setErro('As duas senhas novas não são iguais.'); return }
+    if (nova === atual) { setErro('A nova senha é igual à atual.'); return }
+
+    setEnviando(true)
+    // Confirma a senha atual antes de trocar
+    const conferir = await supabase.auth.signInWithPassword({ email, password: atual })
+    if (conferir.error) {
+      setEnviando(false)
+      setErro('A senha atual está incorreta.')
+      return
+    }
+    const { error } = await supabase.auth.updateUser({ password: nova })
+    setEnviando(false)
+    if (error) { setErro('Não foi possível alterar a senha. Tente de novo.'); return }
+    setAtual('')
+    setNova('')
+    setConfirmacao('')
+    setPronto(true)
+  }
+
+  return (
+    <form onSubmit={trocar} className="space-y-4 rounded-2xl border border-borda bg-superficie p-4">
+      <label className="block">
+        <span className="mb-1.5 block text-sm font-semibold text-texto-2">Senha atual</span>
+        <input type="password" required autoComplete="current-password" value={atual}
+          onChange={(e) => setAtual(e.target.value)} className="campo" />
+      </label>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-semibold text-texto-2">Nova senha</span>
+          <input type="password" required autoComplete="new-password" placeholder="Pelo menos 6 caracteres"
+            value={nova} onChange={(e) => setNova(e.target.value)} className="campo" />
+        </label>
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-semibold text-texto-2">Repita a nova senha</span>
+          <input type="password" required autoComplete="new-password"
+            value={confirmacao} onChange={(e) => setConfirmacao(e.target.value)} className="campo" />
+        </label>
+      </div>
+      {erro && <p role="alert" className="text-sm text-perigo">{erro}</p>}
+      {pronto && (
+        <p role="status" className="flex items-center gap-1.5 text-sm font-semibold text-acao">
+          <Check size={16} /> Senha alterada
+        </p>
+      )}
+      <button disabled={enviando} className="botao-secundario">
+        <KeyRound size={18} /> {enviando ? 'Alterando…' : 'Alterar senha'}
+      </button>
+    </form>
+  )
+}
+
 export default function Ajustes() {
   const { sessao } = useAuth()
-  const usuario = emailParaUsuario(sessao?.user.email)
+  const email = sessao?.user.email ?? ''
+  const usuario = emailParaUsuario(email)
   const nome = nomeDeExibicao(usuario)
   const iniciais = nome.split(' ').map((p) => p[0]).slice(0, 2).join('')
   const [tema, setTema] = useState<Tema>(lerTema)
@@ -61,6 +128,14 @@ export default function Ajustes() {
 
       <section className="space-y-3">
         <div>
+          <h2 className="text-lg font-semibold">Senha</h2>
+          <p className="text-sm text-texto-2">Para trocar, confirme primeiro a senha que você usa hoje.</p>
+        </div>
+        {email && <TrocarSenha email={email} />}
+      </section>
+
+      <section className="space-y-3">
+        <div>
           <h2 className="text-lg font-semibold">Aparência</h2>
           <p className="text-sm text-texto-2">O modo pregação e o telão são sempre escuros.</p>
         </div>
@@ -82,7 +157,7 @@ export default function Ajustes() {
           <p className="text-sm text-texto-2">Versão usada no editor, no modo pregação e no telão.</p>
         </div>
         <select value={versao} onChange={(e) => mudarVersao(e.target.value as VersaoId)} className="campo">
-          {VERSOES.map((v) => <option key={v.id} value={v.id}>{v.id} · {v.nome}</option>)}
+          {VERSOES.map((v) => <option key={v.id} value={v.id}>{v.id}, {v.nome}</option>)}
         </select>
       </section>
     </div>
