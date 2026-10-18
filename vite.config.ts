@@ -9,7 +9,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'prompt',
-      includeAssets: ['favicon.ico', 'apple-touch-icon-180x180.png', 'logo.svg'],
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'apple-touch-icon-180x180.png', 'logo.svg'],
       manifest: {
         name: 'Pulpito',
         short_name: 'Pulpito',
