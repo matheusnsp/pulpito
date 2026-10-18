@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
-  BookOpen, ChevronDown, ChevronLeft, ChevronRight, Maximize, Minus, MonitorPlay, Pause, Play, Plus, RotateCcw, Type, X,
+  BookOpen, Cast, ChevronDown, ChevronLeft, ChevronRight, Maximize, Minus, MonitorPlay, Pause, Play, Plus, RotateCcw, Type, X,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Mensagem, Slide, Topico } from '../lib/tipos'
@@ -239,7 +239,7 @@ function VersiculoBase({ referencia, onAbrir }: { referencia: string; onAbrir: (
   const ref = parseReferencia(referencia)
   const chave = ref ? `${versaoAtual()}:${formatarReferencia(ref)}` : ''
   const [res, setRes] = useState<{ chave: string; texto: string } | null>(null)
-  const [aberto, setAberto] = useState(() => localStorage.getItem(CHAVE_VERSICULO_ABERTO) !== 'nao')
+  const [aberto, setAberto] = useState(() => localStorage.getItem(CHAVE_VERSICULO_ABERTO) === 'sim')
 
   useEffect(() => {
     const r = parseReferencia(referencia)
@@ -555,30 +555,51 @@ export default function Pregar() {
         <div className="pointer-events-none fixed inset-0 z-30 animate-pulse border-[6px] border-perigo" />
       )}
 
-      {/* Topo */}
-      <header className="relative flex items-center justify-between px-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+      {/* Topo: sair, hora + cronômetro, transmitir e ferramentas */}
+      <header className="relative z-10 flex items-center gap-1.5 px-2 pt-[max(0.6rem,env(safe-area-inset-top))] md:px-4">
         <Link to={`/mensagem/${mensagem.id}`} aria-label="Sair do modo pregação" className={iconeBotao}>
-          <X size={22} />
+          <ChevronLeft size={24} />
         </Link>
 
-        <button onClick={() => setPainelTelao(true)}
-          className="flex items-center gap-2 rounded-full border border-borda px-3.5 py-1.5 text-sm font-semibold text-texto-2 hover:text-texto">
-          {codigoTelao ? <span className={`h-2 w-2 rounded-full ${corTelao}`} /> : <MonitorPlay size={16} />}
-          Telão
-        </button>
-
-        <div className="flex">
-          <button onClick={alternarTelaCheia} aria-label="Tela cheia" title="Tela cheia (F)" className={`${iconeBotao} max-md:hidden`}>
-            <Maximize size={20} />
+        <div className="flex flex-1 items-center justify-center gap-1.5">
+          <div className="flex min-w-[4.6rem] flex-col items-center rounded-xl bg-superficie-2 px-2.5 py-1">
+            <span className="text-[8px] font-bold uppercase tracking-[0.14em] text-texto-2">Hora atual</span>
+            <span className="font-display text-lg font-extrabold leading-tight tabular-nums">{hora}</span>
+          </div>
+          <button onClick={alternarCronometro} aria-label={rodando ? 'Pausar cronômetro' : 'Iniciar cronômetro'}
+            title="Iniciar ou pausar (espaço)"
+            className={`flex min-w-[5.6rem] flex-col items-center rounded-xl px-2.5 py-1 transition-colors ${pilulaTempo}`}>
+            <span className="flex items-center gap-1 text-[8px] font-bold uppercase tracking-[0.14em] opacity-80">
+              {rodando ? <Pause size={8} fill="currentColor" /> : <Play size={8} fill="currentColor" />}
+              {fase === 'estourou' ? 'Estourou' : 'Mensagem'}
+            </span>
+            <span className="font-display text-lg font-extrabold leading-tight tabular-nums">
+              {restante >= 0 ? fmt(restante) : `+${fmt(restante)}`}
+            </span>
           </button>
-          <button onClick={() => setPainelTexto((v) => !v)} aria-label="Tamanho do texto" title="Tamanho do texto (+ e −, ou pinça)" className={iconeBotao}>
-            <Type size={20} />
-          </button>
-          <button onClick={() => setBiblia(topico?.versiculo || mensagem.texto_base || '')}
-            aria-label="Abrir Bíblia" title="Bíblia (B)" className={iconeBotao}>
-            <BookOpen size={20} />
-          </button>
+          {!rodando && decorrido > 0 && (
+            <button onClick={zerar} aria-label="Zerar cronômetro" title="Zerar"
+              className="flex h-10 w-9 items-center justify-center rounded-xl bg-superficie-2 text-texto-2 hover:text-texto">
+              <RotateCcw size={16} />
+            </button>
+          )}
         </div>
+
+        <button onClick={() => setPainelTelao(true)} aria-label="Transmitir para o telão" title="Telão (T)"
+          className={`relative ${iconeBotao} ${codigoTelao && telaoOnline ? 'text-tinta' : ''}`}>
+          <Cast size={21} />
+          {codigoTelao && <span className={`absolute right-1.5 top-1.5 h-2 w-2 rounded-full ring-2 ring-fundo ${corTelao}`} />}
+        </button>
+        <button onClick={() => setPainelTexto((v) => !v)} aria-label="Tamanho do texto" title="Tamanho do texto (+ e −, ou pinça)" className={iconeBotao}>
+          <Type size={20} />
+        </button>
+        <button onClick={() => setBiblia(topico?.versiculo || mensagem.texto_base || '')}
+          aria-label="Abrir Bíblia" title="Bíblia (B)" className={`${iconeBotao} max-sm:hidden`}>
+          <BookOpen size={20} />
+        </button>
+        <button onClick={alternarTelaCheia} aria-label="Tela cheia" title="Tela cheia (F)" className={`${iconeBotao} max-md:hidden`}>
+          <Maximize size={20} />
+        </button>
 
         {painelTexto && (
           <div className="absolute right-3 top-full z-20 mt-2 flex items-center gap-1 rounded-2xl border border-borda bg-superficie p-1.5 shadow-xl">
@@ -592,39 +613,20 @@ export default function Pregar() {
         )}
       </header>
 
-      {/* Cronômetro: hora atual + tempo de mensagem (toque para iniciar/pausar) */}
-      <div className="relative px-4 pt-2">
-        <div className="mx-auto flex max-w-md items-stretch gap-2">
-          <div className="flex flex-1 flex-col items-center justify-center rounded-2xl bg-superficie-2 px-3 py-2">
-            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-texto-2">Hora atual</span>
-            <span className="font-display text-2xl font-extrabold tabular-nums">{hora}</span>
-          </div>
-          <button onClick={alternarCronometro} aria-label={rodando ? 'Pausar cronômetro' : 'Iniciar cronômetro'}
-            className={`flex flex-[1.3] flex-col items-center justify-center rounded-2xl px-3 py-2 transition-colors ${pilulaTempo}`}>
-            <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.12em] opacity-80">
-              {rodando ? <Pause size={10} fill="currentColor" /> : <Play size={10} fill="currentColor" />}
-              {fase === 'estourou' ? 'Tempo estourado' : 'Tempo de mensagem'}
-            </span>
-            <span className="font-display text-2xl font-extrabold tabular-nums">
-              {restante >= 0 ? fmt(restante) : `+${fmt(restante)}`}
-            </span>
-          </button>
-          {!rodando && decorrido > 0 && (
-            <button onClick={zerar} aria-label="Zerar cronômetro" title="Zerar"
-              className="flex w-11 items-center justify-center rounded-2xl bg-superficie-2 text-texto-2 hover:text-texto">
-              <RotateCcw size={18} />
-            </button>
-          )}
-        </div>
-        <div className="mx-auto mt-3 h-1 max-w-md overflow-hidden rounded-full bg-superficie-2">
+      <div className="relative px-3 md:px-6">
+        <div className="mt-2 h-0.5 overflow-hidden rounded-full bg-superficie-2">
           <div className={`h-full rounded-full ${corBarra} transition-all`} style={{ width: `${Math.min(fracao, 1) * 100}%` }} />
         </div>
 
         {/* Próximo tópico, com lista para pular para qualquer um */}
         {topicos.length > 0 && (
-          <div className="relative mx-auto mt-3 max-w-md">
+          <div className="relative mx-auto mt-2 flex max-w-3xl items-center justify-between gap-3 px-3">
+            <span className="rotulo shrink-0">
+              {indice === 0 ? 'Capa' : `Tópico ${indice} de ${topicos.length}`}
+              {slidesDaPagina.length > 1 && ` · slide ${sub + 1}/${slidesDaPagina.length}`}
+            </span>
             <button onClick={() => setListaTopicos((v) => !v)} aria-expanded={listaTopicos}
-              className="flex w-full items-center gap-2 rounded-full border border-borda bg-superficie px-4 py-2 text-left text-sm">
+              className="flex min-w-0 max-w-[65%] items-center gap-1.5 rounded-full border border-borda bg-superficie px-3 py-1.5 text-left text-xs">
               <span className="shrink-0 text-texto-2">{indice < topicos.length ? 'Próximo:' : 'Último tópico'}</span>
               <span className="min-w-0 flex-1 truncate font-bold">{indice < topicos.length ? topicos[indice].titulo || 'Sem título' : ''}</span>
               <ChevronDown size={16} className={`shrink-0 text-texto-2 transition-transform ${listaTopicos ? 'rotate-180' : ''}`} />
@@ -632,7 +634,7 @@ export default function Pregar() {
             {listaTopicos && (
               <>
                 <div className="fixed inset-0 z-30" onClick={() => setListaTopicos(false)} />
-                <ol className="absolute inset-x-0 top-full z-40 mt-2 max-h-[50vh] animate-entrar overflow-y-auto rounded-2xl border border-borda bg-superficie p-1.5 shadow-2xl">
+                <ol className="absolute inset-x-3 top-full z-40 mt-2 max-h-[50vh] animate-entrar overflow-y-auto rounded-2xl border border-borda bg-superficie p-1.5 shadow-2xl">
                   {[null, ...topicos].map((t, n) => (
                     <li key={t?.id ?? 'capa'}>
                       <button onClick={() => { irParaTopico(n); setListaTopicos(false) }}
@@ -654,7 +656,7 @@ export default function Pregar() {
 
       {/* Conteúdo */}
       <main ref={areaTexto} className="flex-1 touch-pan-y overflow-y-auto" onClick={() => setPainelTexto(false)}
-        style={{ '--fs-titulo': `${2.6 * escala}rem`, '--fs-corpo': `${1.4 * escala}rem` } as CSSProperties}
+        style={{ '--fs-titulo': `${2.1 * escala}rem`, '--fs-sub': `${2.4 * escala}rem`, '--fs-corpo': `${1.3 * escala}rem` } as CSSProperties}
         onTouchStart={(e) => {
           if (e.touches.length > 1) multitoque.current = true
           else { multitoque.current = false; toqueX.current = e.touches[0].clientX }
@@ -665,12 +667,11 @@ export default function Pregar() {
           toqueX.current = null
           if (Math.abs(dx) > 70) ir(dx < 0 ? 1 : -1)
         }}>
-        <div className="mx-auto max-w-3xl px-6 pb-8 pt-8">
+        <div className="mx-auto max-w-3xl px-6 pb-8 pt-5">
           {!topico && (
-            <div className="space-y-5">
+            <div className="space-y-4">
               <p className="text-texto-2">
-                {topicos.length} {topicos.length === 1 ? 'tópico' : 'tópicos'}, {mensagem.tempo_minutos} min
-                {slidesDaPagina.length > 1 && `, slide ${sub + 1} de ${slidesDaPagina.length}`}
+                {topicos.length} {topicos.length === 1 ? 'tópico' : 'tópicos'} · {mensagem.tempo_minutos} min
               </p>
               <h1 className={`${tam.titulo} font-display font-extrabold uppercase leading-[1.05] tracking-tight text-tinta`}>{mensagem.titulo}</h1>
             </div>
@@ -678,13 +679,12 @@ export default function Pregar() {
 
           {topico && (
             <div className="space-y-7">
-              <div className="space-y-4">
-                <p className="rotulo">
-                  Tópico {indice} de {topicos.length}
-                  {slidesDaPagina.length > 1 && ` · slide ${sub + 1} de ${slidesDaPagina.length}`}
+              <div className="space-y-2">
+                <p className="font-display text-[length:var(--fs-sub)] font-extrabold uppercase leading-[1.05] tracking-tight text-tinta">
+                  {mensagem.titulo}
                 </p>
                 <h1 className={`${tam.titulo} font-display font-extrabold uppercase leading-[1.05] tracking-tight`}>
-                  <span className="text-tinta">{indice}.</span> {topico.titulo || 'Sem título'}
+                  {indice}. {topico.titulo || 'Sem título'}
                 </h1>
               </div>
 
@@ -706,20 +706,20 @@ export default function Pregar() {
       </main>
 
       {/* Navegação */}
-      <footer className="mx-auto grid w-full max-w-3xl grid-cols-[auto_1fr] gap-3 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
+      <footer className="mx-auto grid w-full max-w-3xl grid-cols-[auto_1fr] gap-3 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2">
+
+        <button onClick={() => ir(-1)} disabled={noInicio} aria-label="Voltar"
+          className="flex h-14 w-14 items-center justify-center rounded-2xl border border-borda text-texto-2 hover:text-texto disabled:opacity-30">
+          <ChevronLeft size={28} />
+        </button>
+        <button onClick={() => ir(1)} disabled={noFim}
+          className="flex h-14 items-center justify-center gap-2 rounded-2xl bg-acao font-display text-lg font-extrabold text-acao-texto shadow-[0_10px_30px_-10px_var(--acao)] active:scale-[0.99] disabled:opacity-30 disabled:shadow-none">
+          {rotuloProximo} {!noFim && <ChevronRight size={22} />}
+        </button>
         {(topico?.versiculo || (!topico && mensagem.texto_base)) && (
           <VersiculoBase key={topico?.id ?? 'capa'} referencia={(topico ? topico.versiculo : mensagem.texto_base) ?? ''}
             onAbrir={() => setBiblia((topico ? topico.versiculo : mensagem.texto_base) || '')} />
         )}
-
-        <button onClick={() => ir(-1)} disabled={noInicio} aria-label="Voltar"
-          className="flex h-16 w-16 items-center justify-center rounded-2xl border border-borda text-texto-2 hover:text-texto disabled:opacity-30">
-          <ChevronLeft size={28} />
-        </button>
-        <button onClick={() => ir(1)} disabled={noFim}
-          className="flex h-16 items-center justify-center gap-2 rounded-2xl bg-acao font-display text-lg font-extrabold text-acao-texto shadow-[0_10px_30px_-10px_var(--acao)] active:scale-[0.99] disabled:opacity-30 disabled:shadow-none">
-          {rotuloProximo} {!noFim && <ChevronRight size={22} />}
-        </button>
       </footer>
 
       {indicador && (
