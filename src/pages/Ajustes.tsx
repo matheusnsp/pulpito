@@ -175,7 +175,7 @@ export default function Ajustes() {
           <h2 className="font-display text-lg font-bold">Tutorial</h2>
           <p className="text-sm text-texto-2">Reveja como funcionam as mensagens, os slides, o modo pregação e o telão.</p>
         </div>
-        <button onClick={abrirTutorial} className="botao-secundario w-full sm:w-auto">
+        <button onClick={() => abrirTutorial()} className="botao-secundario w-full sm:w-auto">
           <GraduationCap size={18} /> Ver tutorial
         </button>
       </section>

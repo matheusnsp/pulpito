@@ -1,6 +1,8 @@
 import { lerVersao } from '../lib/preferencias'
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react'
 import { defBloco, itensDaLista } from '../lib/blocos'
+import { alternarTelaCheia as trocarTelaCheia } from '../lib/telaCheia'
+import AjudaTelaCheia from '../components/AjudaTelaCheia'
 import { Link, useParams } from 'react-router-dom'
 import {
   BookOpen, Cast, ChartNoAxesColumn, ChevronDown, Clock, ExternalLink, Target, Timer, ChevronLeft, Maximize, Minus, MonitorPlay, Pause, Play, Plus, RotateCcw, Settings, X,
@@ -506,6 +508,7 @@ export default function Pregar() {
     return salvo && codigoValido(salvo) ? salvo : null
   })
   const [painelTelao, setPainelTelao] = useState(false)
+  const [ajudaTelaCheia, setAjudaTelaCheia] = useState(false)
   const [telaoApagado, setTelaoApagado] = useState(false)
   const [versiculoProjetado, setVersiculoProjetado] = useState<SlideVersiculo | null>(null)
   const { online: telaoOnline, enviar, despedir } = useEmissorTelao(codigoTelao)
@@ -704,8 +707,8 @@ export default function Pregar() {
   }
 
   function alternarTelaCheia() {
-    if (document.fullscreenElement) document.exitFullscreen().catch(() => {})
-    else document.documentElement.requestFullscreen?.().catch(() => {})
+    // No iPhone o Safari não permite: mostra como conseguir a tela toda
+    if (!trocarTelaCheia()) setAjudaTelaCheia(true)
   }
 
   function zerar() {
@@ -824,7 +827,7 @@ export default function Pregar() {
           aria-label="Abrir Bíblia" title="Bíblia (B)" className={`${iconeBotao} max-sm:hidden`}>
           <BookOpen size={20} />
         </button>
-        <button onClick={alternarTelaCheia} aria-label="Tela cheia" title="Tela cheia (F)" className={`${iconeBotao} max-md:hidden`}>
+        <button onClick={alternarTelaCheia} aria-label="Tela cheia" title="Tela cheia (F)" className={iconeBotao}>
           <Maximize size={20} />
         </button>
 
@@ -981,6 +984,8 @@ export default function Pregar() {
             setVersiculoProjetado({ tipo: 'versiculo', referencia, texto, versos })
           }} />
       )}
+
+      {ajudaTelaCheia && <AjudaTelaCheia onFechar={() => setAjudaTelaCheia(false)} />}
 
       {resumo && (
         <ResumoEnsaio

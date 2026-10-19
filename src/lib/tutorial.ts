@@ -1,5 +1,5 @@
-/* Tutorial de primeiro uso: abre sozinho uma vez e pode ser reaberto em Ajustes */
-const CHAVE = 'pulpito-tutorial-visto'
+/* Tutorial: abre sozinho uma vez (v2 = tutorial completo com capítulos) e pode ser reaberto em Ajustes */
+const CHAVE = 'pulpito-tutorial-visto-v2'
 const EVENTO = 'pulpito-abrir-tutorial'
 
 export function tutorialJaVisto() {
@@ -10,11 +10,13 @@ export function marcarTutorialVisto() {
   try { localStorage.setItem(CHAVE, '1') } catch { /* sem armazenamento */ }
 }
 
-export function abrirTutorial() {
-  window.dispatchEvent(new Event(EVENTO))
+/* Sem capítulo, abre o índice; com capítulo, vai direto para ele */
+export function abrirTutorial(capitulo?: string) {
+  window.dispatchEvent(new CustomEvent<string | undefined>(EVENTO, { detail: capitulo }))
 }
 
-export function aoPedirTutorial(fn: () => void) {
-  window.addEventListener(EVENTO, fn)
-  return () => window.removeEventListener(EVENTO, fn)
+export function aoPedirTutorial(fn: (capitulo?: string) => void) {
+  const ouvir = (e: Event) => fn((e as CustomEvent<string | undefined>).detail)
+  window.addEventListener(EVENTO, ouvir)
+  return () => window.removeEventListener(EVENTO, ouvir)
 }

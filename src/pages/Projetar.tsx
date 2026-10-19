@@ -1,3 +1,5 @@
+import { alternarTelaCheia as trocarTelaCheia, aoMudarTelaCheia, emTelaCheia } from '../lib/telaCheia'
+import AjudaTelaCheia from '../components/AjudaTelaCheia'
 import { useEffect, useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { BookOpen, Maximize } from 'lucide-react'
@@ -71,11 +73,8 @@ export default function Projetar() {
 
   useEffect(() => { sessionStorage.setItem(CHAVE_CODIGO, codigo) }, [codigo])
 
-  useEffect(() => {
-    const aoMudar = () => setTelaCheia(!!document.fullscreenElement)
-    document.addEventListener('fullscreenchange', aoMudar)
-    return () => document.removeEventListener('fullscreenchange', aoMudar)
-  }, [])
+  const [ajudaTelaCheia, setAjudaTelaCheia] = useState(false)
+  useEffect(() => aoMudarTelaCheia(() => setTelaCheia(emTelaCheia())), [])
 
   useEffect(() => {
     const ch = supabase.channel(canalTelao(codigo), { config: { broadcast: { self: false } } })
@@ -100,8 +99,7 @@ export default function Projetar() {
   }, [codigo])
 
   function alternarTelaCheia() {
-    if (document.fullscreenElement) document.exitFullscreen()
-    else document.documentElement.requestFullscreen().catch(() => {})
+    if (!trocarTelaCheia()) setAjudaTelaCheia(true)
   }
 
   const link = `${window.location.origin}/conectar/${codigo}`
@@ -140,6 +138,7 @@ export default function Projetar() {
           <Maximize size={16} /> Tela cheia
         </button>
       )}
+      {ajudaTelaCheia && <AjudaTelaCheia onFechar={() => setAjudaTelaCheia(false)} />}
     </div>
   )
 }
