@@ -3,9 +3,11 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, 
 import { defBloco, itensDaLista } from '../lib/blocos'
 import { alternarTelaCheia as trocarTelaCheia } from '../lib/telaCheia'
 import AjudaTelaCheia from '../components/AjudaTelaCheia'
+import { FaixaAoVivo, PainelAoVivo, RespostasAoVivo, type AoVivo } from '../components/AulaAoVivo'
+import { aceitaResposta, useAulaAoVivo } from '../lib/aoVivo'
 import { Link, useParams } from 'react-router-dom'
 import {
-  BookOpen, Cast, ChartNoAxesColumn, ChevronDown, Clock, ExternalLink, Target, Timer, ChevronLeft, Maximize, Minus, MonitorPlay, Pause, Play, Plus, RotateCcw, Settings, X,
+  BookOpen, Cast, ChartNoAxesColumn, ChevronDown, Radio, Clock, ExternalLink, Target, Timer, ChevronLeft, Maximize, Minus, MonitorPlay, Pause, Play, Plus, RotateCcw, Settings, X,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Mensagem, Slide, Topico } from '../lib/tipos'
@@ -282,7 +284,7 @@ function CronometroBloco({ minutos, cor, rotulo }: { minutos: number; cor: strin
 }
 
 /* ── Um bloco do estudo no modo aula ── */
-function BlocoAula({ bloco, n }: { bloco: Topico; n: number }) {
+function BlocoAula({ bloco, n, ao }: { bloco: Topico; n: number; ao: AoVivo }) {
   const def = defBloco(bloco)
   const tipo = bloco.tipo ?? 'explicacao'
   const corpo = bloco.observacao?.trim()
@@ -332,6 +334,10 @@ function BlocoAula({ bloco, n }: { bloco: Topico; n: number }) {
           <ExternalLink size={18} className="shrink-0" /> <span className="truncate">{bloco.extra.url.replace(/^https?:\/\//, '')}</span>
         </a>
       )}
+
+      {ao.aula && aceitaResposta(bloco) ? (
+        <RespostasAoVivo ao={ao} bloco={bloco} />
+      ) : null}
 
       {bloco.extra?.minutos ? (
         <CronometroBloco key={bloco.id} minutos={bloco.extra.minutos} cor={def.cor}
@@ -730,6 +736,11 @@ export default function Pregar() {
     setResumo({ anterior })
   }
 
+  // Respostas ao vivo (só nos estudos)
+  const ehEstudo = mensagem?.tipo === 'estudo'
+  const ao = useAulaAoVivo(ehEstudo ? mensagem : null, topicos, ehEstudo && indice > 0 ? topicos[indice - 1] ?? null : null)
+  const [painelAoVivo, setPainelAoVivo] = useState(false)
+
   if (mensagem === undefined) return <div className="escuro h-dvh bg-fundo p-6 text-texto-2">Carregando…</div>
   if (mensagem === null) return (
     <div className="escuro h-dvh bg-fundo p-6 text-texto">
@@ -815,6 +826,13 @@ export default function Pregar() {
           )}
         </div>
 
+        {estudo && (
+          <button onClick={() => setPainelAoVivo(true)} aria-label="Respostas ao vivo" title="Respostas ao vivo"
+            className={`relative ${iconeBotao} border border-borda ${ao.aula ? 'text-perigo' : ''}`}>
+            <Radio size={20} />
+            {ao.aula && <span className="absolute right-1.5 top-1.5 h-2 w-2 animate-pulse rounded-full bg-perigo ring-2 ring-fundo" />}
+          </button>
+        )}
         <button onClick={() => setPainelTelao(true)} aria-label="Transmitir para o telão" title="Telão (T)"
           className={`relative ${iconeBotao} border border-borda ${codigoTelao && telaoOnline ? 'text-tinta' : ''}`}>
           <Cast size={21} />
@@ -851,6 +869,8 @@ export default function Pregar() {
         <div className="mt-2 h-0.5 overflow-hidden rounded-full bg-superficie-2">
           <div className={`h-full rounded-full ${corBarra} transition-all`} style={{ width: `${Math.min(fracao, 1) * 100}%` }} />
         </div>
+
+        {estudo && <FaixaAoVivo ao={ao} onAbrir={() => setPainelAoVivo(true)} />}
 
         {/* Próximo tópico, com lista para pular para qualquer um */}
         {topicos.length > 0 && (
@@ -902,7 +922,8 @@ export default function Pregar() {
           toqueX.current = null
           if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.4) ir(dx < 0 ? 1 : -1)
         }}>
-        <div key={`${indice}-${sub}`} className="mx-auto max-w-3xl animate-entrar px-6 pb-8 pt-5">
+        <div className="mx-auto flex max-w-6xl justify-center gap-10 xl:px-6">
+        <div key={`${indice}-${sub}`} className="min-w-0 max-w-3xl flex-1 animate-entrar px-6 pb-8 pt-5 xl:px-0">
           {!topico && (
             <div className="space-y-4">
               <p className="text-texto-2">
@@ -919,7 +940,7 @@ export default function Pregar() {
             </div>
           )}
 
-          {topico && estudo && <BlocoAula bloco={topico} n={indice} />}
+          {topico && estudo && <BlocoAula bloco={topico} n={indice} ao={ao} />}
 
           {topico && !estudo && (
             <div className="space-y-7">
@@ -955,6 +976,36 @@ export default function Pregar() {
             </div>
           )}
         </div>
+
+        {/* Computador: roteiro ao lado, para ver onde está e pular para qualquer parte */}
+        {topicos.length > 0 && (
+          <aside className="sticky top-5 hidden w-72 shrink-0 self-start pt-5 xl:block">
+            <p className="rotulo">Roteiro</p>
+            <ol className="mt-2 space-y-1">
+              {[null, ...topicos].map((t, n) => {
+                const def = t && estudo ? defBloco(t) : null
+                const atual = indice === n
+                return (
+                  <li key={t?.id ?? 'capa'}>
+                    <button onClick={(e) => { e.stopPropagation(); irParaTopico(n) }}
+                      className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors ${atual ? 'bg-ouro-suave' : n < indice ? 'opacity-55 hover:bg-superficie' : 'hover:bg-superficie'}`}>
+                      <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-extrabold ${atual ? 'bg-acao text-acao-texto' : 'bg-superficie-2 text-texto-2'}`}
+                        style={def && !atual ? { color: def.cor } : undefined}>
+                        {n === 0 ? '•' : def ? <def.Icone size={14} /> : n}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-semibold">{t ? t.titulo || 'Sem título' : mensagem.titulo}</span>
+                        {t?.extra?.minutos ? <span className="text-xs text-texto-2">{t.extra.minutos} min</span> : t?.versiculo ? <span className="text-xs text-tinta">{t.versiculo}</span> : null}
+                      </span>
+                    </button>
+                  </li>
+                )
+              })}
+            </ol>
+            <p className="mt-4 text-xs text-texto-2">Setas do teclado mudam de {estudo ? 'bloco' : 'tópico'} · espaço liga o cronômetro</p>
+          </aside>
+        )}
+        </div>
       </main>
 
       {/* Navegação */}
@@ -984,6 +1035,8 @@ export default function Pregar() {
             setVersiculoProjetado({ tipo: 'versiculo', referencia, texto, versos })
           }} />
       )}
+
+      {painelAoVivo && <PainelAoVivo ao={ao} onFechar={() => setPainelAoVivo(false)} />}
 
       {ajudaTelaCheia && <AjudaTelaCheia onFechar={() => setAjudaTelaCheia(false)} />}
 

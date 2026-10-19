@@ -420,10 +420,87 @@ export default function Mensagens() {
   const qtdMarcados = (() => { try { return JSON.parse(localStorage.getItem('pulpito-marcados') || '[]').length as number } catch { return 0 } })()
   const ultima = !termo && todas[0] && todas[0].id !== msgProxima?.id ? todas[0] : null
 
+  // Resumo, acesso rápido e compromissos: em cima no celular, numa coluna ao lado no computador
+  const painel = (lateral: boolean) => (
+    <div className={`grid gap-3 ${lateral ? '' : 'md:grid-cols-2'}`}>
+            <section className="cartao p-4">
+              <h2 className="rotulo">Resumo</h2>
+              <div className="mt-3 grid grid-cols-4 gap-2 text-center">
+                {[
+                  { n: todas.length, r: todas.length === 1 ? nomeItens[0] : nomeItens[1] },
+                  { n: (proximo ? 1 : 0) + outrosEventos.length, r: 'na agenda' },
+                  { n: pastas.length, r: pastas.length === 1 ? 'pasta' : 'pastas' },
+                  { n: qtdMarcados, r: qtdMarcados === 1 ? 'marcação' : 'marcações' },
+                ].map(({ n, r }) => (
+                  <div key={r} className="rounded-xl bg-superficie-2 px-1 py-2.5">
+                    <p className="font-display text-2xl font-extrabold tabular-nums">{n}</p>
+                    <p className="truncate text-[11px] font-semibold text-texto-2">{r}</p>
+                  </div>
+                ))}
+              </div>
+              <h2 className="rotulo mt-4">Acesso rápido</h2>
+              <div className="mt-2 grid grid-cols-4 gap-2">
+                {[
+                  { r: 'Nova', Icone: Plus, acao: criar },
+                  modo === 'estudo' ? { r: 'Ajustes', Icone: Settings, para: '/ajustes' } : { r: 'Bíblia', Icone: BookOpen, para: '/biblia' },
+                  { r: 'Agenda', Icone: CalendarDays, para: '/agenda' },
+                  { r: 'Telão', Icone: MonitorPlay, para: '/projetar' },
+                ].map(({ r, Icone, acao, para }) => {
+                  const cls = 'flex flex-col items-center gap-1 rounded-xl border border-borda py-2.5 text-xs font-bold text-texto-2 transition-colors hover:border-acao hover:text-texto'
+                  const miolo = <><Icone size={20} className="text-tinta" />{r}</>
+                  return para
+                    ? <Link key={r} to={para} target={para === '/projetar' ? '_blank' : undefined} className={cls}>{miolo}</Link>
+                    : <button key={r} onClick={acao} className={cls}>{miolo}</button>
+                })}
+              </div>
+            </section>
+
+            <section className="cartao p-4">
+              <div className="flex items-center justify-between">
+                <h2 className="rotulo">Próximos compromissos</h2>
+                <Link to="/agenda" className="text-xs font-bold text-tinta hover:underline">Ver agenda</Link>
+              </div>
+              {(proximo ? [proximo, ...outrosEventos] : []).length === 0 ? (
+                <div className="mt-3 rounded-xl border border-dashed border-borda px-4 py-6 text-center text-sm text-texto-2">
+                  Nada marcado. <Link to="/agenda" className="font-bold text-tinta">Marcar um compromisso</Link>
+                </div>
+              ) : (
+                <ul className="mt-2 divide-y divide-borda">
+                  {[proximo!, ...outrosEventos].map((ev) => {
+                    const d = new Date(ev.inicio)
+                    return (
+                      <li key={ev.id} className="flex items-center gap-3 py-2.5">
+                        <div className="w-11 shrink-0 rounded-lg bg-superficie-2 py-1 text-center">
+                          <p className="text-[10px] font-bold uppercase text-texto-2">{d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')}</p>
+                          <p className="font-display text-lg font-extrabold leading-none">{d.getDate()}</p>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-bold">{ev.titulo}</p>
+                          <p className="truncate text-xs text-texto-2">
+                            {quandoEvento(ev.inicio, hoje)}{ev.mensagem ? ` · ${ev.mensagem.titulo}` : ''}
+                          </p>
+                        </div>
+                        {ev.mensagem && (
+                          <Link to={`/pregar/${ev.mensagem.id}`} aria-label={`Pregar ${ev.mensagem.titulo}`}
+                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-acao text-acao-texto">
+                            <Play size={14} fill="currentColor" />
+                          </Link>
+                        )}
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </section>
+    </div>
+  )
+
   return (
     <DndContext sensors={sensores} onDragStart={aoComecar} onDragEnd={aoSoltar}
       onDragCancel={() => setArrastando(null)}>
-      <div className="mx-auto max-w-5xl px-4 pb-10 pt-2 md:px-8 md:pt-10">
+      <div className="mx-auto max-w-5xl px-4 pb-10 pt-2 md:px-8 md:pt-10 xl:max-w-7xl">
+      <div className="xl:grid xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-start xl:gap-8">
+      <div className="min-w-0">
 
         {/* Saudação */}
         <header className="flex flex-wrap items-end justify-between gap-4">
@@ -435,6 +512,9 @@ export default function Mensagens() {
               {saudacao(hoje.getHours())}, {primeiroNome}
             </h1>
           </div>
+          <button onClick={criar} className="botao-primario hidden md:inline-flex">
+            <Plus size={18} strokeWidth={2.5} /> {modo === 'estudo' ? 'Novo estudo' : 'Nova pregação'}
+          </button>
         </header>
 
         {/* Chave: Pregações | Estudos */}
@@ -508,80 +588,8 @@ export default function Mensagens() {
           </Link>
         )}
 
-        {/* Painel: resumo, próximos compromissos e acesso rápido */}
-        {doisLados.length > 0 && !termo && (
-          <div className="mt-4 grid gap-3 md:grid-cols-2">
-            <section className="cartao p-4">
-              <h2 className="rotulo">Resumo</h2>
-              <div className="mt-3 grid grid-cols-4 gap-2 text-center">
-                {[
-                  { n: todas.length, r: todas.length === 1 ? nomeItens[0] : nomeItens[1] },
-                  { n: (proximo ? 1 : 0) + outrosEventos.length, r: 'na agenda' },
-                  { n: pastas.length, r: pastas.length === 1 ? 'pasta' : 'pastas' },
-                  { n: qtdMarcados, r: qtdMarcados === 1 ? 'marcação' : 'marcações' },
-                ].map(({ n, r }) => (
-                  <div key={r} className="rounded-xl bg-superficie-2 px-1 py-2.5">
-                    <p className="font-display text-2xl font-extrabold tabular-nums">{n}</p>
-                    <p className="truncate text-[11px] font-semibold text-texto-2">{r}</p>
-                  </div>
-                ))}
-              </div>
-              <h2 className="rotulo mt-4">Acesso rápido</h2>
-              <div className="mt-2 grid grid-cols-4 gap-2">
-                {[
-                  { r: 'Nova', Icone: Plus, acao: criar },
-                  modo === 'estudo' ? { r: 'Ajustes', Icone: Settings, para: '/ajustes' } : { r: 'Bíblia', Icone: BookOpen, para: '/biblia' },
-                  { r: 'Agenda', Icone: CalendarDays, para: '/agenda' },
-                  { r: 'Telão', Icone: MonitorPlay, para: '/projetar' },
-                ].map(({ r, Icone, acao, para }) => {
-                  const cls = 'flex flex-col items-center gap-1 rounded-xl border border-borda py-2.5 text-xs font-bold text-texto-2 transition-colors hover:border-acao hover:text-texto'
-                  const miolo = <><Icone size={20} className="text-tinta" />{r}</>
-                  return para
-                    ? <Link key={r} to={para} target={para === '/projetar' ? '_blank' : undefined} className={cls}>{miolo}</Link>
-                    : <button key={r} onClick={acao} className={cls}>{miolo}</button>
-                })}
-              </div>
-            </section>
-
-            <section className="cartao p-4">
-              <div className="flex items-center justify-between">
-                <h2 className="rotulo">Próximos compromissos</h2>
-                <Link to="/agenda" className="text-xs font-bold text-tinta hover:underline">Ver agenda</Link>
-              </div>
-              {(proximo ? [proximo, ...outrosEventos] : []).length === 0 ? (
-                <div className="mt-3 rounded-xl border border-dashed border-borda px-4 py-6 text-center text-sm text-texto-2">
-                  Nada marcado. <Link to="/agenda" className="font-bold text-tinta">Marcar um compromisso</Link>
-                </div>
-              ) : (
-                <ul className="mt-2 divide-y divide-borda">
-                  {[proximo!, ...outrosEventos].map((ev) => {
-                    const d = new Date(ev.inicio)
-                    return (
-                      <li key={ev.id} className="flex items-center gap-3 py-2.5">
-                        <div className="w-11 shrink-0 rounded-lg bg-superficie-2 py-1 text-center">
-                          <p className="text-[10px] font-bold uppercase text-texto-2">{d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')}</p>
-                          <p className="font-display text-lg font-extrabold leading-none">{d.getDate()}</p>
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate font-bold">{ev.titulo}</p>
-                          <p className="truncate text-xs text-texto-2">
-                            {quandoEvento(ev.inicio, hoje)}{ev.mensagem ? ` · ${ev.mensagem.titulo}` : ''}
-                          </p>
-                        </div>
-                        {ev.mensagem && (
-                          <Link to={`/pregar/${ev.mensagem.id}`} aria-label={`Pregar ${ev.mensagem.titulo}`}
-                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-acao text-acao-texto">
-                            <Play size={14} fill="currentColor" />
-                          </Link>
-                        )}
-                      </li>
-                    )
-                  })}
-                </ul>
-              )}
-            </section>
-          </div>
-        )}
+        {/* Painel: no celular e tablet fica aqui; no computador vai para a coluna da direita */}
+        {doisLados.length > 0 && !termo && <div className="mt-4 xl:hidden">{painel(false)}</div>}
 
         {/* Busca */}
         <div className="relative mt-6">
@@ -677,7 +685,7 @@ export default function Mensagens() {
         )}
 
         {filtradas.length > 0 && (
-          <ul className="grid grid-cols-[minmax(0,1fr)] gap-3 md:grid-cols-2">
+          <ul className="grid grid-cols-[minmax(0,1fr)] gap-3 md:grid-cols-2 2xl:grid-cols-3">
             {filtradas.map((m) => (
               <LinhaMensagem key={m.id} m={m} blocos={contagem[m.id]} pastas={pastas} hoje={hoje}
                 pasta={filtroAtivo === 'todas' ? pastas.find((p) => p.id === m.pasta_id) ?? null : null}
@@ -696,6 +704,24 @@ export default function Mensagens() {
             {termo ? `Nada encontrado para "${busca}".` : `Nenhum${modo === 'estudo' ? ' estudo' : 'a pregação'} nesta pasta.`}
           </p>
         )}
+      </div>
+
+      {/* Computador: coluna da direita fixa com resumo, atalhos e agenda */}
+      {doisLados.length > 0 && (
+        <aside className="sticky top-10 hidden space-y-3 xl:block">
+          {painel(true)}
+          <div className="cartao p-4">
+            <p className="rotulo">Atalhos do teclado</p>
+            <ul className="mt-2 space-y-1.5 text-sm text-texto-2">
+              <li className="flex justify-between"><span>Buscar</span><kbd className="rounded border border-borda px-1.5 text-xs">/</kbd></li>
+              <li className="flex justify-between"><span>Desfazer no editor</span><kbd className="rounded border border-borda px-1.5 text-xs">Ctrl Z</kbd></li>
+              <li className="flex justify-between"><span>Começar o cronômetro</span><kbd className="rounded border border-borda px-1.5 text-xs">espaço</kbd></li>
+              <li className="flex justify-between"><span>Tela cheia</span><kbd className="rounded border border-borda px-1.5 text-xs">F</kbd></li>
+            </ul>
+          </div>
+        </aside>
+      )}
+      </div>
       </div>
 
       {/* Celular: botão flutuante de nova mensagem */}

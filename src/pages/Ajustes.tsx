@@ -103,8 +103,8 @@ export default function Ajustes() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-10 px-4 pb-10 pt-2 md:px-8 md:pt-10">
-      <h1 className="titulo-pagina">Ajustes</h1>
+    <div className="mx-auto max-w-2xl space-y-10 px-4 pb-10 pt-2 md:px-8 md:pt-10 lg:grid lg:max-w-6xl lg:grid-cols-2 lg:items-start lg:gap-x-12 lg:gap-y-10 lg:space-y-0">
+      <h1 className="titulo-pagina lg:col-span-2">Ajustes</h1>
 
       <section className="space-y-3">
         <h2 className="font-display text-lg font-bold">Conta</h2>
@@ -123,7 +123,7 @@ export default function Ajustes() {
         </div>
       </section>
 
-      <section className="space-y-3">
+      <section className="space-y-3 lg:row-span-2">
         <div>
           <h2 className="font-display text-lg font-bold">Aparência</h2>
           <p className="text-sm text-texto-2">O modo pregação e o telão são sempre escuros, nas cores do tema.</p>

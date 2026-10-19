@@ -93,11 +93,11 @@ export default function Perguntas() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 pb-10 pt-2 md:px-8 md:pt-10">
+    <div className="mx-auto max-w-3xl px-4 pb-10 pt-2 md:px-8 md:pt-10 lg:max-w-6xl">
       <h1 className="titulo-pagina">Banco de perguntas</h1>
       <p className="mt-1 text-texto-2">As perguntas e atividades de todos os seus estudos. Reuse numa aula nova com um toque.</p>
 
-      <div className="relative mt-5">
+      <div className="relative mt-5 lg:max-w-xl">
         <Search size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-texto-2" />
         <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar pergunta ou atividade"
           type="search" className="campo rounded-2xl py-3 pl-11 pr-11" />
@@ -133,12 +133,12 @@ export default function Perguntas() {
         </div>
       )}
 
-      <ul className="mt-4 space-y-3">
+      <ul className="mt-4 grid gap-3 lg:grid-cols-2">
         {visiveis.map((it) => {
           const def = BLOCOS[it.bloco.tipo === 'atividade' ? 'atividade' : 'pergunta']
           return (
-            <li key={it.chave} className="cartao p-4">
-              <div className="flex items-start gap-3">
+            <li key={it.chave} className="cartao flex flex-col p-4">
+              <div className="mb-3 flex items-start gap-3">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl" style={{ background: `${def.cor}26`, color: def.cor }}>
                   <def.Icone size={18} />
                 </span>
@@ -160,7 +160,7 @@ export default function Perguntas() {
                 </div>
               </div>
 
-              <div className="mt-3 flex gap-2 border-t border-borda pt-3">
+              <div className="mt-auto flex gap-2 border-t border-borda pt-3">
                 <button onClick={() => copiar(it)} className="botao-secundario flex-1 py-2 text-sm">
                   {copiado === it.chave ? <><Check size={16} className="text-sucesso" /> Copiada</> : <><ClipboardCopy size={16} /> Copiar</>}
                 </button>

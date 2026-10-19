@@ -3,7 +3,7 @@ import {
   ArrowLeft, ArrowRight, BookOpen, CalendarDays, ChartNoAxesColumn, Check, ChevronRight, Clock, Copy, Download, Eye, FileDown,
   FolderInput, GraduationCap, GripVertical, Hand, Highlighter, ImagePlus, Layers, LayoutTemplate, ListChecks, Lock, Maximize,
   MessagesSquare, Mic, MonitorPlay, MoveRight, NotebookPen, Palette, Plus, Presentation, QrCode, RefreshCw, RotateCw,
-  Search, Settings, Share2, Sparkles, Target, Timer, Type as TypeIcon, Upload, Users, WifiOff, X,
+  Radio, Search, Settings, Share2, Sparkles, Target, Timer, Trophy, Type as TypeIcon, Upload, Users, WifiOff, X,
 } from 'lucide-react'
 import { abrirCriar } from '../lib/criar'
 import { aoPedirTutorial, marcarTutorialVisto, tutorialJaVisto } from '../lib/tutorial'
@@ -255,7 +255,7 @@ const CAPITULOS: Capitulo[] = [
 
   /* ───────────── 3. Estudos ───────────── */
   {
-    id: 'estudos', nome: 'Estudos', resumo: 'Blocos, modo aula, folha do aluno e perguntas', Icone: GraduationCap, cor: VERDE,
+    id: 'estudos', nome: 'Estudos', resumo: 'Blocos, modo aula, respostas ao vivo e quiz', Icone: GraduationCap, cor: VERDE,
     passos: [
       {
         titulo: 'Monte o estudo em blocos',
@@ -274,7 +274,7 @@ const CAPITULOS: Capitulo[] = [
         ),
         dicas: [
           { Icone: Plus, texto: <>9 tipos: <b>explicação, pergunta, atividade, lista, citação, definição, referência, imagem e link</b>.</> },
-          { Icone: Timer, texto: <>Pergunta e atividade têm <b>tempo</b> (5 min de discussão, 10 de atividade…).</> },
+          { Icone: Timer, texto: <>Pergunta e atividade têm <b>tempo</b>; a pergunta pode ser <b>aberta ou de múltipla escolha</b>.</> },
           { Icone: Lock, texto: <>O campo <b>"Só para você"</b> nunca aparece para a turma.</> },
         ],
       },
@@ -301,25 +301,76 @@ const CAPITULOS: Capitulo[] = [
         ],
       },
       {
-        titulo: 'Folha do aluno',
-        texto: 'Gera um PDF com o estudo e linhas em branco para responder as perguntas e as atividades.',
+        titulo: 'Respostas ao vivo',
+        texto: 'A turma responde pelo celular durante a aula, e as respostas aparecem na sua tela na hora.',
         tela: (
           <Tela>
-            <div className="mx-auto h-full w-32 rounded-md bg-white p-2 text-black shadow">
-              <b className="block text-[9px]">Finanças com propósito</b>
-              <span className="block text-[6px] text-gray-500">Objetivo: montar um orçamento</span>
-              <span className="mt-1 block text-[6px] font-bold" style={{ color: AZUL }}>2. PERGUNTA</span>
-              <b className="block text-[7px]">Qual compra você mais…?</b>
-              {[0, 1, 2].map((i) => <span key={i} className="mt-1.5 block h-px bg-gray-300" />)}
-              <span className="mt-1.5 block text-[6px] font-bold" style={{ color: AMARELO }}>3. LISTA</span>
-              <span className="block text-[6px]">• Gastar • Guardar • Doar</span>
+            <div className="flex items-center gap-2">
+              <span className="flex h-12 w-12 items-center justify-center rounded-lg bg-white text-black"><QrCode size={30} /></span>
+              <span><span className="block text-[8px] font-bold uppercase tracking-wider text-texto-2">Código</span><b className="font-mono text-lg tracking-widest">K7P2X</b></span>
+              <span className="ml-auto flex items-center gap-1 rounded-full bg-perigo/15 px-2 py-0.5 text-[9px] font-bold text-perigo"><span className="h-1.5 w-1.5 rounded-full bg-perigo" /> AO VIVO</span>
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-1.5">
+              {[['Ana', 'Um tênis caro'], ['Lucas', 'Delivery todo dia'], ['Bia', 'Um curso que larguei'], ['João', 'Celular novo']].map(([n, t], i) => (
+                <div key={n} className={`rounded-lg border p-1.5 ${i === 0 ? 'border-acao bg-ouro-suave' : 'border-borda bg-superficie'}`}>
+                  <b className="block text-[9px]">{n}</b><span className="block truncate text-[9px] text-texto-2">{t}</span>
+                </div>
+              ))}
             </div>
           </Tela>
         ),
         dicas: [
-          { Icone: FileDown, texto: <>No editor do estudo, toque em <b>Folha do aluno</b>.</> },
-          { Icone: BookOpen, texto: <>Os versículos da referência já saem escritos na folha.</> },
-          { Icone: Share2, texto: <><b>Roteiro</b> copia o estudo em texto para mandar à equipe.</> },
+          { Icone: Radio, texto: <>Em <b>Dar aula</b>, toque no botão <b>ao vivo</b>: aparece um código e um QR (dá para mostrar no telão).</> },
+          { Icone: Users, texto: <>Cada um abre a câmera ou entra em <b>/responder</b>, coloca o nome e responde. Sem instalar nada.</> },
+          { Icone: Eye, texto: <>Você escolhe se <b>os alunos veem as respostas dos outros</b>; dá para destacar ★ ou esconder uma resposta.</> },
+        ],
+      },
+      {
+        titulo: 'Quiz com placar',
+        texto: 'Numa pergunta de múltipla escolha, a turma toca na opção e o gráfico sobe ao vivo.',
+        tela: (
+          <Tela>
+            <div className="space-y-1">
+              {([['Gastar', 2, '#E11D48'], ['Guardar', 7, '#2563EB'], ['Doar', 1, '#D97706']] as const).map(([o, n, c], i) => (
+                <div key={o} className={`relative overflow-hidden rounded-md border px-2 py-1 ${i === 1 ? 'border-sucesso' : 'border-borda opacity-60'}`}>
+                  <span className="absolute inset-y-0 left-0" style={{ width: `${n * 10}%`, background: `${c}40` }} />
+                  <span className="relative flex items-center gap-1.5 text-[10px] font-bold"><span className="flex h-4 w-4 items-center justify-center rounded text-[8px] text-white" style={{ background: c }}>{'ABC'[i]}</span>{o}<span className="ml-auto font-mono">{n}</span></span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-2 rounded-lg bg-superficie p-1.5 text-[9px]">
+              <b className="flex items-center gap-1 text-tinta"><Trophy size={10} /> Placar</b>
+              <span className="mt-0.5 flex justify-between"><span>1. Bia</span><span className="font-mono">1000</span></span>
+              <span className="flex justify-between"><span>2. Lucas</span><span className="font-mono">940</span></span>
+            </div>
+          </Tela>
+        ),
+        dicas: [
+          { Icone: ListChecks, texto: <>No bloco Pergunta, escolha <b>Múltipla escolha</b>, escreva as opções e toque na letra da certa.</> },
+          { Icone: Check, texto: <>Na aula, toque em <b>Revelar resposta certa</b>: cada aluno vê se acertou.</> },
+          { Icone: Trophy, texto: <>Acertou mais rápido, ganha mais pontos. O placar aparece no seu celular e no deles.</> },
+        ],
+      },
+      {
+        titulo: 'Tudo fica guardado',
+        texto: 'Depois da aula, veja o que cada pessoa respondeu, por data, e baixe em planilha.',
+        tela: (
+          <Tela>
+            <div className="rounded-lg border border-borda bg-superficie p-2">
+              <b className="block text-[11px]">ter, 21 out · 19:30</b>
+              <span className="text-[9px] text-texto-2">12 pessoas · 34 respostas</span>
+            </div>
+            <div className="mt-1.5 flex gap-1">
+              <span className="rounded-md border border-borda px-1.5 py-0.5 text-[9px]"><Download size={9} className="inline" /> Planilha</span>
+              <span className="rounded-md border border-borda px-1.5 py-0.5 text-[9px]"><FileDown size={9} className="inline" /> Folha do aluno</span>
+            </div>
+            <div className="mt-1.5 rounded-lg border border-borda p-1.5 text-[9px]"><b>Ana:</b> Um tênis caro que nunca usei</div>
+          </Tela>
+        ),
+        dicas: [
+          { Icone: MessagesSquare, texto: <>No editor do estudo, toque em <b>Respostas das aulas</b>.</> },
+          { Icone: Download, texto: <><b>Planilha (CSV)</b> abre no Excel e no Google Planilhas.</> },
+          { Icone: FileDown, texto: <>Sem celular na turma? A <b>Folha do aluno</b> em PDF continua lá, com espaço para responder.</> },
         ],
       },
       {

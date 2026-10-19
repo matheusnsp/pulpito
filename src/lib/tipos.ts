@@ -25,7 +25,7 @@ export type Topico = {
   frase_chave: string | null
   notas: string | null
   tipo?: string // 'topico' na pregação; nos estudos, o tipo do bloco (ver lib/blocos)
-  extra?: { minutos?: number; url?: string; autor?: string }
+  extra?: { minutos?: number; url?: string; autor?: string; opcoes?: string[]; correta?: number }
 }
 
 export const CAMPOS_TOPICO = [

@@ -7,7 +7,7 @@ import {
 import { Link, useParams } from 'react-router-dom'
 import {
   BookOpen, CalendarDays, Check, ChevronDown, GripVertical, ChevronLeft, ChevronUp, CircleAlert, ClipboardCopy, Clock, FileDown, GraduationCap,
-  ImagePlus, LoaderCircle, Play, Plus, Presentation, Redo2, Share2, Target, Timer, Trash2, Undo2,
+  ImagePlus, LoaderCircle, MessagesSquare, Play, Plus, Presentation, Redo2, Share2, Target, Timer, Trash2, Undo2,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useSalvamento } from '../lib/salvamento'
@@ -16,6 +16,8 @@ import { CAMPOS_TOPICO, type Mensagem, type Pasta, type Topico } from '../lib/ti
 import { parseReferencia, formatarReferencia, lerReferencia } from '../lib/biblia'
 import { esbocoEmTexto } from '../lib/mensagens'
 import { BLOCOS, ORDEM_BLOCOS, defBloco, itensDaLista, type TipoBloco } from '../lib/blocos'
+import { CORES_OPCOES, LETRAS } from '../lib/aoVivo'
+import { lerModo, salvarModo } from '../lib/criar'
 import { enviarImagem } from '../lib/imagens'
 import { useAuth } from '../lib/auth'
 import type { DetalhesEstudo } from '../lib/tipos'
@@ -155,6 +157,9 @@ export default function EditorMensagem() {
     ]).then(([m, t, p, ev]) => {
       if (!ativo) return
       setMensagem((m.data as Mensagem) ?? null)
+      // Abrir um estudo leva o app para o lado Estudos (logo e menu acompanham), e vice-versa
+      const tipo = (m.data as Mensagem | null)?.tipo === 'estudo' ? 'estudo' : 'pregacao'
+      if (m.data && lerModo() !== tipo) salvarModo(tipo)
       setTopicos((t.data as Topico[]) ?? [])
       setPastas((p.data as Pasta[]) ?? [])
       setEventos((ev.data as EventoCurto[]) ?? [])
@@ -364,7 +369,7 @@ export default function EditorMensagem() {
   const minutosBlocos = topicos.reduce((s, t) => s + (t.extra?.minutos ?? 0), 0)
 
   return (
-    <div className="mx-auto max-w-3xl px-4 pb-28 md:px-8">
+    <div className="mx-auto max-w-3xl px-4 pb-28 md:px-8 lg:max-w-6xl">
       {/* Barra do topo (fixa ao rolar) */}
       <div className="sticky top-0 z-20 -mx-4 flex items-center gap-1 bg-fundo/90 px-4 py-2 backdrop-blur md:-mx-8 md:px-8 md:py-4">
         <Link to="/" className="botao-fantasma -ml-2 px-2">
@@ -386,6 +391,9 @@ export default function EditorMensagem() {
         </Link>
       </div>
 
+      {/* Computador: conteúdo à esquerda e, à direita, uma coluna fixa com ações e dados */}
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_23rem] lg:gap-x-10 lg:[grid-template-areas:'titulo_lado'_'corpo_lado']">
+      <div className="min-w-0 lg:[grid-area:titulo]">
       {estudo && (
         <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-[#14B8A6]/15 px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-wider text-[#14B8A6]">
           <GraduationCap size={13} /> Estudo
@@ -397,8 +405,11 @@ export default function EditorMensagem() {
         placeholder={estudo ? 'Título do estudo' : 'Título da mensagem'}
         className="mt-2 w-full bg-transparent font-display text-2xl font-extrabold leading-tight tracking-tight outline-none placeholder:text-texto-2/50 sm:text-3xl md:text-4xl" />
 
-      <div className={`mt-4 grid gap-2 sm:flex sm:flex-wrap ${estudo ? 'grid-cols-3' : 'grid-cols-2'}`}>
-        <Link to={`/pregar/${mensagem.id}`} className="botao-primario hidden sm:inline-flex">
+      </div>
+
+      <div className="lg:sticky lg:top-24 lg:self-start lg:[grid-area:lado] lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto lg:pb-4 sem-barra">
+      <div className={`mt-4 grid gap-2 sm:flex sm:flex-wrap lg:mt-2 lg:grid lg:grid-cols-2 ${estudo ? 'grid-cols-3' : 'grid-cols-2'}`}>
+        <Link to={`/pregar/${mensagem.id}`} className="botao-primario hidden sm:inline-flex lg:col-span-2">
           <Play size={18} fill="currentColor" /> {acaoNome}
         </Link>
         <Link to={`/mensagem/${mensagem.id}/slides`} className={`botao-secundario ${estudo ? 'max-sm:px-2 max-sm:text-sm' : ''}`}>
@@ -408,6 +419,11 @@ export default function EditorMensagem() {
           {copiado ? <><Check size={18} className="text-sucesso" /> Copiado</>
             : <><span className="sm:hidden"><Share2 size={18} /></span><span className="hidden sm:inline"><ClipboardCopy size={18} /></span> {estudo ? 'Roteiro' : 'Esboço'}</>}
         </button>
+        {estudo && (
+          <Link to={`/mensagem/${mensagem.id}/respostas`} className="botao-secundario max-sm:order-last max-sm:col-span-3 max-sm:text-sm lg:order-last lg:px-3">
+            <MessagesSquare size={18} /> Respostas das aulas
+          </Link>
+        )}
         {estudo && (
           <button onClick={baixarFolha} disabled={gerandoFolha || topicos.length === 0} className="botao-secundario max-sm:px-2 max-sm:text-sm">
             {gerandoFolha ? <LoaderCircle size={18} className="animate-spin" /> : <FileDown size={18} />} <span className="sm:hidden">Folha</span><span className="hidden sm:inline">Folha do aluno</span>
@@ -493,8 +509,11 @@ export default function EditorMensagem() {
         </Link>
       </div>
 
+      </div>
+
+      <div className="min-w-0 lg:[grid-area:corpo]">
       {/* Tópicos */}
-      <div className="mt-10 flex items-baseline justify-between">
+      <div className="mt-10 flex items-baseline justify-between lg:mt-6">
         <h2 className="font-display text-2xl font-extrabold">{estudo ? 'Blocos' : 'Tópicos'}</h2>
         {topicos.length > 0 && (
           <span className="text-sm text-texto-2">
@@ -620,6 +639,51 @@ export default function EditorMensagem() {
                       </label>
                     </div>
                   )}
+                  {tipoB === 'pergunta' && (
+                    <div className="space-y-2">
+                      <span className="block text-sm font-semibold text-texto-2">Tipo de resposta</span>
+                      <div className="flex rounded-xl border border-borda p-1">
+                        {([['aberta', 'Aberta'], ['multipla', 'Múltipla escolha']] as const).map(([v, n]) => {
+                          const ativo = (v === 'multipla') === !!t.extra?.opcoes
+                          return (
+                            <button key={v} type="button" onClick={() => alterarExtra(t, v === 'multipla' ? { opcoes: t.extra?.opcoes ?? ['', ''], correta: t.extra?.correta ?? 0 } : { opcoes: undefined, correta: undefined })}
+                              className={`flex-1 rounded-lg py-1.5 text-sm font-semibold ${ativo ? 'bg-acao text-acao-texto' : 'text-texto-2'}`}>{n}</button>
+                          )
+                        })}
+                      </div>
+                      {t.extra?.opcoes && (
+                        <div className="space-y-2">
+                          {t.extra.opcoes.map((op, k) => (
+                            <div key={k} className="flex items-center gap-2">
+                              <button type="button" onClick={() => alterarExtra(t, { correta: k })} aria-label={`Marcar opção ${LETRAS[k]} como certa`}
+                                title="Resposta certa"
+                                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-extrabold text-white ${t.extra?.correta === k ? 'ring-2 ring-sucesso ring-offset-2 ring-offset-superficie' : 'opacity-70'}`}
+                                style={{ background: CORES_OPCOES[k] }}>
+                                {t.extra?.correta === k ? <Check size={18} /> : LETRAS[k]}
+                              </button>
+                              <input value={op} placeholder={`Opção ${LETRAS[k]}`} className="campo"
+                                onChange={(e) => alterarExtra(t, { opcoes: t.extra!.opcoes!.map((x, j) => (j === k ? e.target.value : x)) })} />
+                              {t.extra!.opcoes!.length > 2 && (
+                                <button type="button" aria-label="Tirar opção" onClick={() => {
+                                  const opcoes = t.extra!.opcoes!.filter((_, j) => j !== k)
+                                  const c = t.extra?.correta ?? 0
+                                  alterarExtra(t, { opcoes, correta: c === k ? 0 : c > k ? c - 1 : c })
+                                }} className={iconeBotao}><Trash2 size={16} /></button>
+                              )}
+                            </div>
+                          ))}
+                          <div className="flex items-center justify-between">
+                            {t.extra.opcoes.length < 6 && (
+                              <button type="button" onClick={() => alterarExtra(t, { opcoes: [...t.extra!.opcoes!, ''] })} className="botao-fantasma -ml-2 px-2 text-sm">
+                                <Plus size={16} /> Opção
+                              </button>
+                            )}
+                            <span className="text-xs text-texto-2">Toque na letra para marcar a certa</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   {def.minutos !== undefined && (
                     <div>
                       <span className="mb-1.5 block text-sm font-semibold text-texto-2">Tempo {tipoB === 'pergunta' ? 'de discussão' : 'da atividade'}</span>
@@ -707,6 +771,8 @@ export default function EditorMensagem() {
         <Plus size={18} /> Adicionar tópico
       </button>
       )}
+      </div>
+      </div>
     </div>
   )
 }

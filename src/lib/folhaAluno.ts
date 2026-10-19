@@ -107,7 +107,12 @@ export async function gerarFolhaAluno(m: Mensagem, blocos: Topico[]) {
         }
       }
     }
-    if (tipo === 'pergunta') linhasResposta(4)
+    const opcoes = tipo === 'pergunta' ? (b.extra?.opcoes ?? []).filter((o) => o.trim()) : []
+    if (opcoes.length >= 2) {
+      y += 1
+      opcoes.forEach((o, k) => escrever(`(   )  ${'ABCDEF'[k]}) ${o}`, 11, 'normal', [25, 25, 25], 3))
+      y += 2
+    } else if (tipo === 'pergunta') linhasResposta(4)
     else if (tipo === 'atividade') linhasResposta(3)
     y += 5
   }

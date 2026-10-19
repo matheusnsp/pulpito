@@ -14,6 +14,8 @@ const Biblia = lazy(() => import('./pages/Biblia'))
 const Agenda = lazy(() => import('./pages/Agenda'))
 const Ajustes = lazy(() => import('./pages/Ajustes'))
 const Perguntas = lazy(() => import('./pages/Perguntas'))
+const Responder = lazy(() => import('./pages/Responder'))
+const RespostasEstudo = lazy(() => import('./pages/RespostasEstudo'))
 
 function Carregando() {
   return (
@@ -38,12 +40,15 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/criar-conta" element={<CriarConta />} />
         <Route path="/projetar" element={<Projetar />} />
+        <Route path="/responder" element={<Responder />} />
+        <Route path="/responder/:codigo" element={<Responder />} />
         <Route element={<Protegido />}>
           <Route path="/pregar/:id" element={<Pregar />} />
           <Route element={<Layout />}>
             <Route path="/" element={<Mensagens />} />
             <Route path="/mensagem/:id" element={<EditorMensagem />} />
             <Route path="/mensagem/:id/slides" element={<EditorSlides />} />
+            <Route path="/mensagem/:id/respostas" element={<RespostasEstudo />} />
             <Route path="/biblia" element={<Biblia />} />
             <Route path="/agenda" element={<Agenda />} />
             <Route path="/perguntas" element={<Perguntas />} />
