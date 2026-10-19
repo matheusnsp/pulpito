@@ -38,8 +38,9 @@ export async function carregarUltimaVersao() {
   } catch { /* navegador sem service worker */ }
   try {
     const nomes = await caches.keys()
-    // A Bíblia baixada continua no aparelho
-    await Promise.all(nomes.filter((n) => n !== 'biblia').map((n) => caches.delete(n)))
+    // Só apaga o código do app. A Bíblia baixada e a cópia dos dados (supabase-api) ficam:
+    // essa cópia é o que permite abrir sem internet e até recuperar algo apagado sem querer.
+    await Promise.all(nomes.filter((n) => n !== 'biblia' && n !== 'supabase-api').map((n) => caches.delete(n)))
   } catch { /* sem cache */ }
   // Endereço diferente, para o navegador não reaproveitar a página guardada
   const url = new URL(window.location.href)
