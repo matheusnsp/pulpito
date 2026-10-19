@@ -49,7 +49,7 @@ export default function Layout() {
         <div className="px-5 pb-5 pt-6">
           <Marca icone modo={modo} />
           <p className={`mt-1 pl-[2.1rem] text-[11px] font-extrabold uppercase tracking-[0.14em] ${modo === 'estudo' ? 'text-[#14B8A6]' : 'text-tinta'}`}>
-            {modo === 'estudo' ? 'Estudos' : 'Pregações'}
+            {modo === 'estudo' ? 'Estudos' : 'Palavra'}
           </p>
         </div>
 

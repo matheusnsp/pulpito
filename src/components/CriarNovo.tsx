@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, GraduationCap, LoaderCircle, Mic, X } from 'lucide-react'
+import { ArrowRight, BookOpen, Briefcase, GraduationCap, LoaderCircle, Mic, NotebookPen, Presentation, X } from 'lucide-react'
 import { aoPedirCriar, salvarModo, type PedidoCriar } from '../lib/criar'
 import { criarMensagem, FALTA_SQL_ESTUDOS } from '../lib/mensagens'
-import { MODELOS_ESTUDO } from '../lib/blocos'
+import { FORMATOS_PALAVRA, ICONE_FORMATO, MODELOS } from '../lib/blocos'
 import type { TipoProjeto } from '../lib/tipos'
 
-/* Folha "O que você vai preparar?": pregação, estudo em branco ou estudo a partir de um modelo */
+/* Folha "O que você vai preparar?": lado Palavra (pregação e formatos) ou lado Estudos (em branco ou modelo) */
 export default function CriarNovo() {
   const navigate = useNavigate()
   const [pedido, setPedido] = useState<PedidoCriar | null>(null)
@@ -39,43 +39,54 @@ export default function CriarNovo() {
 
   if (!pedido) return null
 
-  const opcao = (tipo: TipoProjeto, Icone: typeof Mic, titulo: string, texto: string, cor: string) => (
-    <button onClick={() => criar(tipo)} disabled={!!criando}
-      className={`flex w-full items-start gap-4 rounded-2xl border bg-superficie p-4 text-left transition hover:border-acao ${pedido.tipo === tipo ? 'border-acao ring-4 ring-acao/15' : 'border-borda'}`}>
-      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl" style={{ background: `${cor}24`, color: cor }}>
-        {criando === tipo ? <LoaderCircle size={22} className="animate-spin" /> : <Icone size={24} />}
+  const cartao = (chave: string, tipo: TipoProjeto, modelo: string | undefined, Icone: typeof Mic, titulo: string, texto: string, cor: string, destaque = false) => (
+    <button key={chave} onClick={() => criar(tipo, modelo)} disabled={!!criando}
+      className={`flex w-full items-center gap-3 rounded-2xl border bg-superficie p-3 text-left transition hover:border-acao ${destaque ? 'border-acao/70' : 'border-borda'}`}>
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl" style={{ background: `${cor}24`, color: cor }}>
+        {criando === chave ? <LoaderCircle size={20} className="animate-spin" /> : <Icone size={20} />}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block font-display text-lg font-extrabold">{titulo}</span>
-        <span className="mt-0.5 block text-sm leading-snug text-texto-2">{texto}</span>
+        <span className="block font-display font-extrabold leading-tight">{titulo}</span>
+        <span className="block truncate text-xs text-texto-2">{texto}</span>
       </span>
-      <ArrowRight size={18} className="mt-1 shrink-0 text-texto-2" />
+      <ArrowRight size={16} className="shrink-0 text-texto-2" />
     </button>
+  )
+  const ICONES_ESTUDO: Record<string, typeof Mic> = { aula: NotebookPen, palestra: Presentation, treinamento: Briefcase }
+  const estudos = MODELOS.filter((m) => m.lado === 'estudo')
+  const secao = (tipo: TipoProjeto, Icone: typeof Mic, nome: string, texto: string, cor: string) => (
+    <div className={`mb-2 mt-1 flex items-center gap-2 ${pedido.tipo === tipo ? '' : 'opacity-90'}`}>
+      <Icone size={16} style={{ color: cor }} />
+      <b className="font-display">{nome}</b>
+      <span className="truncate text-xs text-texto-2">{texto}</span>
+    </div>
   )
 
   return (
     <div className="fixed inset-0 z-[65] flex items-end justify-center bg-black/55 backdrop-blur-sm sm:items-center sm:p-6"
       onClick={() => setPedido(null)} role="dialog" aria-modal="true" aria-labelledby="criar-titulo">
       <div onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md animate-subir rounded-t-[1.75rem] border border-borda bg-fundo p-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl sm:animate-entrar sm:rounded-[1.75rem] sm:p-5">
+        className="max-h-[100dvh] w-full max-w-2xl animate-subir overflow-y-auto rounded-t-[1.75rem] border border-borda bg-fundo p-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl sm:animate-entrar sm:rounded-[1.75rem] sm:p-5">
         <span aria-hidden className="mx-auto mb-3 block h-1.5 w-10 rounded-full bg-borda sm:hidden" />
         <div className="mb-3 flex items-center justify-between">
           <h2 id="criar-titulo" className="font-display text-xl font-extrabold">O que você vai preparar?</h2>
           <button onClick={() => setPedido(null)} aria-label="Fechar"
             className="flex h-9 w-9 items-center justify-center rounded-xl text-texto-2 hover:bg-superficie-2"><X size={18} /></button>
         </div>
-        <div className="space-y-2.5">
-          {opcao('pregacao', Mic, 'Pregação', 'Mensagem para pregar: texto base, tópicos, cronômetro e telão.', '#EAB308')}
-          {opcao('estudo', GraduationCap, 'Estudo', 'Aula, célula, curso ou palestra sobre qualquer assunto: blocos, perguntas, atividades e folha do aluno.', '#14B8A6')}
-        </div>
-        <p className="rotulo mt-5">Ou comece um estudo de um modelo</p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {MODELOS_ESTUDO.map((m) => (
-            <button key={m.id} onClick={() => criar('estudo', m.id)} disabled={!!criando}
-              className="flex items-center gap-1.5 rounded-full border border-borda px-3.5 py-2 text-sm font-bold text-texto-2 hover:border-acao hover:text-texto">
-              {criando === m.id && <LoaderCircle size={14} className="animate-spin" />} {m.nome}
-            </button>
-          ))}
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-5 sm:grid-cols-2">
+          <div>
+            {secao('pregacao', BookOpen, 'Palavra', 'Centrado na Bíblia', '#EAB308')}
+            <div className="space-y-2">
+              {FORMATOS_PALAVRA.map((f) => cartao(f.id, 'pregacao', f.id === 'pregacao' ? undefined : f.id, ICONE_FORMATO[f.id], f.nome, f.resumo, '#EAB308', f.id === 'pregacao' && pedido.tipo !== 'estudo'))}
+            </div>
+          </div>
+          <div>
+            {secao('estudo', GraduationCap, 'Estudos', 'Qualquer assunto', '#14B8A6')}
+            <div className="space-y-2">
+              {cartao('estudo', 'estudo', undefined, GraduationCap, 'Em branco', 'Monte com blocos do seu jeito', '#14B8A6', pedido.tipo === 'estudo')}
+              {estudos.map((m) => cartao(m.id, 'estudo', m.id, ICONES_ESTUDO[m.id] ?? GraduationCap, m.nome, m.blocos.map((b) => b.titulo).slice(0, 3).join(' · '), '#14B8A6'))}
+            </div>
+          </div>
         </div>
         {erro === 'sql' && (
           <div role="alert" className="mt-4 rounded-xl bg-aviso/15 p-3 text-sm">

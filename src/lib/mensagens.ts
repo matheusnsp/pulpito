@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
 import { CAMPOS_TOPICO, type Mensagem, type Slide, type Topico, type TipoProjeto } from './tipos'
-import { MODELOS_ESTUDO, defBloco, itensDaLista } from './blocos'
+import { MODELOS, defBloco, ehBloco, itensDaLista } from './blocos'
 import { formatarReferencia, parseReferencia } from './biblia'
 
 const NAO_COPIAR = new Set(['id', 'mensagem_id', 'criado_em', 'atualizado_em'])
@@ -12,20 +12,22 @@ export const FALTA_SQL_ESTUDOS = 'falta-sql-estudos'
 const semColunas = (e: { code?: string; message?: string } | null) =>
   !!e && (e.code === 'PGRST204' || e.code === '42703' || /column .*(tipo|detalhes|extra)/i.test(e.message ?? ''))
 
-/* Cria uma pregação vazia, ou um estudo (vazio ou a partir de um modelo), e devolve o id */
+/* Cria um item do lado Palavra (pregação em branco ou um formato com blocos) ou um estudo, e devolve o id */
 export async function criarMensagem(pastaId: string | null = null, opcoes: { tipo?: TipoProjeto; modelo?: string } = {}) {
-  if (opcoes.tipo !== 'estudo') {
+  const tipo: TipoProjeto = opcoes.tipo === 'estudo' ? 'estudo' : 'pregacao'
+  const modelo = MODELOS.find((m) => m.id === opcoes.modelo)
+  // Pregação em branco: como sempre foi (funciona mesmo sem o SQL dos estudos)
+  if (tipo === 'pregacao' && !modelo) {
     const { data, error } = await supabase.from('mensagens')
       .insert({ pasta_id: pastaId }).select('id').single()
     if (error || !data) throw error ?? new Error('sem dados')
     return data.id as string
   }
-  const modelo = MODELOS_ESTUDO.find((m) => m.id === opcoes.modelo)
   const { data, error } = await supabase.from('mensagens').insert({
-    pasta_id: pastaId, tipo: 'estudo',
+    pasta_id: pastaId, tipo,
     titulo: modelo ? modelo.nome : '',
     tempo_minutos: modelo?.minutos ?? 45,
-    detalhes: modelo ? { objetivo: modelo.objetivo } : {},
+    detalhes: { ...(modelo ? { objetivo: modelo.objetivo } : {}), ...(tipo === 'pregacao' && modelo ? { formato: modelo.id } : {}) },
   }).select('id').single()
   if (semColunas(error)) throw new Error(FALTA_SQL_ESTUDOS)
   if (error || !data) throw error ?? new Error('sem dados')
@@ -86,7 +88,7 @@ export function esbocoEmTexto(m: Mensagem, topicos: Topico[]) {
     const r = t ? parseReferencia(t) : null
     return r ? formatarReferencia(r) : t?.trim() || ''
   }
-  if (m.tipo === 'estudo') return estudoEmTexto(m, topicos, ref)
+  if (m.tipo === 'estudo' || topicos.some((t) => ehBloco(t.tipo))) return estudoEmTexto(m, topicos, ref)
   const linhas: string[] = [`*${m.titulo || 'Sem título'}*`]
   if (m.texto_base) linhas.push(`Texto base: ${ref(m.texto_base)}`)
   linhas.push('')
@@ -111,6 +113,16 @@ function estudoEmTexto(m: Mensagem, blocos: Topico[], ref: (t: string | null) =>
   if (info) linhas.push(info)
   linhas.push('')
   blocos.forEach((b, i) => {
+    if (!ehBloco(b.tipo)) {
+      linhas.push(`${i + 1}. ${b.titulo || 'Sem título'}${b.versiculo ? ` (${ref(b.versiculo)})` : ''}`)
+      for (const c of CAMPOS_TOPICO) {
+        if (c.chave === 'notas') continue
+        const v = b[c.chave]?.trim()
+        if (v) linhas.push(`   ${c.rotulo}: ${v.replace(/\n+/g, ' ')}`)
+      }
+      linhas.push('')
+      return
+    }
     const def = defBloco(b)
     const min = b.extra?.minutos ? ` (${b.extra.minutos} min)` : ''
     linhas.push(`${i + 1}. [${def.nome}] ${b.titulo || ''}${min}`)

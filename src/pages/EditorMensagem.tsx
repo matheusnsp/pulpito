@@ -15,7 +15,7 @@ import { useHistorico } from '../lib/historico'
 import { CAMPOS_TOPICO, type Mensagem, type Pasta, type Topico } from '../lib/tipos'
 import { parseReferencia, formatarReferencia, lerReferencia } from '../lib/biblia'
 import { esbocoEmTexto } from '../lib/mensagens'
-import { BLOCOS, ORDEM_BLOCOS, defBloco, itensDaLista, type TipoBloco } from '../lib/blocos'
+import { BLOCOS, FORMATOS_PALAVRA, ICONE_FORMATO, ORDEM_BLOCOS, defBloco, ehBloco, itensDaLista, type TipoBloco } from '../lib/blocos'
 import { CORES_OPCOES, LETRAS } from '../lib/aoVivo'
 import { lerModo, salvarModo } from '../lib/criar'
 import { enviarImagem } from '../lib/imagens'
@@ -364,8 +364,13 @@ export default function EditorMensagem() {
   }[status]
 
   const estudo = mensagem.tipo === 'estudo'
-  const acaoNome = estudo ? 'Dar aula' : 'Pregar'
   const detalhes = mensagem.detalhes ?? {}
+  // Lado Palavra: formato (célula, EBD…) e se já tem blocos misturados aos tópicos
+  const formato = !estudo ? (detalhes.formato ?? 'pregacao') : null
+  const temBlocos = topicos.some((t) => ehBloco(t.tipo))
+  const comBlocos = estudo || temBlocos || (formato !== null && formato !== 'pregacao')
+  const IconeFormato = formato ? ICONE_FORMATO[formato] ?? ICONE_FORMATO.pregacao : GraduationCap
+  const acaoNome = estudo ? 'Dar aula' : formato === 'pregacao' ? 'Pregar' : 'Começar'
   const minutosBlocos = topicos.reduce((s, t) => s + (t.extra?.minutos ?? 0), 0)
 
   return (
@@ -394,10 +399,20 @@ export default function EditorMensagem() {
       {/* Computador: conteúdo à esquerda e, à direita, uma coluna fixa com ações e dados */}
       <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_23rem] lg:gap-x-10 lg:[grid-template-areas:'titulo_lado'_'corpo_lado']">
       <div className="min-w-0 lg:[grid-area:titulo]">
-      {estudo && (
+      {estudo ? (
         <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-[#14B8A6]/15 px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-wider text-[#14B8A6]">
           <GraduationCap size={13} /> Estudo
         </span>
+      ) : (
+        <label className="relative mt-2 inline-flex items-center gap-1.5 rounded-full bg-ouro-suave py-1 pl-2.5 pr-2 text-[11px] font-extrabold uppercase tracking-wider text-tinta"
+          title="Trocar o formato">
+          <IconeFormato size={13} /> Palavra ·
+          <select value={formato ?? 'pregacao'} onChange={(e) => alterarDetalhes({ formato: e.target.value })} aria-label="Formato"
+            className="cursor-pointer appearance-none bg-transparent pr-4 font-extrabold uppercase tracking-wider outline-none">
+            {FORMATOS_PALAVRA.map((f) => <option key={f.id} value={f.id}>{f.nome}</option>)}
+          </select>
+          <ChevronDown size={12} className="pointer-events-none absolute right-2" />
+        </label>
       )}
 
       {/* Título */}
@@ -408,44 +423,44 @@ export default function EditorMensagem() {
       </div>
 
       <div className="lg:sticky lg:top-24 lg:self-start lg:[grid-area:lado] lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto lg:pb-4 sem-barra">
-      <div className={`mt-4 grid gap-2 sm:flex sm:flex-wrap lg:mt-2 lg:grid lg:grid-cols-2 ${estudo ? 'grid-cols-3' : 'grid-cols-2'}`}>
+      <div className={`mt-4 grid gap-2 sm:flex sm:flex-wrap lg:mt-2 lg:grid lg:grid-cols-2 ${comBlocos ? 'grid-cols-3' : 'grid-cols-2'}`}>
         <Link to={`/pregar/${mensagem.id}`} className="botao-primario hidden sm:inline-flex lg:col-span-2">
           <Play size={18} fill="currentColor" /> {acaoNome}
         </Link>
-        <Link to={`/mensagem/${mensagem.id}/slides`} className={`botao-secundario ${estudo ? 'max-sm:px-2 max-sm:text-sm' : ''}`}>
+        <Link to={`/mensagem/${mensagem.id}/slides`} className={`botao-secundario ${comBlocos ? 'max-sm:px-2 max-sm:text-sm' : ''}`}>
           <Presentation size={18} /> Slides
         </Link>
-        <button onClick={compartilharEsboco} disabled={topicos.length === 0 && !mensagem.texto_base} className={`botao-secundario ${estudo ? 'max-sm:px-2 max-sm:text-sm' : ''}`}>
+        <button onClick={compartilharEsboco} disabled={topicos.length === 0 && !mensagem.texto_base} className={`botao-secundario ${comBlocos ? 'max-sm:px-2 max-sm:text-sm' : ''}`}>
           {copiado ? <><Check size={18} className="text-sucesso" /> Copiado</>
-            : <><span className="sm:hidden"><Share2 size={18} /></span><span className="hidden sm:inline"><ClipboardCopy size={18} /></span> {estudo ? 'Roteiro' : 'Esboço'}</>}
+            : <><span className="sm:hidden"><Share2 size={18} /></span><span className="hidden sm:inline"><ClipboardCopy size={18} /></span> {comBlocos ? 'Roteiro' : 'Esboço'}</>}
         </button>
-        {estudo && (
+        {comBlocos && (
           <Link to={`/mensagem/${mensagem.id}/respostas`} className="botao-secundario max-sm:order-last max-sm:col-span-3 max-sm:text-sm lg:order-last lg:px-3">
-            <MessagesSquare size={18} /> Respostas das aulas
+            <MessagesSquare size={18} /> {estudo ? "Respostas das aulas" : "Respostas"}
           </Link>
         )}
-        {estudo && (
+        {comBlocos && (
           <button onClick={baixarFolha} disabled={gerandoFolha || topicos.length === 0} className="botao-secundario max-sm:px-2 max-sm:text-sm">
-            {gerandoFolha ? <LoaderCircle size={18} className="animate-spin" /> : <FileDown size={18} />} <span className="sm:hidden">Folha</span><span className="hidden sm:inline">Folha do aluno</span>
+            {gerandoFolha ? <LoaderCircle size={18} className="animate-spin" /> : <FileDown size={18} />} <span className="sm:hidden">Folha</span><span className="hidden sm:inline">{estudo ? 'Folha do aluno' : 'Folha impressa'}</span>
           </button>
         )}
       </div>
 
       {/* Dados da mensagem */}
       <div className="cartao mt-6 grid grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] gap-4 p-4">
-        {estudo && (
+        {comBlocos && (
           <>
             <div className="col-span-2">
               <Campo rotulo="Objetivo">
                 <div className="relative">
                   <Target size={18} className="pointer-events-none absolute left-3.5 top-3 text-texto-2" />
-                  <textarea rows={2} value={detalhes.objetivo ?? ''} placeholder="Ao final, a turma consegue…"
+                  <textarea rows={2} value={detalhes.objetivo ?? ''} placeholder={estudo ? 'Ao final, a turma consegue…' : 'O que as pessoas levam para a semana'}
                     onChange={(e) => alterarDetalhes({ objetivo: e.target.value })} className="campo resize-y pl-10 leading-relaxed" />
                 </div>
               </Campo>
             </div>
             <Campo rotulo="Público">
-              <input value={detalhes.publico ?? ''} placeholder="Jovens, equipe, turma…"
+              <input value={detalhes.publico ?? ''} placeholder={estudo ? 'Jovens, equipe, turma…' : 'Célula, classe, discípulo…'}
                 onChange={(e) => alterarDetalhes({ publico: e.target.value })} className="campo" />
             </Campo>
             <Campo rotulo="Material">
@@ -524,10 +539,10 @@ export default function EditorMensagem() {
       <div className="min-w-0 lg:[grid-area:corpo]">
       {/* Tópicos */}
       <div className="mt-10 flex items-baseline justify-between lg:mt-6">
-        <h2 className="font-display text-2xl font-extrabold">{estudo ? 'Blocos' : 'Tópicos'}</h2>
+        <h2 className="font-display text-2xl font-extrabold">{estudo ? 'Blocos' : comBlocos ? 'Roteiro' : 'Tópicos'}</h2>
         {topicos.length > 0 && (
           <span className="text-sm text-texto-2">
-            {estudo
+            {comBlocos
               ? `${topicos.length} · ${minutosBlocos ? `${minutosBlocos} min em perguntas e atividades` : `${mensagem.tempo_minutos} min no total`}`
               : `${topicos.length} · cerca de ${Math.max(1, Math.round(mensagem.tempo_minutos / topicos.length))} min cada`}
           </span>
@@ -536,8 +551,9 @@ export default function EditorMensagem() {
 
       {topicos.length === 0 && (
         <p className="mt-2 text-texto-2">
-          {estudo
-            ? 'Monte o estudo empilhando blocos: explicação, pergunta, atividade, lista e mais. Cada bloco vira um passo da aula e um slide.'
+          {comBlocos
+            ? estudo ? 'Monte o estudo empilhando blocos: explicação, pergunta, atividade, lista e mais. Cada bloco vira um passo da aula e um slide.'
+              : 'Misture tópicos e blocos (pergunta, atividade, lista…). Cada item vira um passo e um slide.'
             : 'Cada tópico vira um ponto da pregação e um slide no telão.'}
         </p>
       )}
@@ -547,7 +563,7 @@ export default function EditorMensagem() {
       <ol className="mt-4 space-y-3">
         {topicos.map((t, i) => {
           const estaAberto = aberto === t.id
-          const def = estudo ? defBloco(t) : null
+          const def = estudo || ehBloco(t.tipo) ? defBloco(t) : null
           const tipoB = (t.tipo ?? 'explicacao') as TipoBloco
           return (
             <Arrastavel key={t.id} id={t.id}>
@@ -716,6 +732,7 @@ export default function EditorMensagem() {
                     <label className="flex items-center gap-2 text-sm text-texto-2">
                       Tipo
                       <select value={tipoB} onChange={(e) => alterarTopico(t.id, { tipo: e.target.value })} className="campo w-auto py-1.5">
+                        {!estudo && <option value="topico">Tópico</option>}
                         {ORDEM_BLOCOS.map((k) => <option key={k} value={k}>{BLOCOS[k].nome}</option>)}
                       </select>
                     </label>
@@ -776,10 +793,25 @@ export default function EditorMensagem() {
           </div>
         </div>
       ) : (
-      <button onClick={() => adicionarTopico()}
-        className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-borda py-4 font-bold text-texto-2 transition-colors hover:border-acao hover:bg-ouro-suave/50 hover:text-tinta">
-        <Plus size={18} /> Adicionar tópico
-      </button>
+      <div className="mt-3 rounded-2xl border-2 border-dashed border-borda p-2">
+        <button onClick={() => adicionarTopico()}
+          className="flex w-full items-center justify-center gap-2 rounded-xl py-3 font-bold text-texto-2 transition-colors hover:bg-ouro-suave/50 hover:text-tinta">
+          <Plus size={18} /> Adicionar tópico
+        </button>
+        <div className="flex items-center gap-1.5 overflow-x-auto px-1 pb-1 pt-1.5 sem-barra sm:flex-wrap sm:justify-center sm:overflow-visible">
+          <span className="shrink-0 pr-1 text-xs font-bold text-texto-2">Inserir</span>
+          {ORDEM_BLOCOS.map((k) => {
+            const b = BLOCOS[k]
+            return (
+              <button key={k} onClick={() => adicionarTopico(k)}
+                className="flex shrink-0 items-center gap-1.5 rounded-full border border-borda bg-superficie py-1 pl-1 pr-2.5 text-xs font-bold transition-colors hover:border-acao">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full" style={{ background: `${b.cor}26`, color: b.cor }}><b.Icone size={13} /></span>
+                {b.nome}
+              </button>
+            )
+          })}
+        </div>
+      </div>
       )}
       </div>
       </div>

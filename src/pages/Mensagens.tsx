@@ -15,6 +15,7 @@ import { LIVROS, parseReferencia } from '../lib/biblia'
 import type { Mensagem, Pasta } from '../lib/tipos'
 import { duplicarMensagem } from '../lib/mensagens'
 import { abrirCriar, lerModo, salvarModo } from '../lib/criar'
+import { ICONE_FORMATO, nomeFormato } from '../lib/blocos'
 import type { TipoProjeto } from '../lib/tipos'
 
 const CHAVE_FILTRO = 'pulpito-filtro-pasta'
@@ -117,9 +118,11 @@ function LinhaMensagem({ m, blocos, pasta, pastas, hoje, menuAberto, onAbrirMenu
   const ref = refCurta(m.texto_base)
   const item = 'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-superficie-2'
   const estudo = tipoDe(m) === 'estudo'
-  const acaoNome = estudo ? 'Dar aula' : 'Pregar'
+  const formato = !estudo && m.detalhes?.formato && m.detalhes.formato !== 'pregacao' ? m.detalhes.formato : null
+  const IconeFormato = formato ? ICONE_FORMATO[formato] ?? Mic : null
+  const acaoNome = estudo ? 'Dar aula' : formato ? 'Começar' : 'Pregar'
   const total = blocos ? Object.values(blocos).reduce((a, b) => a + b, 0) : 0
-  const etiquetas = estudo && blocos ? ([
+  const etiquetas = blocos ? ([
     ['pergunta', 'pergunta', 'perguntas', '#38BDF8'], ['atividade', 'atividade', 'atividades', '#14B8A6'],
   ] as const).filter(([k]) => blocos[k]).map(([k, um, varios, cor]) => ({ texto: `${blocos[k]} ${blocos[k] === 1 ? um : varios}`, cor, k })) : []
 
@@ -136,9 +139,14 @@ function LinhaMensagem({ m, blocos, pasta, pastas, hoje, menuAberto, onAbrirMenu
           <GraduationCap size={20} />
         </span>
       )}
-      <Link to={`/mensagem/${m.id}`} className={`min-w-0 flex-1 py-3 ${estudo ? 'pl-2' : ''}`}>
+      {IconeFormato && (
+        <span className="ml-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EAB308]/15 text-[#EAB308]" title={nomeFormato(formato!)}>
+          <IconeFormato size={20} />
+        </span>
+      )}
+      <Link to={`/mensagem/${m.id}`} className={`min-w-0 flex-1 py-3 ${estudo || formato ? 'pl-2' : ''}`}>
         <p className="truncate font-display text-[17px] font-bold leading-snug">{m.titulo || 'Sem título'}</p>
-        {estudo && m.detalhes?.objetivo && (
+        {(estudo || formato) && m.detalhes?.objetivo && (
           <p className="mt-1 flex items-center gap-1.5 truncate text-sm text-texto/80"><Target size={13} className="shrink-0 text-texto-2" /> <span className="truncate">{m.detalhes.objetivo}</span></p>
         )}
         <p className="mt-1.5 flex min-w-0 items-center gap-2 text-sm text-texto-2">
@@ -148,6 +156,7 @@ function LinhaMensagem({ m, blocos, pasta, pastas, hoje, menuAberto, onAbrirMenu
             </span>
           )}
           <span className="truncate">
+            {formato && `${nomeFormato(formato)} · `}
             {estudo && `${total} ${total === 1 ? 'bloco' : 'blocos'} · ${m.tempo_minutos} min · `}
             {pasta && `${pasta.nome} · `}
             {quandoEditada(m.atualizado_em, hoje)}
@@ -405,7 +414,7 @@ export default function Mensagens() {
   const doisLados = mensagens ?? []
   const qtdPorModo = { pregacao: doisLados.filter((m) => tipoDe(m) === 'pregacao').length, estudo: doisLados.filter((m) => tipoDe(m) === 'estudo').length }
   const todas = doisLados.filter((m) => tipoDe(m) === modo)
-  const nomeItens = modo === 'estudo' ? ['estudo', 'estudos'] : ['pregação', 'pregações']
+  const nomeItens = modo === 'estudo' ? ['estudo', 'estudos'] : ['mensagem', 'mensagens']
   const termo = normalizar(busca.trim())
   const filtradas = todas.filter((m) => {
     const naPasta = filtroAtivo === 'todas' ? true
@@ -513,13 +522,13 @@ export default function Mensagens() {
             </h1>
           </div>
           <button onClick={criar} className="botao-primario hidden md:inline-flex">
-            <Plus size={18} strokeWidth={2.5} /> {modo === 'estudo' ? 'Novo estudo' : 'Nova pregação'}
+            <Plus size={18} strokeWidth={2.5} /> {modo === 'estudo' ? 'Novo estudo' : 'Nova mensagem'}
           </button>
         </header>
 
-        {/* Chave: Pregações | Estudos */}
+        {/* Chave: Palavra | Estudos */}
         <div role="tablist" aria-label="Tipo" className="mt-5 flex gap-1.5 rounded-2xl border border-borda bg-superficie p-1.5 md:max-w-md">
-          {([['pregacao', 'Pregações', Mic], ['estudo', 'Estudos', GraduationCap]] as const).map(([v, nome, Icone]) => {
+          {([['pregacao', 'Palavra', BookOpen], ['estudo', 'Estudos', GraduationCap]] as const).map(([v, nome, Icone]) => {
             const ativo = modo === v
             return (
               <button key={v} role="tab" aria-selected={ativo} onClick={() => trocarModo(v)}
@@ -671,7 +680,7 @@ export default function Mensagens() {
           <div className="cartao relative overflow-hidden px-6 py-12 text-center">
             <div aria-hidden className="pointer-events-none absolute left-1/2 top-0 h-40 w-72 -translate-x-1/2 rounded-full bg-acao/20 blur-3xl" />
             <h2 className="relative font-display text-2xl font-extrabold">
-              {modo === 'estudo' ? 'Comece seu primeiro estudo' : 'Comece sua primeira pregação'}
+              {modo === 'estudo' ? 'Comece seu primeiro estudo' : 'Comece sua primeira mensagem'}
             </h2>
             <p className="relative mx-auto mt-2 max-w-sm text-texto-2">
               {modo === 'estudo'
@@ -679,7 +688,7 @@ export default function Mensagens() {
                 : 'Organize em tópicos, ligue os versículos e pregue com o telão acompanhando.'}
             </p>
             <button onClick={criar} className="botao-primario relative mt-6">
-              <Plus size={18} /> {modo === 'estudo' ? 'Novo estudo' : 'Nova pregação'}
+              <Plus size={18} /> {modo === 'estudo' ? 'Novo estudo' : 'Nova mensagem'}
             </button>
           </div>
         )}
@@ -701,7 +710,7 @@ export default function Mensagens() {
 
         {todas.length > 0 && filtradas.length === 0 && (
           <p className="py-10 text-center text-texto-2">
-            {termo ? `Nada encontrado para "${busca}".` : `Nenhum${modo === 'estudo' ? ' estudo' : 'a pregação'} nesta pasta.`}
+            {termo ? `Nada encontrado para "${busca}".` : `Nenhum${modo === 'estudo' ? ' estudo' : 'a mensagem'} nesta pasta.`}
           </p>
         )}
       </div>
@@ -725,7 +734,7 @@ export default function Mensagens() {
       </div>
 
       {/* Celular: botão flutuante de nova mensagem */}
-      <button onClick={criar} aria-label={modo === 'estudo' ? 'Novo estudo' : 'Nova pregação'}
+      <button onClick={criar} aria-label={modo === 'estudo' ? 'Novo estudo' : 'Nova mensagem'}
         className="fixed bottom-[calc(6.25rem+env(safe-area-inset-bottom))] right-4 z-10 flex h-14 w-14 items-center justify-center rounded-2xl bg-acao text-acao-texto shadow-[0_10px_30px_-8px_var(--acao)] active:scale-95 disabled:opacity-60 md:hidden">
         <Plus size={26} strokeWidth={2.5} />
       </button>

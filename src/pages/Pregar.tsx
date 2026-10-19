@@ -1,6 +1,6 @@
 import { lerVersao } from '../lib/preferencias'
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react'
-import { defBloco, itensDaLista } from '../lib/blocos'
+import { defBloco, ehBloco, itensDaLista } from '../lib/blocos'
 import { alternarTelaCheia as trocarTelaCheia } from '../lib/telaCheia'
 import AjudaTelaCheia from '../components/AjudaTelaCheia'
 import { FaixaAoVivo, PainelAoVivo, RespostasAoVivo, type AoVivo } from '../components/AulaAoVivo'
@@ -736,9 +736,9 @@ export default function Pregar() {
     setResumo({ anterior })
   }
 
-  // Respostas ao vivo (só nos estudos)
-  const ehEstudo = mensagem?.tipo === 'estudo'
-  const ao = useAulaAoVivo(ehEstudo ? mensagem : null, topicos, ehEstudo && indice > 0 ? topicos[indice - 1] ?? null : null)
+  // Respostas ao vivo: nos estudos e em qualquer mensagem que tenha pergunta ou atividade
+  const usaAoVivo = mensagem?.tipo === 'estudo' || topicos.some(aceitaResposta)
+  const ao = useAulaAoVivo(usaAoVivo ? mensagem : null, topicos, usaAoVivo && indice > 0 ? topicos[indice - 1] ?? null : null)
   const [painelAoVivo, setPainelAoVivo] = useState(false)
 
   if (mensagem === undefined) return <div className="escuro h-dvh bg-fundo p-6 text-texto-2">Carregando…</div>
@@ -766,7 +766,10 @@ export default function Pregar() {
   const hora = new Date(agora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
   const topico = indice > 0 ? topicos[indice - 1] : null
   const estudo = mensagem.tipo === 'estudo'
-  const nomeParte = estudo ? 'Bloco' : 'Tópico'
+  const ehDeBloco = (t: Topico) => estudo || ehBloco(t.tipo)
+  const temBlocos = estudo || topicos.some((t) => ehBloco(t.tipo))
+  const comDetalhes = temBlocos || (!!mensagem.detalhes?.formato && mensagem.detalhes.formato !== 'pregacao')
+  const nomeParte = estudo ? 'Bloco' : temBlocos ? 'Parte' : 'Tópico'
 
   function irParaTopico(n: number) {
     setIndice(n)
@@ -826,7 +829,7 @@ export default function Pregar() {
           )}
         </div>
 
-        {estudo && (
+        {usaAoVivo && (
           <button onClick={() => setPainelAoVivo(true)} aria-label="Respostas ao vivo" title="Respostas ao vivo"
             className={`relative ${iconeBotao} border border-borda ${ao.aula ? 'text-perigo' : ''}`}>
             <Radio size={20} />
@@ -870,7 +873,7 @@ export default function Pregar() {
           <div className={`h-full rounded-full ${corBarra} transition-all`} style={{ width: `${Math.min(fracao, 1) * 100}%` }} />
         </div>
 
-        {estudo && <FaixaAoVivo ao={ao} onAbrir={() => setPainelAoVivo(true)} />}
+        {usaAoVivo && <FaixaAoVivo ao={ao} onAbrir={() => setPainelAoVivo(true)} />}
 
         {/* Próximo tópico, com lista para pular para qualquer um */}
         {topicos.length > 0 && (
@@ -927,22 +930,22 @@ export default function Pregar() {
           {!topico && (
             <div className="space-y-4">
               <p className="text-texto-2">
-                {topicos.length} {estudo ? (topicos.length === 1 ? 'bloco' : 'blocos') : (topicos.length === 1 ? 'tópico' : 'tópicos')} · {mensagem.tempo_minutos} min
-                {estudo && mensagem.detalhes?.publico ? ` · ${mensagem.detalhes.publico}` : ''}
+                {topicos.length} {estudo ? (topicos.length === 1 ? 'bloco' : 'blocos') : temBlocos ? (topicos.length === 1 ? 'parte' : 'partes') : (topicos.length === 1 ? 'tópico' : 'tópicos')} · {mensagem.tempo_minutos} min
+                {comDetalhes && mensagem.detalhes?.publico ? ` · ${mensagem.detalhes.publico}` : ''}
               </p>
               <h1 className={`${tam.titulo} font-display font-extrabold uppercase leading-[1.05] tracking-tight text-tinta`}>{mensagem.titulo}</h1>
-              {estudo && mensagem.detalhes?.objetivo && (
+              {comDetalhes && mensagem.detalhes?.objetivo && (
                 <p className={`${tam.corpo} flex items-start gap-3 text-texto/85`}><Target size={22} className="mt-1 shrink-0 text-texto-2" /> {mensagem.detalhes.objetivo}</p>
               )}
-              {estudo && mensagem.detalhes?.material && (
+              {comDetalhes && mensagem.detalhes?.material && (
                 <p className="text-texto-2">Material: {mensagem.detalhes.material}</p>
               )}
             </div>
           )}
 
-          {topico && estudo && <BlocoAula bloco={topico} n={indice} ao={ao} />}
+          {topico && ehDeBloco(topico) && <BlocoAula bloco={topico} n={indice} ao={ao} />}
 
-          {topico && !estudo && (
+          {topico && !ehDeBloco(topico) && (
             <div className="space-y-7">
               <div className="space-y-2">
                 <p className="font-display text-[length:var(--fs-sub)] font-extrabold uppercase leading-[1.05] tracking-tight text-tinta">
@@ -983,7 +986,7 @@ export default function Pregar() {
             <p className="rotulo">Roteiro</p>
             <ol className="mt-2 space-y-1">
               {[null, ...topicos].map((t, n) => {
-                const def = t && estudo ? defBloco(t) : null
+                const def = t && ehDeBloco(t) ? defBloco(t) : null
                 const atual = indice === n
                 return (
                   <li key={t?.id ?? 'capa'}>
@@ -1002,7 +1005,7 @@ export default function Pregar() {
                 )
               })}
             </ol>
-            <p className="mt-4 text-xs text-texto-2">Setas do teclado mudam de {estudo ? 'bloco' : 'tópico'} · espaço liga o cronômetro</p>
+            <p className="mt-4 text-xs text-texto-2">Setas do teclado mudam de {nomeParte.toLowerCase()} · espaço liga o cronômetro</p>
           </aside>
         )}
         </div>

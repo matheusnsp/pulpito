@@ -79,7 +79,7 @@ export default function RespostasEstudo() {
   return (
     <div className="mx-auto max-w-3xl px-4 pb-16 md:px-8">
       <div className="sticky top-0 z-20 -mx-4 flex items-center gap-1 bg-fundo/90 px-4 py-2 backdrop-blur md:-mx-8 md:px-8 md:py-4">
-        <Link to={`/mensagem/${id}`} className="botao-fantasma -ml-2 px-2"><ChevronLeft size={20} /> Estudo</Link>
+        <Link to={`/mensagem/${id}`} className="botao-fantasma -ml-2 px-2"><ChevronLeft size={20} /> Voltar</Link>
       </div>
       <h1 className="titulo-pagina mt-2">Respostas</h1>
       <p className="mt-1 truncate text-texto-2">{mensagem?.titulo}</p>

@@ -14,6 +14,7 @@ export type TipoProjeto = 'pregacao' | 'estudo'
 export type DetalhesEstudo = {
   objetivo?: string; publico?: string; material?: string; referencias?: string
   esperaTitulo?: string; esperaTexto?: string // o que a turma vê no celular enquanto não há pergunta
+  formato?: string // no lado Palavra: pregacao, celula, ebd, devocional, discipulado
 }
 
 export type Topico = {

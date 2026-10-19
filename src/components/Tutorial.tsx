@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   ArrowLeft, ArrowRight, BookOpen, Hourglass, CalendarDays, ChartNoAxesColumn, Check, ChevronRight, Clock, Copy, Download, Eye, FileDown,
   FolderInput, GraduationCap, GripVertical, Hand, Highlighter, ImagePlus, Layers, LayoutTemplate, ListChecks, Lock, Maximize,
-  MessagesSquare, Mic, MonitorPlay, MoveRight, NotebookPen, Palette, Plus, Presentation, QrCode, RefreshCw, RotateCw,
+  MessagesSquare, MonitorPlay, MoveRight, NotebookPen, Palette, Plus, Presentation, QrCode, RefreshCw, RotateCw,
   Radio, Search, Settings, Share2, Sparkles, Target, Timer, Trophy, Type as TypeIcon, Upload, Users, WifiOff, X,
 } from 'lucide-react'
 import { abrirCriar } from '../lib/criar'
@@ -60,7 +60,7 @@ const CAPITULOS: Capitulo[] = [
     passos: [
       {
         titulo: 'Bem-vindo ao Pulpito',
-        texto: 'Prepare, apresente e projete: pregações e estudos no mesmo lugar, do celular ao telão.',
+        texto: 'Prepare, apresente e projete: Palavra e estudos no mesmo lugar, do celular ao telão.',
         tela: (
           <Tela>
             <div className="flex h-full flex-col items-center justify-center gap-4">
@@ -80,18 +80,18 @@ const CAPITULOS: Capitulo[] = [
         ],
       },
       {
-        titulo: 'Pregações e Estudos',
+        titulo: 'Palavra e Estudos',
         texto: 'A chave no topo da tela inicial separa os dois lados do app. Cada lado mostra só os seus itens.',
         tela: (
           <Tela>
             <div className="flex gap-1 rounded-xl border border-borda bg-superficie p-1">
-              <span className="flex flex-1 items-center justify-center gap-1 rounded-lg py-1.5 text-[11px] font-bold text-texto-2"><Mic size={11} /> Pregações</span>
+              <span className="flex flex-1 items-center justify-center gap-1 rounded-lg py-1.5 text-[11px] font-bold text-texto-2"><BookOpen size={11} /> Palavra</span>
               <span className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-acao py-1.5 text-[11px] font-bold text-acao-texto"><GraduationCap size={11} /> Estudos</span>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <div className="rounded-xl border border-borda p-2 text-center">
                 <Marca icone className="text-[13px]" />
-                <p className="mt-1 text-[9px] font-bold uppercase tracking-wider" style={{ color: AMARELO }}>Pregações</p>
+                <p className="mt-1 text-[9px] font-bold uppercase tracking-wider" style={{ color: AMARELO }}>Palavra</p>
               </div>
               <div className="rounded-xl border border-borda p-2 text-center">
                 <Marca icone modo="estudo" className="text-[13px]" />
@@ -102,31 +102,36 @@ const CAPITULOS: Capitulo[] = [
           </Tela>
         ),
         dicas: [
-          { Icone: Mic, texto: <><b>Pregações</b>: mensagens com texto base, tópicos e cronômetro.</> },
-          { Icone: GraduationCap, texto: <><b>Estudos</b>: aula, célula, curso ou palestra sobre qualquer assunto.</> },
+          { Icone: BookOpen, texto: <><b>Palavra</b>: tudo centrado na Bíblia. Pregação, célula, estudo bíblico (EBD), devocional e discipulado.</> },
+          { Icone: GraduationCap, texto: <><b>Estudos</b>: aula de curso, palestra ou treinamento sobre qualquer assunto.</> },
           { Icone: MessagesSquare, texto: <>Nos estudos, o menu de baixo troca a Bíblia pelo <b>Banco de perguntas</b>.</> },
         ],
       },
       {
         titulo: 'Criar algo novo',
-        texto: 'O botão + abre a pergunta "O que você vai preparar?". Escolha pregação, estudo ou um modelo pronto.',
+        texto: 'O botão + abre a pergunta "O que você vai preparar?". De um lado os formatos da Palavra, do outro os estudos.',
         tela: (
           <Tela>
             <p className="font-display text-[13px] font-extrabold">O que você vai preparar?</p>
-            <div className="mt-2 space-y-1.5">
-              <Opcao Icone={Mic} nome="Pregação" cor={AMARELO} />
-              <Opcao Icone={GraduationCap} nome="Estudo" cor={VERDE} />
-            </div>
-            <div className="mt-2 flex flex-wrap gap-1">
-              {['Estudo bíblico', 'Célula', 'Aula', 'Palestra', 'Treinamento'].map((m) => (
-                <span key={m} className="rounded-full border border-borda px-1.5 py-0.5 text-[9px] font-bold text-texto-2">{m}</span>
-              ))}
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <p className="flex items-center gap-1 text-[9px] font-extrabold uppercase tracking-wider" style={{ color: AMARELO }}><BookOpen size={10} /> Palavra</p>
+                {['Pregação', 'Célula', 'Estudo bíblico', 'Devocional', 'Discipulado'].map((m) => (
+                  <span key={m} className="block truncate rounded-md border border-borda bg-superficie px-1.5 py-1 text-[9.5px] font-bold">{m}</span>
+                ))}
+              </div>
+              <div className="space-y-1">
+                <p className="flex items-center gap-1 text-[9px] font-extrabold uppercase tracking-wider" style={{ color: VERDE }}><GraduationCap size={10} /> Estudos</p>
+                {['Em branco', 'Aula de curso', 'Palestra', 'Treinamento'].map((m) => (
+                  <span key={m} className="block truncate rounded-md border border-borda bg-superficie px-1.5 py-1 text-[9.5px] font-bold">{m}</span>
+                ))}
+              </div>
             </div>
           </Tela>
         ),
         dicas: [
           { Icone: Plus, texto: <>No celular, o <b>+</b> fica embaixo à direita; no computador, em <b>Criar novo</b>.</> },
-          { Icone: LayoutTemplate, texto: <>Os <b>modelos</b> já trazem os blocos montados: é só preencher.</> },
+          { Icone: LayoutTemplate, texto: <>Célula, estudo bíblico, devocional, discipulado e os estudos já vêm <b>montados</b>: é só preencher.</> },
           { Icone: Copy, texto: <>No menu <b>⋯</b> de cada item dá para duplicar e reaproveitar.</> },
         ],
       },
@@ -158,9 +163,9 @@ const CAPITULOS: Capitulo[] = [
     ],
   },
 
-  /* ───────────── 2. Pregações ───────────── */
+  /* ───────────── 2. Palavra ───────────── */
   {
-    id: 'pregacoes', nome: 'Pregações', resumo: 'Esboço, modo pregação, cronômetro e ensaio', Icone: Mic, cor: AMARELO,
+    id: 'pregacoes', nome: 'Palavra', resumo: 'Pregação, célula, EBD, devocional e discipulado', Icone: BookOpen, cor: AMARELO,
     passos: [
       {
         titulo: 'Monte o esboço',
@@ -249,6 +254,36 @@ const CAPITULOS: Capitulo[] = [
           { Icone: Settings, texto: <>No modo pregação, toque na <b>engrenagem</b> e depois em <b>Ensaio</b>.</> },
           { Icone: ChartNoAxesColumn, texto: <>O resumo também abre sozinho quando você chega ao fim.</> },
           { Icone: Share2, texto: <>No editor, <b>Esboço</b> copia ou compartilha a mensagem em texto (bom para o WhatsApp).</> },
+        ],
+      },
+      {
+        titulo: 'Célula, EBD e mais',
+        texto: 'Na Palavra cabem vários formatos. Misture tópicos com blocos: uma pergunta para a célula, uma atividade, uma lista.',
+        tela: (
+          <Tela>
+            <span className="inline-flex items-center gap-1 rounded-full bg-ouro-suave px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wider text-tinta"><Users size={10} /> Palavra · Célula</span>
+            <div className="mt-2 space-y-1">
+              <div className="flex items-center gap-2 rounded-lg border border-borda bg-superficie px-1.5 py-1">
+                <Bolinha cor={VERDE}><Users size={12} /></Bolinha><span className="truncate text-[10.5px] font-bold">Quebra-gelo</span>
+              </div>
+              <div className="flex items-center gap-2 rounded-lg border border-borda bg-superficie px-1.5 py-1">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-ouro-suave text-[10px] font-extrabold text-tinta">2</span><span className="truncate text-[10.5px] font-bold">O amor que não desiste</span>
+              </div>
+              <div className="flex items-center gap-2 rounded-lg border border-borda bg-superficie px-1.5 py-1">
+                <Bolinha cor={AZUL}><MessagesSquare size={12} /></Bolinha><span className="truncate text-[10.5px] font-bold">O que falou com você?</span>
+              </div>
+            </div>
+            <div className="mt-2 flex gap-1 overflow-hidden">
+              {['Pergunta', 'Atividade', 'Lista', 'Citação'].map((m) => (
+                <span key={m} className="shrink-0 rounded-full border border-borda px-1.5 py-0.5 text-[9px] font-bold text-texto-2">{m}</span>
+              ))}
+            </div>
+          </Tela>
+        ),
+        dicas: [
+          { Icone: Plus, texto: <>Embaixo de <b>Adicionar tópico</b>, a fileira <b>Inserir</b> põe blocos no meio da mensagem.</> },
+          { Icone: BookOpen, texto: <>Toque na etiqueta <b>Palavra · Formato</b>, no topo do editor, para trocar o formato.</> },
+          { Icone: Radio, texto: <>Tem pergunta ou atividade? As <b>respostas ao vivo</b> e a <b>folha impressa</b> também funcionam aqui.</> },
         ],
       },
     ],
@@ -618,7 +653,38 @@ const CAPITULOS: Capitulo[] = [
         dicas: [
           { Icone: Palette, texto: <><b>4 temas</b> de cores; o modo pregação e o telão acompanham.</> },
           { Icone: BookOpen, texto: <>A <b>versão da Bíblia</b> fica salva na sua conta, em qualquer aparelho.</> },
-          { Icone: RefreshCw, texto: <><b>Carregar última versão</b> traz as novidades na hora; a data mostra qual versão você tem.</> },
+          { Icone: RefreshCw, texto: <>Em <b>Atualizar o app</b> você vê se tem versão nova e o que mudou.</> },
+        ],
+      },
+      {
+        titulo: 'Sempre na versão mais nova',
+        texto: 'Quando sai uma versão nova, um aviso aparece sozinho embaixo da tela. Toque em Atualizar: leva segundos e nada se perde.',
+        tela: (
+          <Tela>
+            <div className="flex h-full flex-col gap-2">
+              <div className="flex items-center gap-2 rounded-xl border border-acao/60 bg-superficie p-2 shadow-lg">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-acao text-acao-texto"><Sparkles size={14} /></span>
+                <span className="min-w-0 flex-1"><b className="block text-[11px] leading-tight">Nova versão do Pulpito</b><span className="block text-[9px] text-texto-2">Leva segundos. Nada se perde.</span></span>
+                <span className="rounded-md bg-acao px-1.5 py-1 text-[9px] font-bold text-acao-texto">Atualizar</span>
+              </div>
+              <div className="flex-1 rounded-xl border border-borda bg-superficie p-2">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: '#2E7D3226', color: '#2E7D32' }}><Check size={15} /></span>
+                  <b className="text-[11px] leading-tight">Você está na versão mais nova</b>
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-1 text-[9px]">
+                  <span className="rounded-md bg-superficie-2 p-1"><span className="block text-texto-2">Neste aparelho</span><b className="font-mono">18 de out, 22:10</b></span>
+                  <span className="rounded-md bg-superficie-2 p-1"><span className="block text-texto-2">Mais nova</span><b className="font-mono">18 de out, 22:10</b></span>
+                </div>
+                <div className="mt-2 space-y-1">{linha('85%')}{linha('60%')}</div>
+              </div>
+            </div>
+          </Tela>
+        ),
+        dicas: [
+          { Icone: Sparkles, texto: <>O aviso aparece sozinho. Tocou em <b>Depois</b>? Ele volta na próxima vez que abrir o app.</> },
+          { Icone: Settings, texto: <>Em <b>Ajustes › Atualizar o app</b>: <b>Verificar de novo</b> e a lista de <b>Novidades</b>.</> },
+          { Icone: RotateCw, texto: <>Algo estranho? Use <b>Fazer atualização completa</b>. No iPhone, se nada mudar, feche o app e abra de novo.</> },
         ],
       },
     ],

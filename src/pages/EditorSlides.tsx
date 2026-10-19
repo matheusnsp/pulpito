@@ -17,6 +17,7 @@ import PainelElemento from '../components/PainelElemento'
 import { CAMPOS_ESTILO, type AcaoElemento, type AlinharNoSlide } from '../lib/elementos'
 import { MODELOS, MODELO_DO_LAYOUT, coresDoEstilo } from '../lib/modelosSlide'
 import { FONTES } from '../lib/fontes'
+import { ehBloco } from '../lib/blocos'
 import {
   ESTILO_PADRAO, FUNDOS_PRONTOS, type Disposicao, type Elemento, type EstiloSlide, type LayoutSlide, type TipoElemento, type Mensagem, type Slide, type Topico,
 } from '../lib/tipos'
@@ -220,7 +221,7 @@ export default function EditorSlides() {
   function rotuloTopico(topicoId: string | null) {
     if (!topicoId) return 'Capa'
     const i = topicos.findIndex((t) => t.id === topicoId)
-    const nome = mensagem?.tipo === 'estudo' ? 'Bloco' : 'Tópico'
+    const nome = mensagem?.tipo === 'estudo' || ehBloco(topicos[i]?.tipo) ? 'Bloco' : 'Tópico'
     return i < 0 ? `${nome} removido` : `${nome} ${i + 1}`
   }
 
@@ -390,8 +391,17 @@ export default function EditorSlides() {
     novo(null, 'capa', { titulo: mensagem.titulo, subtitulo: estudo ? mensagem.detalhes?.publico || referenciaBonita(mensagem.texto_base) : referenciaBonita(mensagem.texto_base) })
     await versiculos(null, mensagem.texto_base)
 
-    // Estudo: cada bloco vira o modelo editável que combina com ele
-    if (estudo) for (const t of topicos) {
+    // Na ordem do roteiro: tópico → título, versículo(s) e frase-chave; bloco → o modelo editável que combina com ele
+    for (const [i, t] of topicos.entries()) {
+      if (!estudo && !ehBloco(t.tipo)) {
+        novo(t.id, 'topico', {
+          subtitulo: `Tópico ${i + 1}`, titulo: t.titulo || 'Sem título', texto: referenciaBonita(t.versiculo),
+        })
+        await versiculos(t.id, t.versiculo)
+        if (comFrase && t.frase_chave?.trim())
+          novo(t.id, 'frase', { texto: t.frase_chave.trim().replace(/^["“]|["”]$/g, '') })
+        continue
+      }
       const min = t.extra?.minutos ? `${t.extra.minutos} min` : ''
       switch (t.tipo) {
         case 'pergunta': {
@@ -417,16 +427,6 @@ export default function EditorSlides() {
         case 'link': livre(t.id, 'tituloTexto', { titulo: t.titulo || 'Assista', texto: [t.observacao, t.extra?.url].filter(Boolean).join('\n\n') || ' ' }); break
         default: livre(t.id, 'tituloTexto', { titulo: t.titulo, texto: t.observacao || ' ' })
       }
-    }
-
-    // Cada tópico: título → versículo(s) → frase-chave
-    if (!estudo) for (const [i, t] of topicos.entries()) {
-      novo(t.id, 'topico', {
-        subtitulo: `Tópico ${i + 1}`, titulo: t.titulo || 'Sem título', texto: referenciaBonita(t.versiculo),
-      })
-      await versiculos(t.id, t.versiculo)
-      if (comFrase && t.frase_chave?.trim())
-        novo(t.id, 'frase', { texto: t.frase_chave.trim().replace(/^["“]|["”]$/g, '') })
     }
 
     slides.forEach((s) => cancelar(`s:${s.id}:`))
@@ -725,7 +725,7 @@ export default function EditorSlides() {
       )}
       <button onClick={gerar} disabled={gerando} className={slides.length ? 'botao-secundario' : 'botao-primario'}>
         <ListPlus size={18} />
-        {gerando ? 'Gerando…' : `${slides.length ? 'Gerar de novo' : 'Gerar'} a partir dos ${mensagem?.tipo === 'estudo' ? 'blocos' : 'tópicos'}`}
+        {gerando ? 'Gerando…' : `${slides.length ? 'Gerar de novo' : 'Gerar'} a partir ${mensagem?.tipo === 'estudo' ? 'dos blocos' : topicos.some((t) => ehBloco(t.tipo)) ? 'do roteiro' : 'dos tópicos'}`}
       </button>
     </div>
   )

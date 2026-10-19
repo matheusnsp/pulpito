@@ -1,8 +1,36 @@
 /*
-  Força o app a carregar a versão mais nova:
-  desliga o service worker, apaga as cópias guardadas (caches) e recarrega.
-  O login, o tema e o histórico do ensaio ficam guardados.
+  Atualização do app.
+  - verificarVersao: pergunta ao servidor (/versao.json, nunca guardado) qual é a versão mais nova.
+  - aplicarAtualizacao: usa o service worker novo, se já baixou; senão, faz a limpeza completa.
+  - carregarUltimaVersao: limpeza completa — desliga o service worker, apaga as cópias guardadas e recarrega.
+  O login, o tema e as mensagens não são afetados.
 */
+
+export const VERSAO_APP = __VERSAO_APP__
+export const ID_BUILD = __ID_BUILD__
+
+export type InfoVersao = { id: string; versao: string }
+
+export async function verificarVersao(): Promise<{ nova: boolean; remota: InfoVersao } | null> {
+  try {
+    const r = await fetch(`/versao.json?t=${Date.now()}`, { cache: 'no-store' })
+    if (!r.ok) return null
+    const remota = (await r.json()) as InfoVersao
+    if (!remota?.id) return null
+    return { nova: Number(remota.id) > Number(ID_BUILD), remota }
+  } catch {
+    return null
+  }
+}
+
+/* Pede ao navegador para baixar o service worker novo, se houver */
+export async function buscarServiceWorkerNovo() {
+  try {
+    const regs = await navigator.serviceWorker?.getRegistrations() ?? []
+    await Promise.all(regs.map((r) => r.update()))
+  } catch { /* sem service worker */ }
+}
+
 export async function carregarUltimaVersao() {
   try {
     const registros = await navigator.serviceWorker?.getRegistrations() ?? []
@@ -10,7 +38,8 @@ export async function carregarUltimaVersao() {
   } catch { /* navegador sem service worker */ }
   try {
     const nomes = await caches.keys()
-    await Promise.all(nomes.map((n) => caches.delete(n)))
+    // A Bíblia baixada continua no aparelho
+    await Promise.all(nomes.filter((n) => n !== 'biblia').map((n) => caches.delete(n)))
   } catch { /* sem cache */ }
   // Endereço diferente, para o navegador não reaproveitar a página guardada
   const url = new URL(window.location.href)
@@ -18,4 +47,17 @@ export async function carregarUltimaVersao() {
   window.location.replace(url.toString())
 }
 
-export const VERSAO_APP = __VERSAO_APP__
+/* "18/10/2026, 22:10" → "18 de out., 22:10" */
+export function versaoAmigavel(v: string) {
+  const m = v.match(/(\d{2})\/(\d{2})\/(\d{4}),?\s*(\d{2}:\d{2})/)
+  if (!m) return v
+  const mes = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'][Number(m[2]) - 1]
+  return `${Number(m[1])} de ${mes}, ${m[4]}`
+}
+
+/* Novidades recentes, mostradas em Ajustes. A mais nova primeiro. */
+export const NOVIDADES: { titulo: string; texto: string }[] = [
+  { titulo: 'Palavra e Estudos', texto: 'Célula, Estudo bíblico, Devocional e Discipulado no lado Palavra; aulas, palestras e treinamentos no lado Estudos.' },
+  { titulo: 'Respostas ao vivo', texto: 'A turma responde pelo celular, com mural, quiz e placar.' },
+  { titulo: 'Tutorial completo', texto: 'Reveja tudo em Ajustes › Ver tutorial.' },
+]

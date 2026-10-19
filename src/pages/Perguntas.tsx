@@ -36,7 +36,7 @@ export default function Perguntas() {
     let ativo = true
     Promise.all([
       supabase.from('topicos').select('id, mensagem_id, titulo, observacao, notas, tipo, extra').in('tipo', ['pergunta', 'atividade']),
-      supabase.from('mensagens').select('id, titulo').eq('tipo', 'estudo').order('atualizado_em', { ascending: false }),
+      supabase.from('mensagens').select('id, titulo').order('atualizado_em', { ascending: false }),
     ]).then(([b, m]) => {
       if (!ativo) return
       if (b.error || m.error) setErro('Não foi possível carregar. Se ainda não rodou o SQL dos estudos no Supabase, rode e tente de novo.')
@@ -87,7 +87,7 @@ export default function Perguntas() {
     })
     setEnviando(false)
     setUsando(null)
-    if (error) { setErro('Não foi possível adicionar ao estudo.'); return }
+    if (error) { setErro('Não foi possível adicionar.'); return }
     setAviso({ texto: `Adicionada em “${nomeEstudo(estudoId)}”`, estudo: estudoId })
     setTimeout(() => setAviso(null), 4000)
   }
@@ -167,12 +167,12 @@ export default function Perguntas() {
                 {usando === it.chave ? (
                   <select autoFocus defaultValue="" disabled={enviando} onBlur={() => !enviando && setUsando(null)}
                     onChange={(e) => e.target.value && usarEm(it, e.target.value)} className="campo flex-[1.4] py-2 text-sm">
-                    <option value="" disabled>Escolha o estudo…</option>
+                    <option value="" disabled>Escolha onde usar…</option>
                     {estudos.map((e) => <option key={e.id} value={e.id}>{e.titulo || 'Sem título'}</option>)}
                   </select>
                 ) : (
                   <button onClick={() => setUsando(it.chave)} disabled={estudos.length === 0} className="botao-primario flex-[1.4] py-2 text-sm">
-                    {enviando ? <LoaderCircle size={16} className="animate-spin" /> : <Plus size={16} />} Usar em estudo
+                    {enviando ? <LoaderCircle size={16} className="animate-spin" /> : <Plus size={16} />} Usar
                   </button>
                 )}
               </div>

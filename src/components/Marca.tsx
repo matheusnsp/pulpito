@@ -41,7 +41,7 @@ export default function Marca({ className = '', icone = false, modo }: { classNa
           style={estudo ? { background: COR_ESTUDO } : undefined} />
       </span>
       {modo && (
-        <span className="sr-only">{estudo ? 'Estudos' : 'Pregações'}</span>
+        <span className="sr-only">{estudo ? 'Estudos' : 'Palavra'}</span>
       )}
     </span>
   )

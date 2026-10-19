@@ -8,6 +8,10 @@
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
     },
     {
+      "source": "/versao.json",
+      "headers": [{ "key": "Cache-Control", "value": "no-store" }]
+    },
+    {
       "source": "/biblia/(.*)",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=604800" }]
     }

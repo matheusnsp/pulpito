@@ -14,7 +14,7 @@ export function aoPedirCriar(fn: (p: PedidoCriar) => void) {
   return () => window.removeEventListener(EVENTO, ouvir)
 }
 
-/* Lado da tela inicial (Pregações ou Estudos), lembrado no aparelho */
+/* Lado da tela inicial (Palavra ou Estudos), lembrado no aparelho */
 const CHAVE_MODO = 'pulpito-modo'
 export function lerModo(): TipoProjeto {
   try { return localStorage.getItem(CHAVE_MODO) === 'estudo' ? 'estudo' : 'pregacao' } catch { return 'pregacao' }

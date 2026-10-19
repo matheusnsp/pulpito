@@ -1,4 +1,4 @@
-import { BookA, BookOpen, FileText, Image as ImagemIcone, Link2, ListChecks, MessagesSquare, Quote, Users, type LucideIcon } from 'lucide-react'
+import { BookA, BookOpen, FileText, Footprints, Image as ImagemIcone, Link2, ListChecks, MessagesSquare, Mic, Quote, Sunrise, Users, type LucideIcon } from 'lucide-react'
 import type { Topico } from './tipos'
 
 /*
@@ -79,31 +79,65 @@ export const ehBloco = (tipo?: string): tipo is TipoBloco => !!tipo && tipo in B
 export const itensDaLista = (t?: string | null) =>
   (t ?? '').split('\n').map((l) => l.replace(/^\s*[-•*]\s*/, '').trim()).filter(Boolean)
 
-/* Modelos para começar um estudo já com blocos */
+/* Formatos do lado Palavra (pregação é o padrão, com tópicos) */
+export const FORMATOS_PALAVRA = [
+  { id: 'pregacao', nome: 'Pregação', resumo: 'Texto base e tópicos' },
+  { id: 'celula', nome: 'Célula', resumo: 'Quebra-gelo, Palavra, conversa e oração' },
+  { id: 'ebd', nome: 'Estudo bíblico', resumo: 'EBD: texto, contexto e perguntas' },
+  { id: 'devocional', nome: 'Devocional', resumo: 'Versículo, reflexão e oração' },
+  { id: 'discipulado', nome: 'Discipulado', resumo: 'Tema, versículos e compromisso' },
+] as const
+export const ICONE_FORMATO: Record<string, LucideIcon> = { pregacao: Mic, celula: Users, ebd: BookOpen, devocional: Sunrise, discipulado: Footprints }
+export const nomeFormato = (id?: string) => FORMATOS_PALAVRA.find((f) => f.id === id)?.nome ?? 'Pregação'
+
+/* Modelos que já vêm com blocos. "lado" diz em qual lado do app o modelo aparece. */
 type BlocoModelo = { tipo: TipoBloco; titulo: string; observacao?: string; minutos?: number }
-export const MODELOS_ESTUDO: { id: string; nome: string; minutos: number; objetivo: string; blocos: BlocoModelo[] }[] = [
+export type ModeloPronto = { id: string; nome: string; lado: 'pregacao' | 'estudo'; minutos: number; objetivo: string; blocos: BlocoModelo[] }
+export const MODELOS: ModeloPronto[] = [
+  /* Palavra */
   {
-    id: 'biblico', nome: 'Estudo bíblico', minutos: 45, objetivo: 'Entender o texto e aplicar na semana',
+    id: 'celula', nome: 'Célula', lado: 'pregacao', minutos: 60, objetivo: 'Comunhão, Palavra e oração',
+    blocos: [
+      { tipo: 'atividade', titulo: 'Quebra-gelo', observacao: 'Cada um conta algo bom que aconteceu na semana.', minutos: 10 },
+      { tipo: 'referencia', titulo: 'Palavra' },
+      { tipo: 'pergunta', titulo: 'O que mais falou com você neste texto?', minutos: 10 },
+      { tipo: 'pergunta', titulo: 'Como podemos viver isso juntos esta semana?', minutos: 10 },
+      { tipo: 'atividade', titulo: 'Oração em duplas', observacao: 'Cada dupla ora pelo pedido do outro.', minutos: 10 },
+    ],
+  },
+  {
+    id: 'ebd', nome: 'Estudo bíblico', lado: 'pregacao', minutos: 45, objetivo: 'Entender o texto e aplicar na semana',
     blocos: [
       { tipo: 'referencia', titulo: 'Texto para ler juntos' },
       { tipo: 'explicacao', titulo: 'Contexto', observacao: 'Quem escreveu, para quem e por quê.' },
       { tipo: 'pergunta', titulo: 'O que o texto diz?', minutos: 5 },
       { tipo: 'pergunta', titulo: 'O que isso significa para nós hoje?', minutos: 5 },
+      { tipo: 'explicacao', titulo: 'Aplicação' },
       { tipo: 'pergunta', titulo: 'O que você vai praticar esta semana?', minutos: 5 },
     ],
   },
   {
-    id: 'celula', nome: 'Célula', minutos: 60, objetivo: 'Comunhão, Palavra e oração',
+    id: 'devocional', nome: 'Devocional', lado: 'pregacao', minutos: 15, objetivo: 'Um momento curto com Deus',
     blocos: [
-      { tipo: 'atividade', titulo: 'Quebra-gelo', observacao: 'Cada um conta algo bom que aconteceu na semana.', minutos: 10 },
-      { tipo: 'referencia', titulo: 'Palavra' },
-      { tipo: 'pergunta', titulo: 'O que mais falou com você neste texto?', minutos: 10 },
-      { tipo: 'pergunta', titulo: 'Como podemos viver isso juntos?', minutos: 10 },
-      { tipo: 'atividade', titulo: 'Oração em duplas', observacao: 'Cada dupla ora pelo pedido do outro.', minutos: 10 },
+      { tipo: 'referencia', titulo: 'Versículo do dia' },
+      { tipo: 'explicacao', titulo: 'Reflexão' },
+      { tipo: 'pergunta', titulo: 'O que Deus está falando com você hoje?', minutos: 3 },
+      { tipo: 'atividade', titulo: 'Oração', observacao: 'Encerrar orando juntos.', minutos: 3 },
     ],
   },
   {
-    id: 'aula', nome: 'Aula de curso', minutos: 50, objetivo: 'Ao final, a turma consegue…',
+    id: 'discipulado', nome: 'Discipulado', lado: 'pregacao', minutos: 40, objetivo: 'Crescer um passo de cada vez',
+    blocos: [
+      { tipo: 'explicacao', titulo: 'Tema do encontro' },
+      { tipo: 'referencia', titulo: 'Versículos-chave' },
+      { tipo: 'pergunta', titulo: 'Como foi a semana com o compromisso anterior?', minutos: 5 },
+      { tipo: 'pergunta', titulo: 'O que você entendeu deste tema?', minutos: 5 },
+      { tipo: 'atividade', titulo: 'Compromisso da semana', observacao: 'Definir um passo prático até o próximo encontro.', minutos: 5 },
+    ],
+  },
+  /* Estudos (qualquer assunto) */
+  {
+    id: 'aula', nome: 'Aula de curso', lado: 'estudo', minutos: 50, objetivo: 'Ao final, a turma consegue…',
     blocos: [
       { tipo: 'explicacao', titulo: 'Introdução', observacao: 'Onde paramos e o que vamos ver hoje.' },
       { tipo: 'definicao', titulo: 'Conceito-chave' },
@@ -113,7 +147,7 @@ export const MODELOS_ESTUDO: { id: string; nome: string; minutos: number; objeti
     ],
   },
   {
-    id: 'palestra', nome: 'Palestra', minutos: 30, objetivo: 'Uma ideia que o público leva para casa',
+    id: 'palestra', nome: 'Palestra', lado: 'estudo', minutos: 30, objetivo: 'Uma ideia que o público leva para casa',
     blocos: [
       { tipo: 'citacao', titulo: 'Uma frase para abrir' },
       { tipo: 'explicacao', titulo: 'O problema' },
@@ -123,7 +157,7 @@ export const MODELOS_ESTUDO: { id: string; nome: string; minutos: number; objeti
     ],
   },
   {
-    id: 'treinamento', nome: 'Treinamento', minutos: 60, objetivo: 'A equipe sai sabendo fazer…',
+    id: 'treinamento', nome: 'Treinamento', lado: 'estudo', minutos: 60, objetivo: 'A equipe sai sabendo fazer…',
     blocos: [
       { tipo: 'explicacao', titulo: 'Por que isso importa' },
       { tipo: 'lista', titulo: 'Passo a passo', observacao: 'Passo 1\nPasso 2\nPasso 3' },

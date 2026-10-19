@@ -1,5 +1,5 @@
 import type { Mensagem, Topico } from './tipos'
-import { defBloco, itensDaLista } from './blocos'
+import { defBloco, ehBloco, itensDaLista } from './blocos'
 import { formatarReferencia, lerReferencia, parseReferencia } from './biblia'
 import { lerVersao } from './preferencias'
 
@@ -67,7 +67,28 @@ export async function gerarFolhaAluno(m: Mensagem, blocos: Topico[]) {
   y += 6
 
   const versao = lerVersao()
+  // Num estudo todos os itens são blocos; no lado Palavra, o que não é bloco é tópico
+  const ehEstudo = m.tipo === 'estudo'
   for (const [i, b] of blocos.entries()) {
+    if (!ehEstudo && !ehBloco(b.tipo)) {
+      quebra(22)
+      escrever(`${i + 1}. TÓPICO`, 8.5, 'bold', [150, 110, 0])
+      y += 0.5
+      if (b.titulo) escrever(b.titulo, 13, 'bold')
+      if (b.frase_chave) escrever(b.frase_chave, 11, 'italic', [60, 60, 60])
+      if (b.versiculo) {
+        const r = parseReferencia(b.versiculo)
+        if (r) {
+          escrever(`${formatarReferencia(r)} (${versao})`, 10.5, 'bold', [150, 110, 0])
+          try {
+            const vs = await lerReferencia(versao, r)
+            escrever(vs.map((v) => `${v.numero} ${v.texto}`).join(' '), 11, 'normal', [40, 40, 40])
+          } catch { /* sem o texto: fica só a referência */ }
+        } else escrever(b.versiculo, 10.5, 'bold', [150, 110, 0])
+      }
+      y += 5
+      continue
+    }
     const def = defBloco(b)
     const tipo = b.tipo ?? 'explicacao'
     quebra(22)
