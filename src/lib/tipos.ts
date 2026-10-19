@@ -64,10 +64,13 @@ export type EstiloSlide = {
   fotoPos?: 'top' | 'center' | 'bottom' // parte da foto que aparece
   fotoTam?: number // fração do slide ocupada pela foto (0.33, 0.5, 0.66)
   elementos?: Elemento[] // fotos extras, setas, formas, ícones e textos soltos
+  fonteTitulo?: string // fonte dos títulos do modelo (ver lib/fontes)
+  fonteTexto?: string // fonte do texto e do versículo
 }
 
-/* Elemento solto no slide. Posição e tamanho em % do slide */
+/* Elemento solto no slide. Posição e tamanho em % do slide; medidas de texto e traço em cqw */
 export type TipoElemento = 'foto' | 'seta' | 'circulo' | 'retangulo' | 'linha' | 'icone' | 'texto'
+  | 'triangulo' | 'estrela' | 'balao' | 'losango'
 export type Elemento = {
   id: string
   tipo: TipoElemento
@@ -78,11 +81,43 @@ export type Elemento = {
   url?: string
   icone?: string
   texto?: string
+  // Comuns
+  opac?: number // 0 a 1
+  sombra?: boolean
+  travado?: boolean // não sai do lugar ao tocar
+  oculto?: boolean
+  // Formas
+  cor2?: string // segunda cor: vira degradê
+  borda?: number // espessura do contorno (cqw)
+  corBorda?: string
+  raio?: number // cantos arredondados (cqw)
+  // Texto
+  fonte?: string
+  tam?: number // tamanho da letra (cqw)
+  peso?: number // 300 a 900
+  italico?: boolean
+  sublinhado?: boolean
+  alinh?: 'left' | 'center' | 'right'
+  alinhV?: 'top' | 'center' | 'bottom'
+  entrelinha?: number
+  espaco?: number // espaço entre letras (em)
+  caixaAlta?: boolean
+  destaque?: string // cor das *palavras marcadas*
+  contorno?: string // cor do contorno das letras
+  faixa?: string // cor da faixa atrás do texto
+  // Foto
+  forma?: 'ret' | 'circulo'
+  ajuste?: 'cobrir' | 'conter'
+  focoY?: number // 0 (topo) a 100 (base)
+  brilho?: number // 0.4 a 1.6
+  contraste?: number
+  pb?: boolean // preto e branco
+  desfoque?: number // 0 a 10
 }
 
 export type Disposicao = 'texto' | 'esquerda' | 'direita' | 'cima' | 'fundo' | 'so-foto'
 
-export type LayoutSlide = 'livre' | 'capa' | 'topico' | 'versiculo' | 'frase'
+export type LayoutSlide = 'livre' | 'capa' | 'topico' | 'versiculo' | 'frase' | 'vazio'
 
 export const ESTILO_PADRAO: EstiloSlide = {
   cor: '#ffffff', alinhamento: 'center', tamanho: 'm', fonte: 'sans', escurecer: 0.45, ajuste: 'cobrir',

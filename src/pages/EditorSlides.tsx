@@ -3,8 +3,8 @@ import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 're
 import { Link, useParams } from 'react-router-dom'
 import {
   ArrowDown, ArrowUp, Check, ChevronLeft, CircleAlert, CircleCheck, Copy, Download, FileText, ImagePlus, ListChecks,
-  Circle, ListPlus, LoaderCircle, Minus, MoveRight, Play, Plus, Presentation, Redo2, Shapes, Square, Trash2,
-  Type as TypeIcon, Undo2, Upload, X,
+  Circle, Diamond, Eye, EyeOff, Heading, Layers, LayoutTemplate, ListPlus, LoaderCircle, Lock, MessageSquare, Minus,
+  MoveRight, Play, Plus, Presentation, Redo2, Shapes, Square, Star, Trash2, Triangle, Type as TypeIcon, Undo2, Upload, Wand2, X,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
@@ -13,7 +13,10 @@ import { useHistorico } from '../lib/historico'
 import { lerArquivos } from '../lib/importar'
 import SlideVisual from '../components/SlideVisual'
 import CamadaElementos from '../components/CamadaElementos'
-import { ICONES } from '../lib/icones'
+import PainelElemento from '../components/PainelElemento'
+import { CAMPOS_ESTILO, type AcaoElemento, type AlinharNoSlide } from '../lib/elementos'
+import { MODELOS, MODELO_DO_LAYOUT, coresDoEstilo } from '../lib/modelosSlide'
+import { FONTES } from '../lib/fontes'
 import {
   ESTILO_PADRAO, FUNDOS_PRONTOS, type Disposicao, type Elemento, type EstiloSlide, type LayoutSlide, type TipoElemento, type Mensagem, type Slide, type Topico,
 } from '../lib/tipos'
@@ -28,6 +31,10 @@ const ferramenta = 'botao-secundario shrink-0 px-3 py-2 text-sm sm:py-1.5'
 /* Ações empilhadas no celular: ícone em cima, nome embaixo */
 const acaoSlide = 'botao-secundario flex-col gap-0.5 px-1 py-2 text-[11px] sm:flex-row sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm'
 const iconeBotao = 'flex h-9 w-9 items-center justify-center rounded-xl text-texto-2 hover:bg-superficie-2 hover:text-texto disabled:opacity-25'
+const NOMES_ELEMENTO: Record<TipoElemento, string> = {
+  texto: 'Texto', foto: 'Foto', seta: 'Seta', circulo: 'Círculo', retangulo: 'Retângulo', linha: 'Linha', icone: 'Ícone',
+  triangulo: 'Triângulo', losango: 'Losango', estrela: 'Estrela', balao: 'Balão',
+}
 const diferente = (a: unknown, b: unknown) => JSON.stringify(a) !== JSON.stringify(b)
 
 function referenciaBonita(ref: string | null) {
@@ -137,6 +144,12 @@ export default function EditorSlides() {
   const arquivoElemento = useRef<HTMLInputElement>(null)
   const [elSel, setElSel] = useState<string | null>(null)
   const [rascunhoEl, setRascunhoEl] = useState<Elemento | null>(null)
+  const [estiloCopiado, setEstiloCopiado] = useState<Partial<Elemento> | null>(null)
+  const [verCamadas, setVerCamadas] = useState(false)
+  const [degrade, setDegrade] = useState<{ a: string; b: string; ang: number; tipo: 'linear' | 'radial' } | null>(null)
+  const elementoCopiado = useRef<Elemento | null>(null)
+  const campoTexto = useRef<HTMLTextAreaElement>(null)
+  const arquivoTroca = useRef<HTMLInputElement>(null)
   const [painelImportar, setPainelImportar] = useState(false)
   const [menuExportar, setMenuExportar] = useState(false)
   const [exportando, setExportando] = useState('')
@@ -167,10 +180,30 @@ export default function EditorSlides() {
   useEffect(() => {
     function tecla(e: KeyboardEvent) {
       if (e.key === 'Escape' && selecao) { setSelecao(null); return }
+      const digitando = (e.target as HTMLElement).closest('input, textarea, select, [contenteditable]')
+      // Atalhos do elemento selecionado (fora dos campos de texto)
+      if (!digitando && elAtual) {
+        const passo = e.shiftKey ? 5 : 0.5
+        const setas: Record<string, Partial<Elemento>> = {
+          ArrowLeft: { x: elAtual.x - passo }, ArrowRight: { x: elAtual.x + passo },
+          ArrowUp: { y: elAtual.y - passo }, ArrowDown: { y: elAtual.y + passo },
+        }
+        if (setas[e.key] && !elAtual.travado) { e.preventDefault(); mudarElemento(setas[e.key]); return }
+        if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); acaoElemento('excluir'); return }
+        if (e.key === 'Escape') { setElSel(null); return }
+        if (e.key === 'Enter' && elAtual.tipo === 'texto') { e.preventDefault(); focarTexto(); return }
+      }
       if (!(e.metaKey || e.ctrlKey)) return
       const k = e.key.toLowerCase()
-      if (k === 'z' && !e.shiftKey) { e.preventDefault(); desfazerAgora() }
-      else if ((k === 'z' && e.shiftKey) || k === 'y') { e.preventDefault(); refazerAgora() }
+      if (!digitando && elAtual && k === 'd') { e.preventDefault(); acaoElemento('duplicar'); return }
+      if (!digitando && elAtual && k === 'c') { elementoCopiado.current = elAtual; return }
+      if (!digitando && k === 'v' && elementoCopiado.current && sel) {
+        e.preventDefault()
+        const c = { ...elementoCopiado.current, id: crypto.randomUUID(), x: elementoCopiado.current.x + 2, y: elementoCopiado.current.y + 2 }
+        salvarElementos([...elementos, c]); setElSel(c.id); return
+      }
+      if (k === 'z' && !e.shiftKey && !digitando) { e.preventDefault(); desfazerAgora() }
+      else if (((k === 'z' && e.shiftKey) || k === 'y') && !digitando) { e.preventDefault(); refazerAgora() }
     }
     window.addEventListener('keydown', tecla)
     return () => window.removeEventListener('keydown', tecla)
@@ -406,16 +439,19 @@ export default function EditorSlides() {
 
   function adicionarElemento(tipo: TipoElemento, extra: Partial<Elemento> = {}) {
     const base: Record<TipoElemento, Partial<Elemento>> = {
-      foto: { w: 30, h: 40 }, seta: { w: 22, h: 9 }, circulo: { w: 14, h: 25 }, retangulo: { w: 26, h: 22 },
-      linha: { w: 30, h: 4 }, icone: { w: 9, h: 16, icone: 'cruz' }, texto: { w: 34, h: 12, texto: 'Texto', cor: '#FFFFFF' },
+      foto: { w: 30, h: 40 }, seta: { w: 22, h: 9 }, circulo: { w: 14, h: 25, preenchido: true }, retangulo: { w: 26, h: 22, preenchido: true },
+      linha: { w: 30, h: 4 }, icone: { w: 9, h: 16, icone: 'cruz' },
+      texto: { w: 50, h: 14, texto: 'Seu texto aqui', cor: '#FFFFFF', tam: 3.6, fonte: estilo.fonteTitulo ?? 'moderna', peso: 800 },
+      triangulo: { w: 16, h: 26, preenchido: true }, losango: { w: 16, h: 28, preenchido: true },
+      estrela: { w: 16, h: 28, preenchido: true }, balao: { w: 30, h: 30, preenchido: true, cor: '#FFFFFF' },
     }
-    const b = base[tipo]
+    const b = { ...base[tipo], ...extra }
     const el: Elemento = {
       // Cada novo elemento entra um pouco deslocado para não cair em cima do anterior
       id: crypto.randomUUID(), tipo,
-      x: 50 - (b.w ?? 20) / 2 + (elementos.length % 5) * 4, y: 50 - (b.h ?? 20) / 2 + (elementos.length % 5) * 4,
+      x: 50 - (b.w ?? 20) / 2 + (elementos.length % 5) * 3, y: 50 - (b.h ?? 20) / 2 + (elementos.length % 5) * 3,
       w: b.w ?? 20, h: b.h ?? 20,
-      cor: '#FFC107', ...b, ...extra,
+      cor: '#FFC107', ...b,
     }
     salvarElementos([...elementos, el])
     setElSel(el.id)
@@ -426,15 +462,70 @@ export default function EditorSlides() {
     salvarElementos(elementos.map((x) => (x.id === elAtual.id ? { ...x, ...campos } : x)))
   }
 
-  function ordemElemento(dir: 'frente' | 'tras') {
+  function acaoElemento(a: AcaoElemento) {
     if (!elAtual) return
     const resto = elementos.filter((x) => x.id !== elAtual.id)
-    salvarElementos(dir === 'frente' ? [...resto, elAtual] : [elAtual, ...resto])
+    const i = elementos.findIndex((x) => x.id === elAtual.id)
+    if (a === 'topo') salvarElementos([...resto, elAtual])
+    else if (a === 'fundo') salvarElementos([elAtual, ...resto])
+    else if (a === 'frente' || a === 'tras') {
+      const j = Math.max(0, Math.min(resto.length, a === 'frente' ? i + 1 : i - 1))
+      salvarElementos([...resto.slice(0, j), elAtual, ...resto.slice(j)])
+    } else if (a === 'duplicar') {
+      const c = { ...elAtual, id: crypto.randomUUID(), x: elAtual.x + 3, y: elAtual.y + 3, travado: false }
+      salvarElementos([...elementos, c]); setElSel(c.id)
+    } else if (a === 'excluir') { salvarElementos(resto); setElSel(null) }
+    else if (a === 'copiarEstilo') setEstiloCopiado(Object.fromEntries(CAMPOS_ESTILO.filter((k) => elAtual[k] !== undefined).map((k) => [k, elAtual[k]])))
+    else if (a === 'colarEstilo' && estiloCopiado) mudarElemento(estiloCopiado)
+    else if (a === 'trocarFoto') arquivoTroca.current?.click()
+  }
+
+  function alinharElemento(a: AlinharNoSlide) {
+    if (!elAtual) return
+    const { w, h } = elAtual
+    const pos: Record<AlinharNoSlide, Partial<Elemento>> = {
+      esq: { x: 0 }, centroH: { x: 50 - w / 2 }, dir: { x: 100 - w },
+      topo: { y: 0 }, meio: { y: 50 - h / 2 }, base: { y: 100 - h },
+      inteiro: { x: 0, y: 0, w: 100, h: 100, rot: 0 },
+    }
+    mudarElemento(pos[a])
+  }
+
+  /* Modelos editáveis: trocam o slide por elementos soltos montados com o conteúdo dele */
+  function aplicarModelo(modeloId: string) {
+    if (!sel) return
+    const m = MODELOS.find((x) => x.id === modeloId)
+    if (!m) return
+    const novos = m.fabrica(sel, coresDoEstilo(estilo))
+    alterar(sel.id, { estilo: { ...sel.estilo, layout: 'vazio', elementos: novos } })
+    setElSel(null)
+  }
+
+  function editarLivremente() {
+    aplicarModelo(MODELO_DO_LAYOUT[estilo.layout ?? 'livre'] ?? 'tituloTexto')
+  }
+
+  function aplicarDegrade(d: NonNullable<typeof degrade>) {
+    setDegrade(d)
+    if (!sel) return
+    alterar(sel.id, { fundo: d.tipo === 'radial'
+      ? `radial-gradient(120% 120% at 50% 100%, ${d.b}, ${d.a})`
+      : `linear-gradient(${d.ang}deg, ${d.a}, ${d.b})` })
+  }
+
+  function focarTexto() {
+    // Espera o painel aparecer e coloca o cursor no campo do texto
+    setTimeout(() => { campoTexto.current?.focus(); campoTexto.current?.select() }, 50)
   }
 
   async function adicionarFotoElemento(file: File) {
     const url = await subirImagem(file)
     if (url) adicionarElemento('foto', { url })
+  }
+
+  async function trocarFotoElemento(file: File) {
+    const url = await subirImagem(file)
+    if (url) mudarElemento({ url })
   }
 
   async function enviarImagem(file: File) {
@@ -778,12 +869,17 @@ export default function EditorSlides() {
 
             {sel && (
               <section className="min-w-0 space-y-5">
-                <div className="relative">
-                  <SlideVisual className="rounded-2xl ring-1 ring-borda"
-                    slide={rascunhoEl ? { ...sel, estilo: { ...sel.estilo, elementos: elementos.map((x) => (x.id === rascunhoEl.id ? rascunhoEl : x)) } } : sel} />
-                  <CamadaElementos elementos={rascunhoEl ? elementos.map((x) => (x.id === rascunhoEl.id ? rascunhoEl : x)) : elementos}
-                    selecionado={elSel} onSelecionar={setElSel} onPreview={setRascunhoEl}
-                    onConfirmar={(el) => salvarElementos(elementos.map((x) => (x.id === el.id ? el : x)))} />
+                {/* Prévia: fica presa no topo enquanto um elemento é editado */}
+                <div className={elAtual ? 'sticky top-0 z-20 -mx-4 bg-fundo/95 px-4 pb-3 pt-2 backdrop-blur md:mx-0 md:px-0' : ''}>
+                  {/* Enquanto edita, a prévia fica visível ao rolar o painel (e não ocupa mais que ~40% da altura) */}
+                  <div className="relative mx-auto" style={elAtual ? { maxWidth: 'min(100%, calc(42dvh * 16 / 9))' } : undefined}>
+                    <SlideVisual className="rounded-2xl ring-1 ring-borda"
+                      slide={rascunhoEl ? { ...sel, estilo: { ...sel.estilo, elementos: elementos.map((x) => (x.id === rascunhoEl.id ? rascunhoEl : x)) } } : sel} />
+                    <CamadaElementos elementos={rascunhoEl ? elementos.map((x) => (x.id === rascunhoEl.id ? rascunhoEl : x)) : elementos}
+                      selecionado={elSel} onSelecionar={setElSel} onPreview={setRascunhoEl}
+                      onConfirmar={(el) => salvarElementos(elementos.map((x) => (x.id === el.id ? el : x)))}
+                      onEditarTexto={(el) => { setElSel(el.id); focarTexto() }} />
+                  </div>
                 </div>
 
                 {/* Ações do slide: no celular, quatro botões iguais logo abaixo da prévia */}
@@ -811,67 +907,88 @@ export default function EditorSlides() {
                   </label>
                 </div>
 
-                {/* Elementos: adicionar e editar o selecionado */}
+                {/* Adicionar elementos */}
                 <div className="rounded-2xl border border-borda bg-superficie p-3">
                   <span className="rotulo mb-2 block sm:hidden">Adicionar ao slide</span>
                   <div className="sem-barra -mx-3 flex items-center gap-1.5 overflow-x-auto px-3 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
                     <span className="rotulo mr-1 hidden sm:inline">Adicionar</span>
                     <input ref={arquivoElemento} type="file" accept="image/*" className="hidden"
                       onChange={(e) => { const f = e.target.files?.[0]; if (f) adicionarFotoElemento(f); e.target.value = '' }} />
+                    <input ref={arquivoTroca} type="file" accept="image/*" className="hidden"
+                      onChange={(e) => { const f = e.target.files?.[0]; if (f) trocarFotoElemento(f); e.target.value = '' }} />
+                    <button onClick={() => { adicionarElemento('texto', { texto: 'Título', tam: 6, w: 70, h: 18, caixaAlta: true }); focarTexto() }} className={ferramenta}><Heading size={15} /> Título</button>
+                    <button onClick={() => { adicionarElemento('texto'); focarTexto() }} className={ferramenta}><TypeIcon size={15} /> Texto</button>
                     <button onClick={() => arquivoElemento.current?.click()} disabled={enviando} className={ferramenta}><ImagePlus size={15} /> Foto</button>
-                    <button onClick={() => adicionarElemento('seta')} className={ferramenta}><MoveRight size={15} /> Seta</button>
-                    <button onClick={() => adicionarElemento('circulo')} className={ferramenta}><Circle size={15} /> Círculo</button>
                     <button onClick={() => adicionarElemento('retangulo')} className={ferramenta}><Square size={15} /> Retângulo</button>
+                    <button onClick={() => adicionarElemento('circulo')} className={ferramenta}><Circle size={15} /> Círculo</button>
+                    <button onClick={() => adicionarElemento('triangulo')} className={ferramenta}><Triangle size={15} /> Triângulo</button>
+                    <button onClick={() => adicionarElemento('losango')} className={ferramenta}><Diamond size={15} /> Losango</button>
+                    <button onClick={() => adicionarElemento('estrela')} className={ferramenta}><Star size={15} /> Estrela</button>
+                    <button onClick={() => adicionarElemento('balao')} className={ferramenta}><MessageSquare size={15} /> Balão</button>
+                    <button onClick={() => adicionarElemento('seta')} className={ferramenta}><MoveRight size={15} /> Seta</button>
                     <button onClick={() => adicionarElemento('linha')} className={ferramenta}><Minus size={15} /> Linha</button>
                     <button onClick={() => adicionarElemento('icone')} className={ferramenta}><Shapes size={15} /> Ícone</button>
-                    <button onClick={() => adicionarElemento('texto')} className={ferramenta}><TypeIcon size={15} /> Texto</button>
                   </div>
 
-                  {elAtual && (
-                    <div className="mt-3 space-y-3 border-t border-borda pt-3">
-                      <p className="text-xs text-texto-2">Arraste no slide para mover. Puxe a bolinha do canto para mudar o tamanho.</p>
-                      {elAtual.tipo === 'texto' && (
-                        <input value={elAtual.texto ?? ''} onChange={(e) => mudarElemento({ texto: e.target.value })}
-                          placeholder="Texto" className="campo" />
-                      )}
-                      {elAtual.tipo === 'icone' && (
-                        <div className="flex flex-wrap gap-1.5">
-                          {Object.entries(ICONES).map(([chave, { Icone, nome }]) => (
-                            <button key={chave} onClick={() => mudarElemento({ icone: chave })} title={nome} aria-label={nome}
-                              className={`flex h-9 w-9 items-center justify-center rounded-lg border ${elAtual.icone === chave ? 'border-acao bg-acao/15' : 'border-borda hover:bg-superficie-2'}`}>
-                              <Icone size={18} />
-                            </button>
+                  {elAtual ? (
+                    <div className="mt-3 border-t border-borda pt-3">
+                      <div className="mb-3 flex items-center justify-between gap-2">
+                        <p className="text-xs text-texto-2">
+                          Arraste para mover; puxe as bolinhas para o tamanho e a de cima para girar.
+                          <span className="hidden sm:inline"> Setas do teclado ajustam; Ctrl+D duplica.</span>
+                        </p>
+                        <button onClick={() => setElSel(null)} className="botao-fantasma shrink-0 px-2 py-1 text-sm">Pronto</button>
+                      </div>
+                      <PainelElemento key={elAtual.id} el={elAtual} onMudar={mudarElemento} onAcao={acaoElemento}
+                        onAlinhar={alinharElemento} temEstiloCopiado={!!estiloCopiado} campoTexto={campoTexto} />
+                    </div>
+                  ) : elementos.length > 0 && (
+                    <p className="mt-2 text-xs text-texto-2">Toque num elemento do slide para editar. Dois toques num texto abrem a edição.</p>
+                  )}
+
+                  {/* Camadas: todos os elementos do slide, de cima para baixo */}
+                  {elementos.length > 0 && (
+                    <div className="mt-3 border-t border-borda pt-3">
+                      <button onClick={() => setVerCamadas((v) => !v)} className="flex w-full items-center gap-2 text-sm font-bold text-texto-2">
+                        <Layers size={16} /> Camadas ({elementos.length})
+                        <span className="ml-auto text-xs font-semibold">{verCamadas ? 'Esconder' : 'Ver'}</span>
+                      </button>
+                      {verCamadas && (
+                        <ul className="mt-2 space-y-1">
+                          {[...elementos].reverse().map((el) => (
+                            <li key={el.id} className={`flex items-center gap-2 rounded-xl px-2 py-1.5 ${el.id === elSel ? 'bg-acao/15' : 'hover:bg-superficie-2'}`}>
+                              <button onClick={() => setElSel(el.id)} className={`min-w-0 flex-1 truncate text-left text-sm ${el.oculto ? 'text-texto-2 line-through' : ''}`}>
+                                <span className="mr-1.5 text-xs font-bold uppercase text-texto-2">{NOMES_ELEMENTO[el.tipo]}</span>
+                                {el.tipo === 'texto' ? (el.texto || 'Texto').split('\n')[0] : ''}
+                              </button>
+                              <button onClick={() => salvarElementos(elementos.map((x) => (x.id === el.id ? { ...x, oculto: !x.oculto } : x)))}
+                                aria-label={el.oculto ? 'Mostrar' : 'Ocultar'} className={iconeBotao}>{el.oculto ? <EyeOff size={15} /> : <Eye size={15} />}</button>
+                              <button onClick={() => salvarElementos(elementos.map((x) => (x.id === el.id ? { ...x, travado: !x.travado } : x)))}
+                                aria-label={el.travado ? 'Destravar' : 'Travar'} className={`${iconeBotao} ${el.travado ? 'text-tinta' : ''}`}><Lock size={15} /></button>
+                            </li>
                           ))}
-                        </div>
+                        </ul>
                       )}
-                      <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
-                        {elAtual.tipo !== 'foto' && (
-                          <div className="flex items-center gap-1.5">
-                            {['#FFC107', '#FFFFFF', '#F44336', '#2DD4BF', '#7DD3FC', '#111111'].map((c) => (
-                              <button key={c} onClick={() => mudarElemento({ cor: c })} aria-label={`Cor ${c}`} style={{ background: c }}
-                                className={`h-7 w-7 rounded-full ${(elAtual.cor ?? '#FFC107') === c ? 'ring-2 ring-acao ring-offset-2 ring-offset-superficie' : 'ring-1 ring-borda'}`} />
-                            ))}
-                          </div>
-                        )}
-                        {['circulo', 'retangulo', 'icone'].includes(elAtual.tipo) && (
-                          <Segmentos valor={elAtual.preenchido ? 'cheio' : 'contorno'}
-                            opcoes={[{ valor: 'contorno', rotulo: 'Contorno' }, { valor: 'cheio', rotulo: 'Preenchido' }]}
-                            onChange={(v) => mudarElemento({ preenchido: v === 'cheio' })} />
-                        )}
-                        <label className="flex w-full items-center gap-2 text-sm text-texto-2 sm:w-auto">
-                          Girar
-                          <input type="range" min={-180} max={180} step={5} value={elAtual.rot ?? 0}
-                            onChange={(e) => mudarElemento({ rot: Number(e.target.value) })} className="min-w-0 flex-1 accent-[var(--acao)] sm:w-28 sm:flex-none" />
-                        </label>
-                      </div>
-                      <div className="grid grid-cols-4 gap-1.5 sm:flex sm:flex-wrap">
-                        <button onClick={() => ordemElemento('frente')} className={acaoSlide}><ArrowUp size={15} /> Frente</button>
-                        <button onClick={() => ordemElemento('tras')} className={acaoSlide}><ArrowDown size={15} /> Trás</button>
-                        <button onClick={() => { const c = { ...elAtual, id: crypto.randomUUID(), x: elAtual.x + 3, y: elAtual.y + 3 }; salvarElementos([...elementos, c]); setElSel(c.id) }} className={acaoSlide}><Copy size={15} /> Duplicar</button>
-                        <button onClick={() => { salvarElementos(elementos.filter((x) => x.id !== elAtual.id)); setElSel(null) }} className={`${acaoSlide} hover:text-perigo`}><Trash2 size={15} /> Excluir</button>
-                      </div>
                     </div>
                   )}
+                </div>
+
+                {/* Modelos editáveis, com prévia usando o conteúdo deste slide */}
+                <div>
+                  <div className="mb-2 flex items-center gap-2">
+                    <span className="rotulo flex items-center gap-1.5"><LayoutTemplate size={14} /> Modelos editáveis</span>
+                    <span className="text-xs text-texto-2">tudo vira caixa livre</span>
+                  </div>
+                  <div className="sem-barra -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
+                    {MODELOS.map((m) => (
+                      <button key={m.id} onClick={() => aplicarModelo(m.id)}
+                        className="w-36 shrink-0 rounded-xl border-2 border-borda bg-superficie p-1.5 text-left transition-colors hover:border-acao">
+                        <SlideVisual className="pointer-events-none rounded-md"
+                          slide={{ ...sel, estilo: { ...sel.estilo, layout: 'vazio', elementos: m.fabrica(sel, coresDoEstilo(estilo)) } }} />
+                        <span className="mt-1 block truncate px-0.5 text-xs font-bold">{m.nome}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Disposição: onde fica a foto em relação ao texto */}
@@ -891,6 +1008,21 @@ export default function EditorSlides() {
 
                 <div className="grid grid-cols-[minmax(0,1fr)] gap-6 md:grid-cols-2">
                   {/* Textos */}
+                  {estilo.layout === 'vazio' ? (
+                    <div className="space-y-3 rounded-2xl border border-dashed border-borda p-4">
+                      <p className="font-semibold">Este slide está no modo livre</p>
+                      <p className="text-sm text-texto-2">
+                        Cada texto é uma caixa: toque nele no slide para mudar o conteúdo, a fonte, a cor e o tamanho.
+                        Use “Adicionar” para colocar mais textos, fotos e formas.
+                      </p>
+                      <button onClick={() => {
+                        alterar(sel.id, { estilo: { ...sel.estilo, layout: 'livre', elementos: elementos.filter((x) => x.tipo !== 'texto') } })
+                        setElSel(null)
+                      }} className={botaoPequeno}>
+                        Voltar ao modelo automático
+                      </button>
+                    </div>
+                  ) : (
                   <div className="space-y-4">
                     <Campo rotulo="Título">
                       <input value={sel.titulo ?? ''} className="campo"
@@ -904,7 +1036,12 @@ export default function EditorSlides() {
                       <textarea rows={6} value={sel.texto ?? ''} className="campo resize-y leading-relaxed"
                         onChange={(e) => alterar(sel.id, { texto: e.target.value })} />
                     </Campo>
+                    <p className="text-xs text-texto-2">Dica: *palavra* entre asteriscos aparece na cor de destaque.</p>
+                    <button onClick={editarLivremente} className="botao-secundario w-full">
+                      <Wand2 size={17} /> Editar livremente (mover e estilizar cada texto)
+                    </button>
                   </div>
+                  )}
 
                   {/* Visual */}
                   <div className="space-y-5 rounded-2xl border border-borda bg-superficie p-4">
@@ -923,7 +1060,35 @@ export default function EditorSlides() {
                             value={sel.fundo?.startsWith('#') ? sel.fundo : '#000000'}
                             onChange={(e) => alterar(sel.id, { fundo: e.target.value })} />
                         </label>
+                        <button onClick={() => (degrade ? setDegrade(null) : aplicarDegrade({ a: '#1e1b4b', b: '#db2777', ang: 135, tipo: 'linear' }))}
+                          className={`h-9 rounded-xl border px-3 text-sm font-semibold ${degrade ? 'border-acao bg-acao/15' : 'border-borda'}`}>
+                          Degradê
+                        </button>
                       </div>
+                      {degrade && (
+                        <div className="mt-3 space-y-3 rounded-xl bg-superficie-2 p-3">
+                          <div className="flex items-center gap-3">
+                            {(['a', 'b'] as const).map((k) => (
+                              <label key={k} className="flex items-center gap-2 text-sm text-texto-2">
+                                {k === 'a' ? 'Cor 1' : 'Cor 2'}
+                                <input type="color" value={degrade[k]} onChange={(e) => aplicarDegrade({ ...degrade, [k]: e.target.value })}
+                                  className="h-9 w-11 cursor-pointer rounded-lg border border-borda bg-transparent" />
+                              </label>
+                            ))}
+                            <button onClick={() => aplicarDegrade({ ...degrade, a: degrade.b, b: degrade.a })} className="botao-fantasma ml-auto px-2 py-1 text-sm">Inverter</button>
+                          </div>
+                          <Segmentos valor={degrade.tipo}
+                            opcoes={[{ valor: 'linear', rotulo: 'Reto' }, { valor: 'radial', rotulo: 'Luz de baixo' }]}
+                            onChange={(v) => aplicarDegrade({ ...degrade, tipo: v })} />
+                          {degrade.tipo === 'linear' && (
+                            <label className="block text-sm text-texto-2">
+                              Direção ({degrade.ang}°)
+                              <input type="range" min={0} max={360} step={15} value={degrade.ang}
+                                onChange={(e) => aplicarDegrade({ ...degrade, ang: Number(e.target.value) })} className="w-full accent-[var(--acao)]" />
+                            </label>
+                          )}
+                        </div>
+                      )}
                       <div className="mt-3 flex flex-wrap gap-2">
                         <input ref={arquivo} type="file" accept="image/*" className="hidden"
                           onChange={(e) => { const f = e.target.files?.[0]; if (f) enviarImagem(f); e.target.value = '' }} />
@@ -984,7 +1149,7 @@ export default function EditorSlides() {
 
                     <div className="flex flex-wrap gap-x-5 gap-y-4">
                       <div className="w-full">
-                        <span className="mb-2 block text-sm font-semibold text-texto-2">Modelo</span>
+                        <span className="mb-2 block text-sm font-semibold text-texto-2">Modelo automático</span>
                         <Segmentos valor={estilo.layout ?? 'livre'}
                           opcoes={[
                             { valor: 'livre', rotulo: 'Livre' }, { valor: 'capa', rotulo: 'Capa' },
@@ -1015,11 +1180,23 @@ export default function EditorSlides() {
                           opcoes={[{ valor: 'p', rotulo: 'P' }, { valor: 'm', rotulo: 'M' }, { valor: 'g', rotulo: 'G' }]}
                           onChange={(v) => alterarEstilo({ tamanho: v })} />
                       </div>
-                      <div>
-                        <span className="mb-2 block text-sm font-semibold text-texto-2">Fonte</span>
-                        <Segmentos valor={estilo.fonte}
-                          opcoes={[{ valor: 'sans', rotulo: 'Moderna' }, { valor: 'serif', rotulo: 'Clássica' }]}
-                          onChange={(v) => alterarEstilo({ fonte: v })} />
+                      <div className="grid w-full gap-3 sm:grid-cols-2">
+                        <label className="block">
+                          <span className="mb-2 block text-sm font-semibold text-texto-2">Fonte dos títulos</span>
+                          <select value={estilo.fonteTitulo ?? (estilo.fonte === 'serif' ? 'classica' : 'moderna')} className="campo"
+                            onChange={(e) => alterarEstilo({ fonteTitulo: e.target.value })}
+                            style={{ fontFamily: FONTES.find((f) => f.id === (estilo.fonteTitulo ?? 'moderna'))?.css }}>
+                            {FONTES.map((f) => <option key={f.id} value={f.id}>{f.nome}</option>)}
+                          </select>
+                        </label>
+                        <label className="block">
+                          <span className="mb-2 block text-sm font-semibold text-texto-2">Fonte do texto</span>
+                          <select value={estilo.fonteTexto ?? 'classica'} className="campo"
+                            onChange={(e) => alterarEstilo({ fonteTexto: e.target.value })}
+                            style={{ fontFamily: FONTES.find((f) => f.id === (estilo.fonteTexto ?? 'classica'))?.css }}>
+                            {FONTES.map((f) => <option key={f.id} value={f.id}>{f.nome}</option>)}
+                          </select>
+                        </label>
                       </div>
                     </div>
 

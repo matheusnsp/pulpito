@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { ESTILO_PADRAO, type EstiloSlide } from '../lib/tipos'
-import ElementoSlide from './ElementoSlide'
+import ElementoSlide, { TextoMarcado } from './ElementoSlide'
+import { fonteCss } from '../lib/fontes'
 
 export type ConteudoSlide = {
   titulo?: string | null
@@ -11,8 +12,8 @@ export type ConteudoSlide = {
 }
 
 const ESCALA = { p: 0.82, m: 1, g: 1.2 }
-const DISPLAY = '"Plus Jakarta Sans Variable", "Atkinson Hyperlegible Next", system-ui, sans-serif'
-const SERIF = '"Literata Variable", Georgia, serif'
+const DISPLAY_PADRAO = '"Plus Jakarta Sans Variable", "Atkinson Hyperlegible Next", system-ui, sans-serif'
+const SERIF_PADRAO = '"Literata Variable", Georgia, serif'
 
 /* Tamanho do texto pelo comprimento, para nunca estourar o slide (unidades do contêiner) */
 function tamanhoPorTexto(t: string, maior: number, menor: number) {
@@ -57,17 +58,25 @@ export default function SlideVisual({ slide, preencher = false, className = '' }
   const layout = e.layout ?? 'livre'
 
   const k = k0 * kTexto
+  // Fontes escolhidas no slide (senão, as padrões de cada modelo)
+  const DISPLAY = e.fonteTitulo ? fonteCss(e.fonteTitulo) : DISPLAY_PADRAO
+  const SERIF = e.fonteTexto ? fonteCss(e.fonteTexto) : SERIF_PADRAO
+  // *palavra* entre asteriscos aparece na cor de destaque
+  const m = (t: string) => <TextoMarcado texto={t} destaque={destaque} />
   let miolo: ReactNode
 
-  if (layout === 'capa') {
+  if (layout === 'vazio') {
+    // Tudo é feito com elementos livres
+    miolo = null
+  } else if (layout === 'capa') {
     miolo = (
       <>
         <span style={{ width: '7cqw', height: '0.7cqw', background: destaque, borderRadius: 99 }} />
         <h1 style={{ fontFamily: DISPLAY, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1.02, fontSize: `${tamanhoPorTexto(titulo, 7.4, 4.6) * k}cqw` }}>
-          {titulo}
+          {m(titulo)}
         </h1>
         {subtitulo && (
-          <p style={{ fontFamily: DISPLAY, fontWeight: 700, color: destaque, fontSize: `${2.6 * k}cqw`, letterSpacing: '0.02em' }}>{subtitulo}</p>
+          <p style={{ fontFamily: DISPLAY, fontWeight: 700, color: destaque, fontSize: `${2.6 * k}cqw`, letterSpacing: '0.02em' }}>{m(subtitulo)}</p>
         )}
       </>
     )
@@ -76,14 +85,14 @@ export default function SlideVisual({ slide, preencher = false, className = '' }
       <>
         {subtitulo && (
           <p style={{ fontFamily: DISPLAY, fontWeight: 800, color: destaque, textTransform: 'uppercase', letterSpacing: '0.18em', fontSize: `${1.9 * k}cqw` }}>
-            {subtitulo}
+            {m(subtitulo)}
           </p>
         )}
         <h1 style={{ fontFamily: DISPLAY, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1.04, fontSize: `${tamanhoPorTexto(titulo, 6.6, 4.2) * k}cqw` }}>
-          {titulo}
+          {m(titulo)}
         </h1>
         {texto && (
-          <p style={{ fontFamily: DISPLAY, fontWeight: 700, color: destaque, fontSize: `${2.7 * k}cqw` }}>{texto}</p>
+          <p style={{ fontFamily: DISPLAY, fontWeight: 700, color: destaque, fontSize: `${2.7 * k}cqw` }}>{m(texto)}</p>
         )}
       </>
     )
@@ -91,10 +100,10 @@ export default function SlideVisual({ slide, preencher = false, className = '' }
     miolo = (
       <>
         <p style={{ fontFamily: SERIF, lineHeight: 1.38, fontSize: `${tamanhoPorTexto(texto, 4.4, 2.5) * k}cqw`, whiteSpace: 'pre-wrap' }}>
-          {texto}
+          {m(texto)}
         </p>
         {titulo && (
-          <p style={{ fontFamily: DISPLAY, fontWeight: 800, color: destaque, fontSize: `${2.4 * k}cqw`, letterSpacing: '0.02em' }}>{titulo}</p>
+          <p style={{ fontFamily: DISPLAY, fontWeight: 800, color: destaque, fontSize: `${2.4 * k}cqw`, letterSpacing: '0.02em' }}>{m(titulo)}</p>
         )}
       </>
     )
@@ -103,9 +112,9 @@ export default function SlideVisual({ slide, preencher = false, className = '' }
       <>
         <span aria-hidden style={{ fontFamily: SERIF, color: destaque, fontSize: `${12 * k}cqw`, lineHeight: 0.6, height: `${5 * k}cqw` }}>“</span>
         <p style={{ fontFamily: DISPLAY, fontWeight: 800, lineHeight: 1.18, letterSpacing: '-0.01em', fontSize: `${tamanhoPorTexto(texto, 5.6, 3.2) * k}cqw`, whiteSpace: 'pre-wrap' }}>
-          {texto}
+          {m(texto)}
         </p>
-        {titulo && <p style={{ color: destaque, fontWeight: 700, fontSize: `${2 * k}cqw` }}>{titulo}</p>}
+        {titulo && <p style={{ color: destaque, fontWeight: 700, fontSize: `${2 * k}cqw` }}>{m(titulo)}</p>}
       </>
     )
   } else {
@@ -113,11 +122,11 @@ export default function SlideVisual({ slide, preencher = false, className = '' }
     miolo = (
       <>
         {titulo && (
-          <h1 style={{ fontFamily: e.fonte === 'serif' ? SERIF : DISPLAY, fontWeight: 800, lineHeight: 1.08, fontSize: `${tamanhoPorTexto(titulo, 6, 4) * k}cqw` }}>{titulo}</h1>
+          <h1 style={{ fontFamily: e.fonte === 'serif' && !e.fonteTitulo ? SERIF_PADRAO : DISPLAY, fontWeight: 800, lineHeight: 1.08, fontSize: `${tamanhoPorTexto(titulo, 6, 4) * k}cqw` }}>{m(titulo)}</h1>
         )}
-        {subtitulo && <p style={{ fontSize: `${2.8 * k}cqw`, opacity: 0.8 }}>{subtitulo}</p>}
+        {subtitulo && <p style={{ fontSize: `${2.8 * k}cqw`, opacity: 0.8 }}>{m(subtitulo)}</p>}
         {texto && (
-          <p style={{ fontSize: `${tamanhoPorTexto(texto, 3.8, 2.4) * k}cqw`, lineHeight: 1.35, whiteSpace: 'pre-wrap' }}>{texto}</p>
+          <p style={{ fontFamily: e.fonteTexto ? SERIF : undefined, fontSize: `${tamanhoPorTexto(texto, 3.8, 2.4) * k}cqw`, lineHeight: 1.35, whiteSpace: 'pre-wrap' }}>{m(texto)}</p>
         )}
       </>
     )
@@ -141,7 +150,7 @@ export default function SlideVisual({ slide, preencher = false, className = '' }
       {disp === 'fundo' && e.escurecer > 0 && (
         <div className="absolute inset-0" style={{ background: `rgba(0,0,0,${e.escurecer})` }} />
       )}
-      {disp === 'so-foto' ? null : lateral || disp === 'cima' ? (
+      {disp === 'so-foto' || layout === 'vazio' ? null : lateral || disp === 'cima' ? (
         <div className={`relative flex h-full ${disp === 'cima' ? 'flex-col' : disp === 'direita' ? 'flex-row-reverse' : 'flex-row'}`}>
           <div className="shrink-0" style={{
             ...estiloFoto(foto!),
