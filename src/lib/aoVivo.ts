@@ -24,6 +24,7 @@ export type BlocoPublico = {
 export type RespostaPublica = { participante: string; nome: string; texto?: string | null; opcao?: number | null; destaque?: boolean }
 export type EstadoAula = {
   titulo: string
+  espera?: { titulo?: string; texto?: string } // mensagem de espera escolhida no estudo
   aberta: boolean
   mostrar: boolean // alunos veem as respostas dos outros
   bloco: BlocoPublico | null
@@ -147,6 +148,7 @@ export function useAulaAoVivo(mensagem: Mensagem | null | undefined, blocos: Top
     const multipla = ehMultipla(b)
     const estado: EstadoAula = {
       titulo: mensagem.titulo,
+      espera: { titulo: mensagem.detalhes?.esperaTitulo, texto: mensagem.detalhes?.esperaTexto },
       aberta: aula.aberta,
       mostrar: aula.mostrar_respostas,
       bloco: b ? {

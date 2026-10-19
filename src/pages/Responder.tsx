@@ -191,8 +191,8 @@ export default function Responder() {
       {!recebe ? (
         <div className="my-auto space-y-3 py-10 text-center">
           <Hourglass size={36} className="mx-auto text-texto-2" />
-          <h1 className="font-display text-2xl font-extrabold">Preste atenção na aula</h1>
-          <p className="text-texto-2">Quando chegar uma pergunta, ela aparece aqui.</p>
+          <h1 className="whitespace-pre-wrap font-display text-2xl font-extrabold">{estado.espera?.titulo?.trim() || 'Preste atenção na aula'}</h1>
+          <p className="whitespace-pre-wrap text-texto-2">{estado.espera?.texto?.trim() || 'Quando chegar uma pergunta, ela aparece aqui.'}</p>
           {b?.titulo && <p className="rounded-xl bg-superficie px-4 py-3 text-sm">Agora: <b>{b.titulo}</b></p>}
         </div>
       ) : (

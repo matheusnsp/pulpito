@@ -452,6 +452,16 @@ export default function EditorMensagem() {
               <input value={detalhes.material ?? ''} placeholder="Papel e caneta"
                 onChange={(e) => alterarDetalhes({ material: e.target.value })} className="campo" />
             </Campo>
+            <details className="col-span-2 rounded-xl border border-borda px-3 py-2.5" open={!!(detalhes.esperaTitulo || detalhes.esperaTexto)}>
+              <summary className="cursor-pointer text-sm font-semibold text-texto-2">Mensagem de espera para a turma</summary>
+              <p className="mt-1 text-xs text-texto-2">Aparece no celular dos alunos, nas respostas ao vivo, enquanto não tem pergunta na tela.</p>
+              <div className="mt-3 space-y-2">
+                <input value={detalhes.esperaTitulo ?? ''} placeholder="Preste atenção na aula" maxLength={80}
+                  onChange={(e) => alterarDetalhes({ esperaTitulo: e.target.value })} className="campo font-semibold" />
+                <textarea rows={2} value={detalhes.esperaTexto ?? ''} placeholder="Quando chegar uma pergunta, ela aparece aqui." maxLength={240}
+                  onChange={(e) => alterarDetalhes({ esperaTexto: e.target.value })} className="campo resize-y" />
+              </div>
+            </details>
           </>
         )}
         <div className="col-span-2">

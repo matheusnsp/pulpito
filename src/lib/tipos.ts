@@ -11,7 +11,10 @@ export type Mensagem = {
 }
 
 export type TipoProjeto = 'pregacao' | 'estudo'
-export type DetalhesEstudo = { objetivo?: string; publico?: string; material?: string; referencias?: string }
+export type DetalhesEstudo = {
+  objetivo?: string; publico?: string; material?: string; referencias?: string
+  esperaTitulo?: string; esperaTexto?: string // o que a turma vê no celular enquanto não há pergunta
+}
 
 export type Topico = {
   id: string
