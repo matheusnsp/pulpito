@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { BookOpen, MonitorPlay, NotebookPen, Timer } from 'lucide-react'
 import Marca from './Marca'
+import Creditos from './Creditos'
 
 const RECURSOS = [
   { Icone: NotebookPen, texto: 'Esboços em tópicos, com versículo, aplicação e ilustração' },
@@ -33,11 +34,17 @@ export default function TelaEntrada({ children }: { children: ReactNode }) {
             ))}
           </ul>
         </div>
-        <p className="relative text-sm text-texto-2/70">A inspiração é de Deus. O Pulpito só organiza.</p>
+        <div className="relative flex items-end justify-between gap-4">
+          <p className="text-sm text-texto-2/70">A inspiração é de Deus. O Pulpito só organiza.</p>
+          <Creditos className="shrink-0" />
+        </div>
       </aside>
 
       <main className="flex flex-1 items-center justify-center px-6 py-10">
-        <div className="w-full max-w-sm animate-entrar">{children}</div>
+        <div className="w-full max-w-sm animate-entrar">
+          {children}
+          <Creditos className="mt-10 text-center lg:hidden" />
+        </div>
       </main>
     </div>
   )

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
-import { Check, ChevronDown, CircleCheck, Download, GraduationCap, KeyRound, LoaderCircle, LogOut, RefreshCw, Sparkles, WifiOff, Wrench } from 'lucide-react'
+import { Check, ChevronDown, CircleCheck, Download, GraduationCap, KeyRound, LoaderCircle, LogOut, RefreshCw, Sparkles, WifiOff, Wrench, Globe } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { sairDaConta } from '../lib/conta'
@@ -8,6 +8,7 @@ import { VERSOES, type VersaoId } from '../lib/biblia'
 import { emailParaUsuario, nomeDeExibicao } from '../lib/usuario'
 import { NOVIDADES, VERSAO_APP, buscarServiceWorkerNovo, carregarUltimaVersao, verificarVersao, versaoAmigavel } from '../lib/atualizar'
 import { abrirTutorial } from '../lib/tutorial'
+import { ANO_INICIO, AUTOR } from '../lib/autor'
 import { aoMudarVersao, lerVersao, salvarVersao } from '../lib/preferencias'
 
 
@@ -181,7 +182,51 @@ export default function Ajustes() {
       </section>
 
       <AtualizarApp />
+
+      <Sobre />
     </div>
+  )
+}
+
+/* Marcas do GitHub e do LinkedIn (o lucide não traz logos de empresas) */
+const Github = ({ size = 18 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+    <path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.19 1.76 1.19 1.03 1.76 2.69 1.25 3.35.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.68 0-1.25.45-2.28 1.19-3.08-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.78 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.83 1.19 3.08 0 4.41-2.69 5.38-5.25 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z" />
+  </svg>
+)
+const Linkedin = ({ size = 18 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+    <path d="M20.45 20.45h-3.55v-5.57c0-1.33-.03-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.36V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28ZM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12ZM7.12 20.45H3.56V9h3.56v11.45ZM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0Z" />
+  </svg>
+)
+
+/* Sobre o app e o autor */
+function Sobre() {
+  const links = [
+    { nome: 'Site', url: AUTOR.site, Icone: Globe },
+    { nome: 'GitHub', url: AUTOR.github, Icone: Github },
+    { nome: 'LinkedIn', url: AUTOR.linkedin, Icone: Linkedin },
+  ]
+  return (
+    <section className="space-y-3 lg:col-span-2">
+      <h2 className="font-display text-lg font-bold">Sobre</h2>
+      <div className="cartao flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
+        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-acao font-display text-xl font-extrabold text-acao-texto">MN</span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm text-texto-2">O Pulpito foi idealizado e criado por</p>
+          <b className="block font-display text-xl">{AUTOR.nome}</b>
+          <p className="text-xs text-texto-2">© {ANO_INICIO}{new Date().getFullYear() > ANO_INICIO ? `–${new Date().getFullYear()}` : ''} {AUTOR.nome}. Todos os direitos reservados.</p>
+        </div>
+        <div className="flex gap-2">
+          {links.map(({ nome, url, Icone }) => (
+            <a key={nome} href={url} target="_blank" rel="noopener" aria-label={nome} title={nome}
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-borda text-texto-2 hover:border-acao hover:text-texto">
+              <Icone size={18} />
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
   )
 }
 
