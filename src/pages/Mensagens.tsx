@@ -1,23 +1,28 @@
 import AvisoDeslizante from '../components/AvisoDeslizante'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import {
   DndContext, DragOverlay, PointerSensor, useDraggable, useDroppable, useSensor, useSensors,
   type DragEndEvent, type DragStartEvent,
 } from '@dnd-kit/core'
 import {
-  BookOpen, CalendarDays, Check, ChevronRight, Copy, Ellipsis, MonitorPlay, NotebookPen, FolderInput, GripVertical, Pencil, Play, Plus, Search, Trash2, X,
+  BookOpen, CalendarDays, Check, ChevronRight, Settings, Copy, Ellipsis, GraduationCap, Mic, MonitorPlay, NotebookPen, FolderInput, GripVertical, Pencil, Play, Plus, Search, Target, Trash2, X,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { emailParaUsuario, nomeDeExibicao } from '../lib/usuario'
 import { LIVROS, parseReferencia } from '../lib/biblia'
 import type { Mensagem, Pasta } from '../lib/tipos'
-import { criarMensagem, duplicarMensagem } from '../lib/mensagens'
+import { duplicarMensagem } from '../lib/mensagens'
+import { abrirCriar, lerModo, salvarModo } from '../lib/criar'
+import type { TipoProjeto } from '../lib/tipos'
 
 const CHAVE_FILTRO = 'pulpito-filtro-pasta'
 const TEMPO_DESFAZER = 6000
 type Filtro = 'todas' | 'sem' | string
+/* Quantos blocos de cada tipo cada estudo tem (para as etiquetas dos cartões) */
+type ContagemBlocos = Record<string, Record<string, number>>
+const tipoDe = (m: Pick<Mensagem, 'tipo'>): TipoProjeto => (m.tipo === 'estudo' ? 'estudo' : 'pregacao')
 
 type Proximo = {
   id: string
@@ -95,8 +100,9 @@ function ChipPasta({ valor, rotulo, qtd, ativo, soltavel, onClick }: {
 }
 
 /* ── Linha da lista: arrasta pela alça, ações no menu ⋯ ── */
-function LinhaMensagem({ m, pasta, pastas, hoje, menuAberto, onAbrirMenu, onFecharMenu, onMover, onDuplicar, onExcluir }: {
+function LinhaMensagem({ m, blocos, pasta, pastas, hoje, menuAberto, onAbrirMenu, onFecharMenu, onMover, onDuplicar, onExcluir }: {
   m: Mensagem
+  blocos?: Record<string, number>
   pasta: Pasta | null
   pastas: Pasta[]
   hoje: Date
@@ -110,6 +116,12 @@ function LinhaMensagem({ m, pasta, pastas, hoje, menuAberto, onAbrirMenu, onFech
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: m.id })
   const ref = refCurta(m.texto_base)
   const item = 'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-superficie-2'
+  const estudo = tipoDe(m) === 'estudo'
+  const acaoNome = estudo ? 'Dar aula' : 'Pregar'
+  const total = blocos ? Object.values(blocos).reduce((a, b) => a + b, 0) : 0
+  const etiquetas = estudo && blocos ? ([
+    ['pergunta', 'pergunta', 'perguntas', '#38BDF8'], ['atividade', 'atividade', 'atividades', '#14B8A6'],
+  ] as const).filter(([k]) => blocos[k]).map(([k, um, varios, cor]) => ({ texto: `${blocos[k]} ${blocos[k] === 1 ? um : varios}`, cor, k })) : []
 
   return (
     <li ref={setNodeRef}
@@ -119,8 +131,16 @@ function LinhaMensagem({ m, pasta, pastas, hoje, menuAberto, onAbrirMenu, onFech
         <GripVertical size={18} />
       </button>
 
-      <Link to={`/mensagem/${m.id}`} className="min-w-0 flex-1 py-3">
+      {estudo && (
+        <span className="ml-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#14B8A6]/15 text-[#14B8A6]">
+          <GraduationCap size={20} />
+        </span>
+      )}
+      <Link to={`/mensagem/${m.id}`} className={`min-w-0 flex-1 py-3 ${estudo ? 'pl-2' : ''}`}>
         <p className="truncate font-display text-[17px] font-bold leading-snug">{m.titulo || 'Sem título'}</p>
+        {estudo && m.detalhes?.objetivo && (
+          <p className="mt-1 flex items-center gap-1.5 truncate text-sm text-texto/80"><Target size={13} className="shrink-0 text-texto-2" /> <span className="truncate">{m.detalhes.objetivo}</span></p>
+        )}
         <p className="mt-1.5 flex min-w-0 items-center gap-2 text-sm text-texto-2">
           {ref && (
             <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-ouro-suave px-1.5 py-0.5 text-xs font-bold text-tinta">
@@ -128,13 +148,21 @@ function LinhaMensagem({ m, pasta, pastas, hoje, menuAberto, onAbrirMenu, onFech
             </span>
           )}
           <span className="truncate">
+            {estudo && `${total} ${total === 1 ? 'bloco' : 'blocos'} · ${m.tempo_minutos} min · `}
             {pasta && `${pasta.nome} · `}
             {quandoEditada(m.atualizado_em, hoje)}
           </span>
         </p>
+        {etiquetas.length > 0 && (
+          <p className="mt-1.5 flex gap-1.5">
+            {etiquetas.map((e) => (
+              <span key={e.k} className="rounded-full px-2 py-0.5 text-[10.5px] font-extrabold uppercase tracking-wider" style={{ color: e.cor, background: `${e.cor}1f` }}>{e.texto}</span>
+            ))}
+          </p>
+        )}
       </Link>
 
-      <Link to={`/pregar/${m.id}`} aria-label="Pregar"
+      <Link to={`/pregar/${m.id}`} aria-label={acaoNome}
         className="hidden h-9 w-9 items-center justify-center rounded-xl bg-acao text-acao-texto opacity-0 transition group-hover:opacity-100 md:flex">
         <Play size={16} fill="currentColor" />
       </Link>
@@ -148,7 +176,7 @@ function LinhaMensagem({ m, pasta, pastas, hoje, menuAberto, onAbrirMenu, onFech
           <div className="fixed inset-0 z-30" onClick={onFecharMenu} />
           <div className="absolute right-2 top-14 z-40 w-60 animate-entrar rounded-2xl border border-borda bg-superficie p-1.5 shadow-xl">
             <Link to={`/pregar/${m.id}`} className={item}>
-              <Play size={18} className="text-tinta" /> Pregar
+              <Play size={18} className="text-tinta" /> {acaoNome}
             </Link>
             <button onClick={onDuplicar} className={item}>
               <Copy size={18} className="text-texto-2" /> Duplicar
@@ -173,7 +201,6 @@ function LinhaMensagem({ m, pasta, pastas, hoje, menuAberto, onAbrirMenu, onFech
 }
 
 export default function Mensagens() {
-  const navigate = useNavigate()
   const { sessao } = useAuth()
   const [hoje] = useState(() => new Date())
   const [mensagens, setMensagens] = useState<Mensagem[] | null>(null)
@@ -185,8 +212,9 @@ export default function Mensagens() {
   const [menu, setMenu] = useState<string | null>(null)
   const [erro, setErro] = useState('')
   const [busca, setBusca] = useState('')
-  const [criando, setCriando] = useState(false)
   const [arrastando, setArrastando] = useState<string | null>(null)
+  const [modo, setModo] = useState<TipoProjeto>(lerModo)
+  const [contagem, setContagem] = useState<ContagemBlocos>({})
   const campoBusca = useRef<HTMLInputElement>(null)
 
   // Exclusão com "Desfazer": só apaga do banco depois do tempo
@@ -227,8 +255,23 @@ export default function Mensagens() {
       setProximo(evs[0] ?? null)
       setOutrosEventos(evs.slice(1))
     })
+    // Tipos dos blocos de cada estudo (se o banco ainda não tem a coluna, só não mostra as etiquetas)
+    supabase.from('topicos').select('mensagem_id, tipo').neq('tipo', 'topico').then(({ data, error }) => {
+      if (!ativo || error || !data) return
+      const c: ContagemBlocos = {}
+      for (const t of data as { mensagem_id: string; tipo: string }[]) {
+        c[t.mensagem_id] ??= {}
+        c[t.mensagem_id][t.tipo] = (c[t.mensagem_id][t.tipo] ?? 0) + 1
+      }
+      setContagem(c)
+    })
     return () => { ativo = false }
   }, [])
+
+  function trocarModo(m: TipoProjeto) {
+    setModo(m)
+    salvarModo(m)
+  }
 
   // Ao sair da tela com uma exclusão pendente, confirma a exclusão
   useEffect(() => () => {
@@ -243,12 +286,8 @@ export default function Mensagens() {
   const filtroAtivo = mensagens === null || filtroValido ? filtro : 'todas'
   const pastaAtual = pastas.find((p) => p.id === filtroAtivo) ?? null
 
-  async function criar() {
-    setCriando(true)
-    try { navigate(`/mensagem/${await criarMensagem(pastaAtual?.id ?? null)}`) }
-    catch { setErro('Não foi possível criar a mensagem.') }
-    finally { setCriando(false) }
-  }
+  // Abre a folha "O que você vai preparar?", já sugerindo o lado em que a pessoa está
+  const criar = () => abrirCriar({ pastaId: pastaAtual?.id ?? null, tipo: modo })
 
   async function duplicar(m: Mensagem) {
     setMenu(null)
@@ -363,7 +402,10 @@ export default function Mensagens() {
     setFiltro('todas')
   }
 
-  const todas = mensagens ?? []
+  const doisLados = mensagens ?? []
+  const qtdPorModo = { pregacao: doisLados.filter((m) => tipoDe(m) === 'pregacao').length, estudo: doisLados.filter((m) => tipoDe(m) === 'estudo').length }
+  const todas = doisLados.filter((m) => tipoDe(m) === modo)
+  const nomeItens = modo === 'estudo' ? ['estudo', 'estudos'] : ['pregação', 'pregações']
   const termo = normalizar(busca.trim())
   const filtradas = todas.filter((m) => {
     const naPasta = filtroAtivo === 'todas' ? true
@@ -394,6 +436,20 @@ export default function Mensagens() {
             </h1>
           </div>
         </header>
+
+        {/* Chave: Pregações | Estudos */}
+        <div role="tablist" aria-label="Tipo" className="mt-5 flex gap-1.5 rounded-2xl border border-borda bg-superficie p-1.5 md:max-w-md">
+          {([['pregacao', 'Pregações', Mic], ['estudo', 'Estudos', GraduationCap]] as const).map(([v, nome, Icone]) => {
+            const ativo = modo === v
+            return (
+              <button key={v} role="tab" aria-selected={ativo} onClick={() => trocarModo(v)}
+                className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 font-bold transition-colors ${ativo ? 'bg-acao text-acao-texto shadow-[0_6px_18px_-8px_var(--acao)]' : 'text-texto-2 hover:text-texto'}`}>
+                <Icone size={17} /> {nome}
+                <span className={`rounded-full px-1.5 text-xs tabular-nums ${ativo ? 'bg-black/15' : 'bg-superficie-2'}`}>{qtdPorModo[v]}</span>
+              </button>
+            )
+          })}
+        </div>
 
         {/* Próxima pregação */}
         {proximo && (
@@ -441,7 +497,7 @@ export default function Mensagens() {
           <Link to={`/mensagem/${ultima.id}`}
             className="cartao group mt-4 flex items-center gap-4 p-4 transition hover:border-texto-2/40">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-ouro-suave text-tinta">
-              <NotebookPen size={20} />
+              {modo === 'estudo' ? <GraduationCap size={20} /> : <NotebookPen size={20} />}
             </span>
             <span className="min-w-0 flex-1">
               <span className="rotulo block">Continue de onde parou</span>
@@ -453,13 +509,13 @@ export default function Mensagens() {
         )}
 
         {/* Painel: resumo, próximos compromissos e acesso rápido */}
-        {mensagens && mensagens.length > 0 && !termo && (
+        {doisLados.length > 0 && !termo && (
           <div className="mt-4 grid gap-3 md:grid-cols-2">
             <section className="cartao p-4">
               <h2 className="rotulo">Resumo</h2>
               <div className="mt-3 grid grid-cols-4 gap-2 text-center">
                 {[
-                  { n: todas.length, r: todas.length === 1 ? 'mensagem' : 'mensagens' },
+                  { n: todas.length, r: todas.length === 1 ? nomeItens[0] : nomeItens[1] },
                   { n: (proximo ? 1 : 0) + outrosEventos.length, r: 'na agenda' },
                   { n: pastas.length, r: pastas.length === 1 ? 'pasta' : 'pastas' },
                   { n: qtdMarcados, r: qtdMarcados === 1 ? 'marcação' : 'marcações' },
@@ -474,7 +530,7 @@ export default function Mensagens() {
               <div className="mt-2 grid grid-cols-4 gap-2">
                 {[
                   { r: 'Nova', Icone: Plus, acao: criar },
-                  { r: 'Bíblia', Icone: BookOpen, para: '/biblia' },
+                  modo === 'estudo' ? { r: 'Ajustes', Icone: Settings, para: '/ajustes' } : { r: 'Bíblia', Icone: BookOpen, para: '/biblia' },
                   { r: 'Agenda', Icone: CalendarDays, para: '/agenda' },
                   { r: 'Telão', Icone: MonitorPlay, para: '/projetar' },
                 ].map(({ r, Icone, acao, para }) => {
@@ -482,7 +538,7 @@ export default function Mensagens() {
                   const miolo = <><Icone size={20} className="text-tinta" />{r}</>
                   return para
                     ? <Link key={r} to={para} target={para === '/projetar' ? '_blank' : undefined} className={cls}>{miolo}</Link>
-                    : <button key={r} onClick={acao} disabled={criando} className={cls}>{miolo}</button>
+                    : <button key={r} onClick={acao} className={cls}>{miolo}</button>
                 })}
               </div>
             </section>
@@ -531,7 +587,7 @@ export default function Mensagens() {
         <div className="relative mt-6">
           <Search size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-texto-2" />
           <input ref={campoBusca} value={busca} onChange={(e) => setBusca(e.target.value)}
-            placeholder="Buscar por título ou texto base" type="search" enterKeyHint="search"
+            placeholder={modo === 'estudo' ? 'Buscar estudos' : 'Buscar por título ou texto base'} type="search" enterKeyHint="search"
             className="campo rounded-2xl py-3 pl-11 pr-12" />
           {busca ? (
             <button onClick={() => setBusca('')} aria-label="Limpar busca"
@@ -581,7 +637,7 @@ export default function Mensagens() {
         {pastaAtual && (
           <div className="mb-3 flex flex-wrap items-center gap-1">
             <h2 className="mr-auto font-display text-lg font-bold">{pastaAtual.nome}</h2>
-            <button onClick={criar} disabled={criando} className="botao-secundario hidden px-3 py-1.5 text-sm md:inline-flex">
+            <button onClick={criar} className="botao-secundario hidden px-3 py-1.5 text-sm md:inline-flex">
               <Plus size={16} /> Nova nesta pasta
             </button>
             <button onClick={() => renomearPasta(pastaAtual)} className="botao-fantasma px-3 py-1.5 text-sm">
@@ -603,15 +659,19 @@ export default function Mensagens() {
           </ul>
         )}
 
-        {mensagens?.length === 0 && !excluida && (
+        {mensagens !== null && todas.length === 0 && !excluida && (
           <div className="cartao relative overflow-hidden px-6 py-12 text-center">
             <div aria-hidden className="pointer-events-none absolute left-1/2 top-0 h-40 w-72 -translate-x-1/2 rounded-full bg-acao/20 blur-3xl" />
-            <h2 className="relative font-display text-2xl font-extrabold">Comece sua primeira mensagem</h2>
+            <h2 className="relative font-display text-2xl font-extrabold">
+              {modo === 'estudo' ? 'Comece seu primeiro estudo' : 'Comece sua primeira pregação'}
+            </h2>
             <p className="relative mx-auto mt-2 max-w-sm text-texto-2">
-              Organize em tópicos, ligue os versículos e pregue com o telão acompanhando.
+              {modo === 'estudo'
+                ? 'Aula, célula, curso ou palestra sobre qualquer assunto, montado em blocos: explicação, perguntas, atividades e mais.'
+                : 'Organize em tópicos, ligue os versículos e pregue com o telão acompanhando.'}
             </p>
-            <button onClick={criar} disabled={criando} className="botao-primario relative mt-6">
-              <Plus size={18} /> Nova mensagem
+            <button onClick={criar} className="botao-primario relative mt-6">
+              <Plus size={18} /> {modo === 'estudo' ? 'Novo estudo' : 'Nova pregação'}
             </button>
           </div>
         )}
@@ -619,7 +679,7 @@ export default function Mensagens() {
         {filtradas.length > 0 && (
           <ul className="grid grid-cols-[minmax(0,1fr)] gap-3 md:grid-cols-2">
             {filtradas.map((m) => (
-              <LinhaMensagem key={m.id} m={m} pastas={pastas} hoje={hoje}
+              <LinhaMensagem key={m.id} m={m} blocos={contagem[m.id]} pastas={pastas} hoje={hoje}
                 pasta={filtroAtivo === 'todas' ? pastas.find((p) => p.id === m.pasta_id) ?? null : null}
                 menuAberto={menu === m.id}
                 onAbrirMenu={() => setMenu(m.id)}
@@ -631,15 +691,15 @@ export default function Mensagens() {
           </ul>
         )}
 
-        {mensagens && mensagens.length > 0 && filtradas.length === 0 && (
+        {todas.length > 0 && filtradas.length === 0 && (
           <p className="py-10 text-center text-texto-2">
-            {termo ? `Nenhuma mensagem encontrada para "${busca}".` : 'Nenhuma mensagem nesta pasta.'}
+            {termo ? `Nada encontrado para "${busca}".` : `Nenhum${modo === 'estudo' ? ' estudo' : 'a pregação'} nesta pasta.`}
           </p>
         )}
       </div>
 
       {/* Celular: botão flutuante de nova mensagem */}
-      <button onClick={criar} disabled={criando} aria-label="Nova mensagem"
+      <button onClick={criar} aria-label={modo === 'estudo' ? 'Novo estudo' : 'Nova pregação'}
         className="fixed bottom-[calc(6.25rem+env(safe-area-inset-bottom))] right-4 z-10 flex h-14 w-14 items-center justify-center rounded-2xl bg-acao text-acao-texto shadow-[0_10px_30px_-8px_var(--acao)] active:scale-95 disabled:opacity-60 md:hidden">
         <Plus size={26} strokeWidth={2.5} />
       </button>

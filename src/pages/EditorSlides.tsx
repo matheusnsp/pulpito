@@ -220,7 +220,8 @@ export default function EditorSlides() {
   function rotuloTopico(topicoId: string | null) {
     if (!topicoId) return 'Capa'
     const i = topicos.findIndex((t) => t.id === topicoId)
-    return i < 0 ? 'Tópico removido' : `Tópico ${i + 1}`
+    const nome = mensagem?.tipo === 'estudo' ? 'Bloco' : 'Tópico'
+    return i < 0 ? `${nome} removido` : `${nome} ${i + 1}`
   }
 
   function alterar(sid: string, campos: Partial<Slide>) {
@@ -374,12 +375,47 @@ export default function EditorSlides() {
       for (const b of await blocosDoVersiculo(ref)) novo(topicoId, 'versiculo', { titulo: b.referencia, texto: b.texto })
     }
 
+    // Slide em modo livre, montado por um modelo editável (usado nos estudos)
+    const livre = (topico_id: string | null, modeloId: string, c: { titulo?: string | null; subtitulo?: string | null; texto?: string | null }, extra: Elemento[] = []) => {
+      const m = MODELOS.find((x) => x.id === modeloId)!
+      linhas.push({
+        mensagem_id: mensagem.id, topico_id, ordem: linhas.length,
+        titulo: c.titulo ?? null, subtitulo: c.subtitulo ?? null, texto: c.texto ?? null,
+        fundo, estilo: { ...estiloSel, layout: 'vazio', elementos: [...m.fabrica(c, coresDoEstilo(estiloSel)), ...extra] },
+      })
+    }
+
     // Capa
-    novo(null, 'capa', { titulo: mensagem.titulo, subtitulo: referenciaBonita(mensagem.texto_base) })
+    const estudo = mensagem.tipo === 'estudo'
+    novo(null, 'capa', { titulo: mensagem.titulo, subtitulo: estudo ? mensagem.detalhes?.publico || referenciaBonita(mensagem.texto_base) : referenciaBonita(mensagem.texto_base) })
     await versiculos(null, mensagem.texto_base)
 
+    // Estudo: cada bloco vira o modelo editável que combina com ele
+    if (estudo) for (const t of topicos) {
+      const min = t.extra?.minutos ? `${t.extra.minutos} min` : ''
+      switch (t.tipo) {
+        case 'pergunta': livre(t.id, 'pergunta', { titulo: t.titulo, subtitulo: min ? `Converse em grupo · ${min}` : 'Converse com quem está ao seu lado' }); break
+        case 'lista': livre(t.id, 'lista', { titulo: t.titulo, texto: t.observacao }); break
+        case 'citacao': livre(t.id, 'citacao', { texto: t.titulo, subtitulo: t.extra?.autor ? `— ${t.extra.autor}` : ' ' }); break
+        case 'definicao': livre(t.id, 'definicao', { titulo: t.titulo, subtitulo: t.frase_chave || ' ', texto: t.observacao }); break
+        case 'atividade': livre(t.id, 'tituloTexto', { titulo: `${t.titulo || 'Atividade'}${min ? ` · ${min}` : ''}`, texto: t.observacao || ' ' }); break
+        case 'referencia':
+          await versiculos(t.id, t.versiculo)
+          if (t.observacao?.trim()) livre(t.id, 'tituloTexto', { titulo: t.titulo || 'Referência', texto: t.observacao })
+          break
+        case 'imagem':
+          livre(t.id, 'branco', { titulo: t.titulo }, [
+            ...(t.extra?.url ? [{ id: crypto.randomUUID(), tipo: 'foto' as const, x: 15, y: 8, w: 70, h: t.titulo ? 70 : 84, url: t.extra.url, ajuste: 'conter' as const, sombra: false }] : []),
+            ...(t.titulo ? [{ id: crypto.randomUUID(), tipo: 'texto' as const, x: 10, y: 80, w: 80, h: 12, texto: t.titulo, tam: 2.6, cor: estiloSel.cor || '#FFFFFF', peso: 700 }] : []),
+          ])
+          break
+        case 'link': livre(t.id, 'tituloTexto', { titulo: t.titulo || 'Assista', texto: [t.observacao, t.extra?.url].filter(Boolean).join('\n\n') || ' ' }); break
+        default: livre(t.id, 'tituloTexto', { titulo: t.titulo, texto: t.observacao || ' ' })
+      }
+    }
+
     // Cada tópico: título → versículo(s) → frase-chave
-    for (const [i, t] of topicos.entries()) {
+    if (!estudo) for (const [i, t] of topicos.entries()) {
       novo(t.id, 'topico', {
         subtitulo: `Tópico ${i + 1}`, titulo: t.titulo || 'Sem título', texto: referenciaBonita(t.versiculo),
       })
@@ -675,14 +711,16 @@ export default function EditorSlides() {
 
   const blocoGerar = (
     <div className="space-y-3">
-      <label className="flex items-center gap-2.5 text-sm">
-        <input type="checkbox" checked={comFrase} onChange={(e) => setComFrase(e.target.checked)}
-          className="h-4 w-4 accent-[var(--acao)]" />
-        Criar também um slide com a frase-chave de cada tópico
-      </label>
+      {mensagem?.tipo !== 'estudo' && (
+        <label className="flex items-center gap-2.5 text-sm">
+          <input type="checkbox" checked={comFrase} onChange={(e) => setComFrase(e.target.checked)}
+            className="h-4 w-4 accent-[var(--acao)]" />
+          Criar também um slide com a frase-chave de cada tópico
+        </label>
+      )}
       <button onClick={gerar} disabled={gerando} className={slides.length ? 'botao-secundario' : 'botao-primario'}>
         <ListPlus size={18} />
-        {gerando ? 'Gerando…' : slides.length ? 'Gerar de novo a partir dos tópicos' : 'Gerar a partir dos tópicos'}
+        {gerando ? 'Gerando…' : `${slides.length ? 'Gerar de novo' : 'Gerar'} a partir dos ${mensagem?.tipo === 'estudo' ? 'blocos' : 'tópicos'}`}
       </button>
     </div>
   )

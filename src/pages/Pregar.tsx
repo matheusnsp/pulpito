@@ -1,8 +1,9 @@
 import { lerVersao } from '../lib/preferencias'
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react'
+import { defBloco, itensDaLista } from '../lib/blocos'
 import { Link, useParams } from 'react-router-dom'
 import {
-  BookOpen, Cast, ChartNoAxesColumn, ChevronDown, Clock, Timer, ChevronLeft, Maximize, Minus, MonitorPlay, Pause, Play, Plus, RotateCcw, Settings, X,
+  BookOpen, Cast, ChartNoAxesColumn, ChevronDown, Clock, ExternalLink, Target, Timer, ChevronLeft, Maximize, Minus, MonitorPlay, Pause, Play, Plus, RotateCcw, Settings, X,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Mensagem, Slide, Topico } from '../lib/tipos'
@@ -229,6 +230,118 @@ function TextoRico({ texto, className }: { texto: string; className: string }) {
       ) : (
         <p key={i} className="whitespace-pre-wrap">{b.t}</p>
       ))}
+    </div>
+  )
+}
+
+/* ── Cronômetro de um bloco (pergunta ou atividade): conta para trás e avisa no fim ── */
+function CronometroBloco({ minutos, cor, rotulo }: { minutos: number; cor: string; rotulo: string }) {
+  const [total, setTotal] = useState(minutos * 60_000)
+  const [rodando, setRodando] = useState(false)
+  const [base, setBase] = useState({ acumulado: 0, desde: 0 })
+  const [agora, setAgora] = useState(0)
+  useEffect(() => {
+    if (!rodando) return
+    const t = setInterval(() => setAgora(Date.now()), 250)
+    return () => clearInterval(t)
+  }, [rodando])
+  const passado = base.acumulado + (rodando ? Math.max(0, agora - base.desde) : 0)
+  const resta = total - passado
+  const acabou = resta <= 0
+  function alternar(e: { stopPropagation: () => void }) {
+    e.stopPropagation()
+    const t = Date.now()
+    if (rodando) setBase({ acumulado: base.acumulado + (t - base.desde), desde: 0 })
+    else setBase({ acumulado: base.acumulado, desde: t })
+    setAgora(t)
+    setRodando(!rodando)
+  }
+  return (
+    <div className={`rounded-2xl border p-4 transition-colors ${acabou ? 'border-perigo bg-perigo/15' : 'bg-superficie'}`}
+      style={acabou ? undefined : { borderColor: `${cor}66` }} onClick={(e) => e.stopPropagation()}>
+      <div className="flex items-center justify-between">
+        <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.08em]" style={{ color: acabou ? undefined : cor }}>
+          <Timer size={13} /> {acabou ? 'Tempo esgotado' : rotulo}
+        </span>
+        <button onClick={(e) => { e.stopPropagation(); setTotal((x) => x + 60_000) }} className="rounded-lg px-2 py-1 text-sm font-bold text-texto-2 hover:bg-superficie-2">+1 min</button>
+      </div>
+      <div className="mt-1 flex items-center justify-between gap-3">
+        <span className={`font-mono text-5xl font-bold tabular-nums ${acabou ? 'text-perigo' : ''}`}>{acabou ? `+${fmt(-resta)}` : fmt(resta)}</span>
+        <button onClick={alternar} aria-label={rodando ? 'Pausar' : 'Começar'}
+          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-[#0A0A0A]" style={{ background: acabou ? 'var(--perigo)' : cor }}>
+          {rodando ? <Pause size={22} fill="currentColor" /> : <Play size={22} fill="currentColor" className="ml-0.5" />}
+        </button>
+      </div>
+      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-superficie-2">
+        <div className="h-full rounded-full transition-[width]" style={{ width: `${Math.min(1, passado / total) * 100}%`, background: acabou ? 'var(--perigo)' : cor }} />
+      </div>
+    </div>
+  )
+}
+
+/* ── Um bloco do estudo no modo aula ── */
+function BlocoAula({ bloco, n }: { bloco: Topico; n: number }) {
+  const def = defBloco(bloco)
+  const tipo = bloco.tipo ?? 'explicacao'
+  const corpo = bloco.observacao?.trim()
+  return (
+    <div className="space-y-6">
+      <p className="flex items-center gap-2 text-sm font-extrabold uppercase tracking-[0.1em]" style={{ color: def.cor }}>
+        <def.Icone size={20} /> {n}. {def.nome}
+      </p>
+
+      {tipo === 'citacao' ? (
+        <blockquote className="space-y-3">
+          <p className="font-escritura text-[length:var(--fs-titulo)] italic leading-tight">“{(bloco.titulo || '').replace(/^["“]|["”]$/g, '')}”</p>
+          {bloco.extra?.autor && <p className="text-[length:var(--fs-corpo)] font-bold" style={{ color: def.cor }}>— {bloco.extra.autor}</p>}
+        </blockquote>
+      ) : tipo === 'definicao' ? (
+        <div className="space-y-2">
+          <h1 className="font-display text-[length:var(--fs-titulo)] font-extrabold leading-tight">{bloco.titulo || 'Termo'}</h1>
+          {bloco.frase_chave && <p className="text-[length:var(--fs-corpo)] italic" style={{ color: def.cor }}>{bloco.frase_chave}</p>}
+        </div>
+      ) : (
+        <h1 className={`font-display font-extrabold leading-[1.12] tracking-tight ${tipo === 'pergunta' ? 'text-[length:var(--fs-titulo)]' : 'text-[length:var(--fs-topico)]'}`}>
+          {bloco.titulo || def.nome}
+        </h1>
+      )}
+
+      {tipo === 'lista' ? (
+        <ul className="space-y-3">
+          {itensDaLista(bloco.observacao).map((it, k) => (
+            <li key={k} className={`flex items-start gap-4 ${tam.corpo} font-semibold`}>
+              <span className="mt-[0.1em] flex h-[1.6em] w-[1.6em] shrink-0 items-center justify-center rounded-full text-[0.8em] font-extrabold text-[#0A0A0A]" style={{ background: def.cor }}>{k + 1}</span>
+              {it}
+            </li>
+          ))}
+        </ul>
+      ) : tipo === 'pergunta' ? (
+        corpo && <TextoRico texto={corpo} className={`${tam.corpo} text-texto-2`} />
+      ) : tipo !== 'citacao' && corpo ? (
+        <TextoRico texto={corpo} className={`${tam.corpo} text-texto`} />
+      ) : null}
+
+      {tipo === 'imagem' && bloco.extra?.url && (
+        <img src={bloco.extra.url} alt={bloco.titulo || ''} className="max-h-[50vh] rounded-2xl border border-borda object-contain" />
+      )}
+      {tipo === 'link' && bloco.extra?.url && (
+        <a href={bloco.extra.url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}
+          className="inline-flex max-w-full items-center gap-2 rounded-xl border border-borda bg-superficie px-4 py-3 font-bold" style={{ color: def.cor }}>
+          <ExternalLink size={18} className="shrink-0" /> <span className="truncate">{bloco.extra.url.replace(/^https?:\/\//, '')}</span>
+        </a>
+      )}
+
+      {bloco.extra?.minutos ? (
+        <CronometroBloco key={bloco.id} minutos={bloco.extra.minutos} cor={def.cor}
+          rotulo={tipo === 'pergunta' ? 'Tempo de discussão' : 'Tempo da atividade'} />
+      ) : null}
+
+      {bloco.notas?.trim() && (
+        <div className="rounded-2xl bg-superficie-2 px-4 py-3">
+          <p className="rotulo">Só você vê</p>
+          <TextoRico texto={bloco.notas} className="mt-1 text-base text-texto-2" />
+        </div>
+      )}
     </div>
   )
 }
@@ -638,6 +751,8 @@ export default function Pregar() {
   }[fase]
   const hora = new Date(agora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
   const topico = indice > 0 ? topicos[indice - 1] : null
+  const estudo = mensagem.tipo === 'estudo'
+  const nomeParte = estudo ? 'Bloco' : 'Tópico'
 
   function irParaTopico(n: number) {
     setIndice(n)
@@ -665,7 +780,7 @@ export default function Pregar() {
 
       {/* Topo: sair, hora + cronômetro, transmitir e ferramentas */}
       <header className="relative z-10 flex items-center gap-1.5 px-2 pt-[max(0.6rem,env(safe-area-inset-top))] md:px-4">
-        <Link to={`/mensagem/${mensagem.id}`} aria-label="Sair do modo pregação" className={iconeBotao}>
+        <Link to={`/mensagem/${mensagem.id}`} aria-label={estudo ? 'Sair do modo aula' : 'Sair do modo pregação'} className={iconeBotao}>
           <ChevronLeft size={24} />
         </Link>
 
@@ -738,12 +853,12 @@ export default function Pregar() {
         {topicos.length > 0 && (
           <div className="relative mx-auto mt-2 flex max-w-3xl items-center justify-between gap-3 px-3">
             <span className="rotulo shrink-0">
-              {indice === 0 ? 'Capa' : `Tópico ${indice} de ${topicos.length}`}
+              {indice === 0 ? 'Capa' : `${nomeParte} ${indice} de ${topicos.length}`}
               {slidesDaPagina.length > 1 && ` · slide ${sub + 1}/${slidesDaPagina.length}`}
             </span>
             <button onClick={() => setListaTopicos((v) => !v)} aria-expanded={listaTopicos}
               className="flex min-w-0 max-w-[65%] items-center gap-1.5 rounded-lg px-1 py-1 text-left text-xs hover:bg-superficie-2">
-              <span className="shrink-0 text-texto-2">{indice < topicos.length ? 'Próximo:' : 'Último tópico'}</span>
+              <span className="shrink-0 text-texto-2">{indice < topicos.length ? 'Próximo:' : `Último ${nomeParte.toLowerCase()}`}</span>
               <span className="min-w-0 flex-1 truncate font-bold">{indice < topicos.length ? topicos[indice].titulo || 'Sem título' : ''}</span>
               <ChevronDown size={16} className={`shrink-0 text-texto-2 transition-transform ${listaTopicos ? 'rotate-180' : ''}`} />
             </button>
@@ -788,13 +903,22 @@ export default function Pregar() {
           {!topico && (
             <div className="space-y-4">
               <p className="text-texto-2">
-                {topicos.length} {topicos.length === 1 ? 'tópico' : 'tópicos'} · {mensagem.tempo_minutos} min
+                {topicos.length} {estudo ? (topicos.length === 1 ? 'bloco' : 'blocos') : (topicos.length === 1 ? 'tópico' : 'tópicos')} · {mensagem.tempo_minutos} min
+                {estudo && mensagem.detalhes?.publico ? ` · ${mensagem.detalhes.publico}` : ''}
               </p>
               <h1 className={`${tam.titulo} font-display font-extrabold uppercase leading-[1.05] tracking-tight text-tinta`}>{mensagem.titulo}</h1>
+              {estudo && mensagem.detalhes?.objetivo && (
+                <p className={`${tam.corpo} flex items-start gap-3 text-texto/85`}><Target size={22} className="mt-1 shrink-0 text-texto-2" /> {mensagem.detalhes.objetivo}</p>
+              )}
+              {estudo && mensagem.detalhes?.material && (
+                <p className="text-texto-2">Material: {mensagem.detalhes.material}</p>
+              )}
             </div>
           )}
 
-          {topico && (
+          {topico && estudo && <BlocoAula bloco={topico} n={indice} />}
+
+          {topico && !estudo && (
             <div className="space-y-7">
               <div className="space-y-2">
                 <p className="font-display text-[length:var(--fs-sub)] font-extrabold uppercase leading-[1.05] tracking-tight text-tinta">

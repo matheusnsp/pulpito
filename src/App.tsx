@@ -13,6 +13,7 @@ const Conectar = lazy(() => import('./pages/Conectar'))
 const Biblia = lazy(() => import('./pages/Biblia'))
 const Agenda = lazy(() => import('./pages/Agenda'))
 const Ajustes = lazy(() => import('./pages/Ajustes'))
+const Perguntas = lazy(() => import('./pages/Perguntas'))
 
 function Carregando() {
   return (
@@ -45,6 +46,7 @@ export default function App() {
             <Route path="/mensagem/:id/slides" element={<EditorSlides />} />
             <Route path="/biblia" element={<Biblia />} />
             <Route path="/agenda" element={<Agenda />} />
+            <Route path="/perguntas" element={<Perguntas />} />
             <Route path="/ajustes" element={<Ajustes />} />
             <Route path="/conectar/:codigo" element={<Conectar />} />
           </Route>

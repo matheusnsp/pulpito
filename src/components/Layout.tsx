@@ -1,15 +1,19 @@
-import { Suspense, useState } from 'react'
-import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { BookOpen, CalendarDays, NotebookPen, Plus, Settings } from 'lucide-react'
+import { Suspense, useEffect, useState } from 'react'
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
+import { BookOpen, CalendarDays, MessagesSquare, NotebookPen, Plus, Settings } from 'lucide-react'
 import { useAuth } from '../lib/auth'
 import { emailParaUsuario, nomeDeExibicao } from '../lib/usuario'
-import { criarMensagem } from '../lib/mensagens'
 import Marca from './Marca'
 import Tutorial from './Tutorial'
+import CriarNovo from './CriarNovo'
+import { abrirCriar, aoMudarModo, lerModo } from '../lib/criar'
 
-const ITENS = [
-  { para: '/', rotulo: 'Mensagens', Icone: NotebookPen, fim: true },
-  { para: '/biblia', rotulo: 'Bíblia', Icone: BookOpen, fim: false },
+type Item = { para: string; rotulo: string; Icone: typeof BookOpen; fim: boolean; novaAba?: boolean }
+const INICIO: Item = { para: '/', rotulo: 'Início', Icone: NotebookPen, fim: true }
+const BIBLIA: Item = { para: '/biblia', rotulo: 'Bíblia', Icone: BookOpen, fim: false }
+/* Nos estudos, o Banco de perguntas entra no lugar da Bíblia */
+const PERGUNTAS: Item = { para: '/perguntas', rotulo: 'Perguntas', Icone: MessagesSquare, fim: false }
+const FIM: Item[] = [
   { para: '/agenda', rotulo: 'Agenda', Icone: CalendarDays, fim: false },
   { para: '/ajustes', rotulo: 'Ajustes', Icone: Settings, fim: false },
 ]
@@ -29,35 +33,35 @@ export function Avatar({ nome, className = '' }: { nome: string; className?: str
 
 export default function Layout() {
   const { sessao } = useAuth()
-  const navigate = useNavigate()
   const { pathname } = useLocation()
   const usuario = emailParaUsuario(sessao?.user.email)
   const nome = nomeDeExibicao(usuario)
-  const [criando, setCriando] = useState(false)
   const semTopo = SEM_TOPO.some((r) => r.test(pathname))
-
-  async function nova() {
-    setCriando(true)
-    try { navigate(`/mensagem/${await criarMensagem()}`) }
-    catch { alert('Não foi possível criar a mensagem. Verifique a internet.') }
-    finally { setCriando(false) }
-  }
+  const nova = () => abrirCriar({ tipo: lerModo() })
+  const [modo, setModo] = useState(lerModo)
+  useEffect(() => aoMudarModo(() => setModo(lerModo())), [])
+  const ITENS = [INICIO, modo === 'estudo' ? PERGUNTAS : BIBLIA, ...FIM]
 
   return (
     <div className="flex h-full">
       {/* Computador: barra lateral */}
       <aside className="hidden w-64 shrink-0 flex-col border-r border-borda bg-superficie md:flex">
-        <div className="px-5 pb-5 pt-6"><Marca icone /></div>
+        <div className="px-5 pb-5 pt-6">
+          <Marca icone modo={modo} />
+          <p className={`mt-1 pl-[2.1rem] text-[11px] font-extrabold uppercase tracking-[0.14em] ${modo === 'estudo' ? 'text-[#14B8A6]' : 'text-tinta'}`}>
+            {modo === 'estudo' ? 'Estudos' : 'Pregações'}
+          </p>
+        </div>
 
         <div className="px-3">
-          <button onClick={nova} disabled={criando} className="botao-primario w-full justify-start">
-            <Plus size={18} strokeWidth={2.5} /> {criando ? 'Criando…' : 'Nova mensagem'}
+          <button onClick={nova} className="botao-primario w-full justify-start">
+            <Plus size={18} strokeWidth={2.5} /> Criar novo
           </button>
         </div>
 
         <nav className="mt-5 flex flex-1 flex-col gap-0.5 px-3">
-          {ITENS.map(({ para, rotulo, Icone, fim }) => (
-            <NavLink key={para} to={para} end={fim}
+          {ITENS.map(({ para, rotulo, Icone, fim, novaAba }) => (
+            <NavLink key={para} to={para} end={fim} target={novaAba ? '_blank' : undefined}
               className={({ isActive }) => `group flex items-center gap-3 rounded-xl px-3 py-2.5 font-semibold transition-colors ${isActive
                 ? 'bg-ouro-suave text-texto'
                 : 'text-texto-2 hover:bg-superficie-2 hover:text-texto'}`}>
@@ -84,7 +88,7 @@ export default function Layout() {
         {/* Celular: topo com marca e conta */}
         {!semTopo && (
           <header className="flex shrink-0 items-center justify-between bg-fundo/90 px-4 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur md:hidden">
-            <Marca icone className="text-xl" />
+            <Marca icone modo={modo} className="text-xl" />
             <Link to="/ajustes" aria-label="Sua conta"><Avatar nome={nome} className="h-9 w-9 text-sm" /></Link>
           </header>
         )}
@@ -97,10 +101,11 @@ export default function Layout() {
 
       {/* Celular: barra flutuante embaixo, ao alcance do polegar */}
       <Tutorial />
+      <CriarNovo />
 
       {!semTopo && <nav className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-20 grid grid-cols-4 gap-1 rounded-[1.4rem] border border-borda bg-superficie/90 p-1.5 shadow-cartao backdrop-blur-xl md:hidden">
-        {ITENS.map(({ para, rotulo, Icone, fim }) => (
-          <NavLink key={para} to={para} end={fim}
+        {ITENS.map(({ para, rotulo, Icone, fim, novaAba }) => (
+          <NavLink key={para} to={para} end={fim} target={novaAba ? '_blank' : undefined}
             className={({ isActive }) => `flex flex-col items-center gap-0.5 rounded-2xl py-2 text-[11px] font-bold transition-colors ${isActive ? 'bg-acao text-acao-texto' : 'text-texto-2 active:bg-superficie-2'}`}>
             {({ isActive }) => (
               <>

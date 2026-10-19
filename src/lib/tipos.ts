@@ -6,7 +6,12 @@ export type Mensagem = {
   pasta_id: string | null
   criado_em: string
   atualizado_em: string
+  tipo?: TipoProjeto // ausente = pregação (banco sem a coluna nova)
+  detalhes?: DetalhesEstudo
 }
+
+export type TipoProjeto = 'pregacao' | 'estudo'
+export type DetalhesEstudo = { objetivo?: string; publico?: string; material?: string; referencias?: string }
 
 export type Topico = {
   id: string
@@ -19,6 +24,8 @@ export type Topico = {
   ilustracao: string | null
   frase_chave: string | null
   notas: string | null
+  tipo?: string // 'topico' na pregação; nos estudos, o tipo do bloco (ver lib/blocos)
+  extra?: { minutos?: number; url?: string; autor?: string }
 }
 
 export const CAMPOS_TOPICO = [

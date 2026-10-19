@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  ArrowLeft, ArrowRight, BookOpen, CalendarDays, Check, Clock, GripVertical, Hand, ImagePlus,
+  ArrowLeft, ArrowRight, BookOpen, GraduationCap, CalendarDays, Check, Clock, GripVertical, Hand, ImagePlus,
   MonitorPlay, MoveRight, NotebookPen, Palette, Plus, Presentation, RefreshCw, Search, Timer, X,
 } from 'lucide-react'
 import { criarMensagem } from '../lib/mensagens'
@@ -48,8 +48,8 @@ const PASSOS: Passo[] = [
     ],
   },
   {
-    titulo: 'Suas mensagens',
-    texto: 'A tela inicial reúne suas mensagens, os próximos compromissos e um atalho para continuar de onde parou.',
+    titulo: 'Pregações e estudos',
+    texto: 'A tela inicial separa pregações e estudos (aulas, células, cursos, palestras), com os próximos compromissos e um atalho para continuar de onde parou.',
     tela: (
       <Tela>
         <div className="space-y-2">
@@ -67,7 +67,8 @@ const PASSOS: Passo[] = [
       </Tela>
     ),
     dicas: [
-      { Icone: Plus, texto: <>Toque em <b>+</b> para criar uma mensagem nova.</> },
+      { Icone: GraduationCap, texto: <>Troque entre <b>Pregações</b> e <b>Estudos</b> na chave do topo.</> },
+      { Icone: Plus, texto: <>Toque em <b>+</b> e escolha o que vai preparar, ou comece de um modelo.</> },
       { Icone: GripVertical, texto: <>Arraste uma mensagem até uma <b>pasta</b> para organizar.</> },
       { Icone: Search, texto: <>Busque pelo título ou pelo texto base.</> },
     ],
