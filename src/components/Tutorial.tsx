@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import {
-  ArrowLeft, ArrowRight, BookOpen, CalendarDays, ChartNoAxesColumn, Check, ChevronRight, Clock, Copy, Download, Eye, FileDown,
+  ArrowLeft, ArrowRight, BookOpen, Hourglass, CalendarDays, ChartNoAxesColumn, Check, ChevronRight, Clock, Copy, Download, Eye, FileDown,
   FolderInput, GraduationCap, GripVertical, Hand, Highlighter, ImagePlus, Layers, LayoutTemplate, ListChecks, Lock, Maximize,
   MessagesSquare, Mic, MonitorPlay, MoveRight, NotebookPen, Palette, Plus, Presentation, QrCode, RefreshCw, RotateCw,
   Radio, Search, Settings, Share2, Sparkles, Target, Timer, Trophy, Type as TypeIcon, Upload, Users, WifiOff, X,
@@ -203,6 +203,7 @@ const CAPITULOS: Capitulo[] = [
         dicas: [
           { Icone: Hand, texto: <><b>Arraste para o lado</b> para mudar de tópico. Toque em "Próximo" para pular para qualquer um.</> },
           { Icone: Search, texto: <><b>Pinça</b> (ou + e −) muda o tamanho da letra.</> },
+          { Icone: ListChecks, texto: <>No computador, o <b>roteiro</b> fica ao lado: clique em qualquer tópico para pular até ele.</> },
           { Icone: Maximize, texto: <><b>Tela cheia</b>: no iPad e no Android, pelo botão; no iPhone, abra pelo app instalado e deite o celular.</> },
         ],
       },
@@ -323,6 +324,7 @@ const CAPITULOS: Capitulo[] = [
           { Icone: Radio, texto: <>Em <b>Dar aula</b>, toque no botão <b>ao vivo</b>: aparece um código e um QR (dá para mostrar no telão).</> },
           { Icone: Users, texto: <>Cada um abre a câmera ou entra em <b>/responder</b>, coloca o nome e responde. Sem instalar nada.</> },
           { Icone: Eye, texto: <>Você escolhe se <b>os alunos veem as respostas dos outros</b>; dá para destacar ★ ou esconder uma resposta.</> },
+          { Icone: Hourglass, texto: <>Enquanto não tem pergunta, a turma vê uma <b>mensagem de espera</b>. Personalize no editor do estudo.</> },
         ],
       },
       {
