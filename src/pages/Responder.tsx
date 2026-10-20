@@ -149,7 +149,7 @@ export default function Responder() {
       <Moldura>
         <div className="my-auto space-y-3 py-10 text-center">
           <Check size={40} className="mx-auto text-sucesso" />
-          <h1 className="font-display text-2xl font-extrabold">A aula terminou</h1>
+          <h1 className="font-display text-2xl font-extrabold">A seção terminou</h1>
           <p className="text-texto-2">Obrigado por participar, {nome}!</p>
         </div>
       </Moldura>
