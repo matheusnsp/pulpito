@@ -4,7 +4,7 @@ import { defBloco, ehBloco, itensDaLista } from '../lib/blocos'
 import { alternarTelaCheia as trocarTelaCheia } from '../lib/telaCheia'
 import AjudaTelaCheia from '../components/AjudaTelaCheia'
 import { FaixaAoVivo, PainelAoVivo, RespostasAoVivo, type AoVivo } from '../components/AulaAoVivo'
-import { aceitaResposta, useAulaAoVivo } from '../lib/aoVivo'
+import { aceitaResposta, ehMultipla, linkResponder, useAulaAoVivo } from '../lib/aoVivo'
 import { Link, useParams } from 'react-router-dom'
 import {
   BookOpen, Cast, ChartNoAxesColumn, ChevronDown, Radio, Clock, ExternalLink, Target, Timer, ChevronLeft, Maximize, Minus, MonitorPlay, Pause, Play, Plus, RotateCcw, Settings, X,
@@ -587,6 +587,10 @@ export default function Pregar() {
     else localStorage.removeItem(CHAVE_TELAO)
   }, [codigoTelao])
 
+  // Respostas ao vivo: nos estudos e em qualquer mensagem que tenha pergunta ou atividade
+  const usaAoVivo = mensagem?.tipo === 'estudo' || topicos.some(aceitaResposta)
+  const ao = useAulaAoVivo(usaAoVivo ? mensagem : null, topicos, usaAoVivo && indice > 0 ? topicos[indice - 1] ?? null : null)
+
   // Envia para o telão o que deve aparecer agora
   useEffect(() => {
     if (!mensagem || !codigoTelao) return
@@ -603,6 +607,19 @@ export default function Pregar() {
     }
 
     const topico = indice > 0 ? topicos[indice - 1] : null
+
+    // Pergunta aberta ou atividade com as respostas ao vivo abertas: o telão vira o mural
+    if (ao.aula && ao.muralNoTelao && topico && aceitaResposta(topico) && !ehMultipla(topico)) {
+      const visiveis = ao.respostasDoBloco.filter((r) => !r.oculta && r.texto?.trim())
+      const exibidas = [...visiveis].reverse().sort((a, b) => Number(b.destaque) - Number(a.destaque)).slice(0, 9)
+      enviar({
+        tipo: 'mural', titulo: topico.titulo || 'Pergunta', codigo: ao.aula.codigo, link: linkResponder(ao.aula.codigo),
+        total: visiveis.length,
+        respostas: exibidas.map((r) => ({ texto: r.texto!.trim().slice(0, 240), destaque: r.destaque || undefined, nome: ao.anonimo ? undefined : r.nome })),
+      })
+      return
+    }
+
     const refTexto = topico ? topico.versiculo : mensagem.texto_base
     const r = refTexto ? parseReferencia(refTexto) : null
     const referencia = r ? formatarReferencia(r) : refTexto?.trim() || undefined
@@ -626,7 +643,7 @@ export default function Pregar() {
       })
       .catch(() => {})
     return () => { ativo = false }
-  }, [mensagem, topicos, indice, sub, slidesDaPagina, codigoTelao, telaoApagado, versiculoProjetado, enviar])
+  }, [mensagem, topicos, indice, sub, slidesDaPagina, codigoTelao, telaoApagado, versiculoProjetado, enviar, ao.aula, ao.muralNoTelao, ao.respostasDoBloco, ao.anonimo])
 
   // Relógio: a cada segundo parado, a cada 250ms com o cronômetro rodando
   useEffect(() => {
@@ -736,9 +753,6 @@ export default function Pregar() {
     setResumo({ anterior })
   }
 
-  // Respostas ao vivo: nos estudos e em qualquer mensagem que tenha pergunta ou atividade
-  const usaAoVivo = mensagem?.tipo === 'estudo' || topicos.some(aceitaResposta)
-  const ao = useAulaAoVivo(usaAoVivo ? mensagem : null, topicos, usaAoVivo && indice > 0 ? topicos[indice - 1] ?? null : null)
   const [painelAoVivo, setPainelAoVivo] = useState(false)
 
   if (mensagem === undefined) return <div className="escuro h-dvh bg-fundo p-6 text-texto-2">Carregando…</div>

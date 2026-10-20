@@ -26,6 +26,7 @@ export type EstadoAula = {
   titulo: string
   espera?: { titulo?: string; texto?: string } // mensagem de espera escolhida no estudo
   aberta: boolean
+  anonimo?: boolean // sigilo: ninguém informa o nome e as respostas aparecem sem autor
   mostrar: boolean // alunos veem as respostas dos outros
   bloco: BlocoPublico | null
   revelada: boolean
@@ -44,6 +45,9 @@ export type Aula = { id: string; codigo: string; mensagem_id: string; mostrar_re
 export const aceitaResposta = (t?: Pick<Topico, 'tipo'> | null) => t?.tipo === 'pergunta' || t?.tipo === 'atividade'
 export const ehMultipla = (t?: Pick<Topico, 'tipo' | 'extra'> | null) =>
   t?.tipo === 'pergunta' && (t.extra?.opcoes?.filter((o) => o.trim()).length ?? 0) >= 2
+
+/* Nome gravado quando a aula é anônima (o banco exige um nome, mas ninguém digita o seu) */
+export const NOME_ANONIMO = 'Anônimo'
 
 const gerarCodigo = () => {
   const letras = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' // sem 0/O e 1/I para não confundir
@@ -73,6 +77,7 @@ export function calcularPlacar(respostas: Resposta[], blocos: Topico[]) {
 }
 
 const CHAVE_AULA = (mensagemId: string) => `pulpito-aula-ao-vivo-${mensagemId}`
+const CHAVE_ANONIMA = (codigo: string) => `pulpito-aula-anonima-${codigo}`
 
 /* Lado do professor: abre, sincroniza o bloco atual e acompanha as respostas */
 export function useAulaAoVivo(mensagem: Mensagem | null | undefined, blocos: Topico[], blocoAtual: Topico | null) {
@@ -81,6 +86,8 @@ export function useAulaAoVivo(mensagem: Mensagem | null | undefined, blocos: Top
   const [participantes, setParticipantes] = useState<Record<string, string>>({})
   const [revelados, setRevelados] = useState<Set<string>>(new Set())
   const [erro, setErro] = useState('')
+  const [anonimo, setAnonimo] = useState(true)
+  const [muralNoTelao, setMuralNoTelao] = useState(true) // perguntas abertas aparecem no telão, com as respostas
   const canal = useRef<RealtimeChannel | null>(null)
   const estadoRef = useRef<EstadoAula | null>(null)
   const recarregarRef = useRef<() => void>(() => {})
@@ -93,6 +100,7 @@ export function useAulaAoVivo(mensagem: Mensagem | null | undefined, blocos: Top
     supabase.from('aulas_ao_vivo').select('*').eq('codigo', codigo).eq('aberta', true).maybeSingle()
       .then(({ data }) => {
         if (!data) { sessionStorage.removeItem(CHAVE_AULA(mensagem.id)); return }
+        setAnonimo(sessionStorage.getItem(CHAVE_ANONIMA(codigo)) !== '0')
         setAula(data as Aula)
       })
   }, [mensagem])
@@ -150,6 +158,7 @@ export function useAulaAoVivo(mensagem: Mensagem | null | undefined, blocos: Top
       titulo: mensagem.titulo,
       espera: { titulo: mensagem.detalhes?.esperaTitulo, texto: mensagem.detalhes?.esperaTexto },
       aberta: aula.aberta,
+      anonimo,
       mostrar: aula.mostrar_respostas,
       bloco: b ? {
         id: b.id, tipo: b.tipo ?? 'explicacao', titulo: b.titulo, minutos: b.extra?.minutos,
@@ -158,16 +167,16 @@ export function useAulaAoVivo(mensagem: Mensagem | null | undefined, blocos: Top
       } : null,
       revelada,
       respostas: (aula.mostrar_respostas || revelada)
-        ? respostasDoBloco.filter((r) => !r.oculta).map((r) => ({ participante: r.participante, nome: r.nome, texto: r.texto, opcao: r.opcao, destaque: r.destaque }))
+        ? respostasDoBloco.filter((r) => !r.oculta).map((r) => ({ participante: r.participante, nome: anonimo ? '' : r.nome, texto: r.texto, opcao: r.opcao, destaque: r.destaque }))
         : [],
-      placar: revelada && multipla ? placar.slice(0, 10) : [],
+      placar: revelada && multipla && !anonimo ? placar.slice(0, 10) : [], // placar com nomes não faz sentido no anonimato
       participantes: Object.keys(participantes).length,
     }
     estadoRef.current = estado
     canal.current?.send({ type: 'broadcast', event: 'estado', payload: estado })
-  }, [aula, mensagem, blocoAtual, respostasDoBloco, revelada, placar, participantes])
+  }, [aula, mensagem, blocoAtual, respostasDoBloco, revelada, placar, participantes, anonimo])
 
-  async function abrir() {
+  async function abrir(anonima = true) {
     if (!mensagem) return
     setErro('')
     for (let tentativa = 0; tentativa < 3; tentativa++) {
@@ -175,6 +184,8 @@ export function useAulaAoVivo(mensagem: Mensagem | null | undefined, blocos: Top
       const { data, error } = await supabase.from('aulas_ao_vivo').insert({ codigo, mensagem_id: mensagem.id }).select().single()
       if (data) {
         sessionStorage.setItem(CHAVE_AULA(mensagem.id), codigo)
+        sessionStorage.setItem(CHAVE_ANONIMA(codigo), anonima ? '1' : '0')
+        setAnonimo(anonima)
         setRespostas([]); setParticipantes({}); setRevelados(new Set())
         setAula(data as Aula)
         return
@@ -219,6 +230,7 @@ export function useAulaAoVivo(mensagem: Mensagem | null | undefined, blocos: Top
 
   return {
     aula, erro, respostasDoBloco, placar, revelada, participantes: Object.keys(participantes).length,
+    anonimo, muralNoTelao, setMuralNoTelao,
     abrir, encerrar, alternarMostrar, marcar, alternarRevelar,
   }
 }

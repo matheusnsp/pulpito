@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'rea
 import { useNavigate, useParams } from 'react-router-dom'
 import { Check, CircleX, Hourglass, LoaderCircle, Pencil, Send, Trophy, Users } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import { CORES_OPCOES, LETRAS, canalAula, type EstadoAula } from '../lib/aoVivo'
+import { CORES_OPCOES, LETRAS, NOME_ANONIMO, canalAula, type EstadoAula } from '../lib/aoVivo'
 import Marca from '../components/Marca'
 
 /*
@@ -70,10 +70,13 @@ export default function Responder() {
   const [erro, setErro] = useState('')
   const [participante] = useState(idDoAparelho)
   const canal = useRef<ReturnType<typeof supabase.channel> | null>(null)
+  const nomeRef = useRef(nome)
+  useEffect(() => { nomeRef.current = nome }, [nome])
 
-  // Entra no canal da aula e pede o estado até o professor responder
+  // Entra no canal da aula e pede o estado até o professor responder.
+  // Entra antes de pedir o nome: se a aula for anônima, o nome nunca é pedido.
   useEffect(() => {
-    if (!codigo || !confirmado || !nome.trim()) return
+    if (!codigo) return
     const ch = supabase.channel(canalAula(codigo), { config: { broadcast: { self: false } } })
     let insistir: ReturnType<typeof setInterval> | undefined
     let espera: ReturnType<typeof setTimeout> | undefined
@@ -85,21 +88,21 @@ export default function Responder() {
       setEstado(payload as EstadoAula)
     }).subscribe((status) => {
       if (status !== 'SUBSCRIBED') return
-      const entrar = () => ch.send({ type: 'broadcast', event: 'entrou', payload: { participante: participante, nome: nome.trim() } })
+      const entrar = () => ch.send({ type: 'broadcast', event: 'entrou', payload: { participante: participante, nome: nomeRef.current.trim() || NOME_ANONIMO } })
       entrar()
       insistir = setInterval(entrar, 3000)
       espera = setTimeout(() => { if (!recebeu) setSemResposta(true) }, 9000)
     })
     canal.current = ch
     return () => { clearInterval(insistir); clearTimeout(espera); canal.current = null; supabase.removeChannel(ch) }
-  }, [codigo, confirmado, nome, participante])
+  }, [codigo, participante])
 
   async function enviar(campos: Minha) {
     if (!estado?.bloco) return
     setEnviando(true)
     setErro('')
     const { error } = await supabase.rpc('responder_aula', {
-      p_codigo: codigo, p_bloco: estado.bloco.id, p_participante: participante, p_nome: nome.trim(),
+      p_codigo: codigo, p_bloco: estado.bloco.id, p_participante: participante, p_nome: estado.anonimo ? NOME_ANONIMO : nome.trim(),
       p_texto: campos.texto ?? null, p_opcao: campos.opcao ?? null,
     })
     setEnviando(false)
@@ -128,8 +131,33 @@ export default function Responder() {
     )
   }
 
-  /* 2. Nome */
-  if (!confirmado || !nome.trim()) {
+  /* 2. Esperando o professor */
+  if (!estado) {
+    return (
+      <Moldura>
+        <div className="my-auto space-y-3 py-10 text-center">
+          <LoaderCircle size={36} className="mx-auto animate-spin text-texto-2" />
+          <p className="font-display text-xl font-bold">Entrando na aula {codigo}…</p>
+          {semResposta && <p className="text-texto-2">Ainda não achamos esta aula. Confira o código com o professor ou espere ele abrir as respostas.</p>}
+        </div>
+      </Moldura>
+    )
+  }
+
+  if (!estado.aberta) {
+    return (
+      <Moldura>
+        <div className="my-auto space-y-3 py-10 text-center">
+          <Check size={40} className="mx-auto text-sucesso" />
+          <h1 className="font-display text-2xl font-extrabold">A aula terminou</h1>
+          <p className="text-texto-2">Obrigado por participar, {nome}!</p>
+        </div>
+      </Moldura>
+    )
+  }
+
+  /* 3. Nome (só quando a aula não é anônima) */
+  if (!estado.anonimo && (!confirmado || !nome.trim())) {
     const entrar = (e: FormEvent) => {
       e.preventDefault()
       if (!nome.trim()) return
@@ -149,32 +177,6 @@ export default function Responder() {
     )
   }
 
-  /* 3. Esperando o professor */
-  if (!estado) {
-    return (
-      <Moldura>
-        <div className="my-auto space-y-3 py-10 text-center">
-          <LoaderCircle size={36} className="mx-auto animate-spin text-texto-2" />
-          <p className="font-display text-xl font-bold">Entrando na aula {codigo}…</p>
-          {semResposta && <p className="text-texto-2">Ainda não achamos esta aula. Confira o código com o professor ou espere ele abrir as respostas.</p>}
-          <button onClick={() => setConfirmado(false)} className="botao-fantasma text-sm">Trocar nome ({nome})</button>
-        </div>
-      </Moldura>
-    )
-  }
-
-  if (!estado.aberta) {
-    return (
-      <Moldura>
-        <div className="my-auto space-y-3 py-10 text-center">
-          <Check size={40} className="mx-auto text-sucesso" />
-          <h1 className="font-display text-2xl font-extrabold">A aula terminou</h1>
-          <p className="text-texto-2">Obrigado por participar, {nome}!</p>
-        </div>
-      </Moldura>
-    )
-  }
-
   const b = estado.bloco
   const recebe = b && (b.tipo === 'pergunta' || b.tipo === 'atividade')
   const minha = b ? minhas[b.id] : undefined
@@ -185,7 +187,10 @@ export default function Responder() {
     <Moldura>
       <div className="mt-4 flex items-center justify-between gap-3 text-sm text-texto-2">
         <span className="truncate">{estado.titulo}</span>
-        <span className="flex shrink-0 items-center gap-1"><Users size={14} /> {estado.participantes}</span>
+        <span className="flex shrink-0 items-center gap-3">
+          {!estado.anonimo && <button onClick={() => setConfirmado(false)} className="underline decoration-dotted">Trocar nome ({nome})</button>}
+          <span className="flex items-center gap-1"><Users size={14} /> {estado.participantes}</span>
+        </span>
       </div>
 
       {!recebe ? (
@@ -257,7 +262,7 @@ export default function Responder() {
               <div className="mt-2 space-y-2">
                 {[...estado.respostas].sort((x, y) => Number(!!y.destaque) - Number(!!x.destaque)).map((r) => (
                   <div key={r.participante} className={`rounded-xl border p-3 ${r.destaque ? 'border-acao bg-ouro-suave' : 'border-borda bg-superficie'}`}>
-                    <b className="text-sm">{r.participante === participante ? 'Você' : r.nome}</b>
+                    {(r.participante === participante || r.nome) && <b className="block text-sm">{r.participante === participante ? 'Você' : r.nome}</b>}
                     <p className="mt-0.5 whitespace-pre-wrap break-words">{r.texto}</p>
                   </div>
                 ))}

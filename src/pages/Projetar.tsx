@@ -13,8 +13,54 @@ const CHAVE_CODIGO = 'pulpito-codigo-telao'
 const porTamanho = (t: string, grande: string, medio: string, pequeno: string) =>
   t.length > 300 ? pequeno : t.length > 150 ? medio : grande
 
+/* Mural ao vivo: a pergunta, como entrar e as respostas chegando (sem nomes quando a aula é anônima) */
+function SlideMural({ slide }: { slide: Extract<SlideTelao, { tipo: 'mural' }> }) {
+  const colunas = slide.respostas.length > 4 ? 'grid-cols-3' : 'grid-cols-2'
+  const tamanho = (t: string) => (t.length > 120 ? 'text-[1.6vw]' : t.length > 60 ? 'text-[2vw]' : 'text-[2.5vw]')
+  return (
+    <div className="flex h-full flex-col gap-[2.5vh] px-[5vw] py-[4vh]">
+      <div className="flex items-start gap-[3vw]">
+        <div className="min-w-0 flex-1">
+          <p className="text-[1.5vw] font-extrabold uppercase tracking-[0.12em] text-tinta">Responda pelo celular</p>
+          <h1 className="mt-[1vh] font-display text-[3.8vw] font-bold leading-[1.1]">{slide.titulo}</h1>
+        </div>
+        <div className="flex shrink-0 items-center gap-[1.4vw] rounded-[1.4vw] bg-white/5 p-[1vw]">
+          <div className="w-[8vw] rounded-[0.8vw] bg-white p-[0.6vw]">
+            <QRCodeSVG value={slide.link} style={{ width: '100%', height: 'auto', display: 'block' }} />
+          </div>
+          <div>
+            <p className="text-[1.2vw] text-white/60">Código</p>
+            <p className="font-mono text-[3.4vw] font-bold leading-none tracking-[0.12em]">{slide.codigo}</p>
+            <p className="mt-[0.6vh] text-[1.1vw] text-white/50">{slide.link.replace(/^https?:\/\//, '').replace(/\/responder\/.*$/, '/responder')}</p>
+          </div>
+        </div>
+      </div>
+
+      <p className="flex items-center gap-[0.8vw] text-[1.6vw] text-white/60">
+        <span className="h-[0.9vw] w-[0.9vw] animate-pulse rounded-full bg-perigo" />
+        {slide.total} {slide.total === 1 ? 'resposta' : 'respostas'}
+      </p>
+
+      {slide.respostas.length === 0 ? (
+        <p className="m-auto text-[2.2vw] text-white/40">As respostas aparecem aqui</p>
+      ) : (
+        <div className={`grid min-h-0 flex-1 content-start gap-[1.4vw] overflow-hidden ${colunas}`}>
+          {slide.respostas.map((r, i) => (
+            <div key={i} className={`rounded-[1.2vw] border p-[1.4vw] ${r.destaque ? 'border-acao bg-acao/15' : 'border-white/15 bg-white/5'}`}>
+              {r.nome && <b className="mb-[0.4vh] block text-[1.4vw] text-tinta">{r.nome}</b>}
+              <p className={`${tamanho(r.texto)} whitespace-pre-wrap break-words leading-snug`}>{r.texto}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function Slide({ slide }: { slide: SlideTelao }) {
   if (slide.tipo === 'vazio') return null
+
+  if (slide.tipo === 'mural') return <SlideMural slide={slide} />
 
   if (slide.tipo === 'personalizado') return <SlideVisual slide={slide} preencher />
 

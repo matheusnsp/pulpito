@@ -12,6 +12,11 @@ export type SlideTelao =
     }
   | { tipo: 'versiculo'; referencia: string; texto: string; versos?: { n: number; t: string }[] }
   | {
+      // Mural de respostas ao vivo: a pergunta, o código para entrar e as respostas chegando (sem nome quando anônimo)
+      tipo: 'mural'; titulo: string; codigo: string; link: string; total: number
+      respostas: { texto: string; destaque?: boolean; nome?: string }[]
+    }
+  | {
       tipo: 'personalizado'; titulo?: string | null; subtitulo?: string | null
       texto?: string | null; fundo?: string | null; estilo?: Partial<EstiloSlide> | null
     }

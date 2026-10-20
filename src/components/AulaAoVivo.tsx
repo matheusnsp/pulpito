@@ -11,6 +11,7 @@ export type AoVivo = ReturnType<typeof useAulaAoVivo>
 export function PainelAoVivo({ ao, onFechar }: { ao: AoVivo; onFechar: () => void }) {
   const [copiado, setCopiado] = useState(false)
   const [abrindo, setAbrindo] = useState(false)
+  const [anonima, setAnonima] = useState(true)
   const aula = ao.aula
   const link = aula ? linkResponder(aula.codigo) : ''
 
@@ -29,7 +30,7 @@ export function PainelAoVivo({ ao, onFechar }: { ao: AoVivo; onFechar: () => voi
         {!aula ? (
           <>
             <p className="mt-2 text-texto-2">
-              A turma entra pelo celular com um código, coloca o nome e responde as perguntas e atividades.
+              A turma entra pelo celular com um código e responde as perguntas e atividades.
               As respostas chegam aqui na hora e ficam guardadas no estudo.
             </p>
             <ul className="mt-4 space-y-2 text-sm">
@@ -37,8 +38,19 @@ export function PainelAoVivo({ ao, onFechar }: { ao: AoVivo; onFechar: () => voi
               <li className="flex gap-2"><Check size={16} className="mt-0.5 shrink-0 text-sucesso" /> Pergunta com opções vira quiz, com gráfico e placar.</li>
               <li className="flex gap-2"><Check size={16} className="mt-0.5 shrink-0 text-sucesso" /> Ninguém precisa instalar nada nem criar conta.</li>
             </ul>
+            <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-2xl border border-borda p-3">
+              <input type="checkbox" checked={anonima} onChange={(e) => setAnonima(e.target.checked)} className="mt-1 h-5 w-5 accent-[var(--acao)]" />
+              <span>
+                <b className="block">Respostas anônimas (sigilo)</b>
+                <span className="text-sm text-texto-2">
+                  {anonima
+                    ? 'Não pergunta o nome. Ninguém vê quem respondeu, nem você, e nada é guardado com o nome.'
+                    : 'Pede o nome de cada pessoa e mostra quem respondeu.'}
+                </span>
+              </span>
+            </label>
             {ao.erro && <p role="alert" className="mt-4 rounded-xl bg-aviso/15 p-3 text-sm">{ao.erro}</p>}
-            <button onClick={async () => { setAbrindo(true); await ao.abrir(); setAbrindo(false) }} disabled={abrindo}
+            <button onClick={async () => { setAbrindo(true); await ao.abrir(anonima); setAbrindo(false) }} disabled={abrindo}
               className="botao-primario mt-5 w-full"><Radio size={18} /> {abrindo ? 'Abrindo…' : 'Abrir respostas ao vivo'}</button>
           </>
         ) : (
@@ -58,7 +70,19 @@ export function PainelAoVivo({ ao, onFechar }: { ao: AoVivo; onFechar: () => voi
             </button>
             <p className="mt-2 text-xs text-texto-2">Peça para abrirem a câmera no QR, ou entrarem no endereço e digitarem o código.</p>
 
-            <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-2xl border border-borda p-3">
+            <p className="mt-3 text-xs font-bold text-texto-2">{ao.anonimo ? 'Modo anônimo: o nome não é pedido.' : 'A turma informa o nome ao entrar.'}</p>
+
+            <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-2xl border border-borda p-3">
+              <input type="checkbox" checked={ao.muralNoTelao} onChange={(e) => ao.setMuralNoTelao(e.target.checked)} className="mt-1 h-5 w-5 accent-[var(--acao)]" />
+              <span>
+                <b className="block">Mostrar o mural no telão</b>
+                <span className="text-sm text-texto-2">
+                  {ao.muralNoTelao ? 'Nas perguntas abertas e atividades, o telão mostra a pergunta, o código e as respostas chegando.' : 'O telão continua mostrando só o slide normal.'}
+                </span>
+              </span>
+            </label>
+
+            <label className="mt-3 flex cursor-pointer items-start gap-3 rounded-2xl border border-borda p-3">
               <input type="checkbox" checked={aula.mostrar_respostas} onChange={ao.alternarMostrar} className="mt-1 h-5 w-5 accent-[var(--acao)]" />
               <span>
                 <b className="block">Alunos veem as respostas dos outros</b>
@@ -121,7 +145,7 @@ export function RespostasAoVivo({ ao, bloco }: { ao: AoVivo; bloco: Topico }) {
             </div>
           )
         })}
-        {ao.revelada && ao.placar.length > 0 && (
+        {ao.revelada && !ao.anonimo && ao.placar.length > 0 && (
           <div className="rounded-2xl bg-superficie p-3">
             <p className="rotulo flex items-center gap-1.5"><Trophy size={14} className="text-tinta" /> Placar</p>
             <ol className="mt-2 space-y-1.5">
@@ -147,7 +171,7 @@ export function RespostasAoVivo({ ao, bloco }: { ao: AoVivo; bloco: Topico }) {
         {[...rs].sort((a, b) => Number(b.destaque) - Number(a.destaque)).map((r) => (
           <div key={r.id} className={`rounded-xl border p-3 ${r.destaque ? 'border-acao bg-ouro-suave' : 'border-borda bg-superficie'} ${r.oculta ? 'opacity-40' : ''}`}>
             <div className="flex items-center gap-2">
-              <b className="min-w-0 flex-1 truncate text-sm">{r.nome}</b>
+              <b className="min-w-0 flex-1 truncate text-sm">{ao.anonimo ? '' : r.nome}</b>
               <button onClick={() => ao.marcar(r, { destaque: !r.destaque })} aria-label={r.destaque ? 'Tirar destaque' : 'Destacar'} title="Destacar"
                 className={`rounded-lg p-1 ${r.destaque ? 'text-tinta' : 'text-texto-2'}`}><Star size={15} fill={r.destaque ? 'currentColor' : 'none'} /></button>
               <button onClick={() => ao.marcar(r, { oculta: !r.oculta })} aria-label={r.oculta ? 'Mostrar' : 'Esconder da turma'} title="Esconder da turma"
