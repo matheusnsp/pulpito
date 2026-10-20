@@ -58,7 +58,7 @@ export function versaoAmigavel(v: string) {
 
 /* Novidades recentes, mostradas em Ajustes. A mais nova primeiro. */
 export const NOVIDADES: { titulo: string; texto: string }[] = [
-  { titulo: 'Palavra e Estudos', texto: 'Célula, Estudo bíblico, Devocional e Discipulado no lado Palavra; aulas, palestras e treinamentos no lado Estudos.' },
-  { titulo: 'Respostas ao vivo', texto: 'A turma responde pelo celular, com mural, quiz e placar.' },
-  { titulo: 'Tutorial completo', texto: 'Reveja tudo em Ajustes › Ver tutorial.' },
-]
+    { titulo: 'Mural no telão', texto: 'Com as respostas ao vivo abertas, avance a partir da pergunta e o telão mostra o QR Code, o código e as respostas chegando.' },
+    { titulo: 'Respostas anônimas', texto: 'Escolha o sigilo antes de abrir: ninguém informa o nome e as respostas aparecem sem autor.' },
+    { titulo: 'Tutorial completo', texto: 'Reveja tudo em Ajustes › Ver tutorial.' },
+  ]

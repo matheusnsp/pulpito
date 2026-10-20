@@ -554,19 +554,30 @@ export default function Pregar() {
     return () => { ativo = false }
   }, [id])
 
+  // Respostas ao vivo: nos estudos e em qualquer mensagem que tenha pergunta ou atividade
+  const usaAoVivo = mensagem?.tipo === 'estudo' || topicos.some(aceitaResposta)
+  const ao = useAulaAoVivo(usaAoVivo ? mensagem : null, topicos, usaAoVivo && indice > 0 ? topicos[indice - 1] ?? null : null)
+
   // Slides personalizados da página atual (capa ou tópico)
   const slidesDaPagina = useMemo(() => {
     const topicoId = indice > 0 ? topicos[indice - 1]?.id ?? null : null
     return slides.filter((s) => s.topico_id === topicoId).sort((a, b) => a.ordem - b.ordem)
   }, [slides, topicos, indice])
 
+  // Pergunta aberta ou atividade com as respostas ao vivo abertas ganha um passo a mais: o mural no telão.
+  // Primeiro vem a pergunta (ou os slides dela) e, ao avançar, o telão vira o mural com o QR Code.
+  const blocoAtual = indice > 0 ? topicos[indice - 1] ?? null : null
+  const temMural = !!(ao.aula && ao.muralNoTelao && blocoAtual && aceitaResposta(blocoAtual) && !ehMultipla(blocoAtual))
+  const passos = Math.max(1, slidesDaPagina.length) + (temMural ? 1 : 0)
+
   const sub = subEstado.pagina === indice
-    ? Math.max(0, Math.min(subEstado.sub, slidesDaPagina.length - 1))
+    ? Math.max(0, Math.min(subEstado.sub, passos - 1))
     : 0
+  const noMural = temMural && sub === passos - 1
 
   // Próximo/anterior: passa pelos slides do tópico antes de mudar de tópico
   const ir = useCallback((dir: -1 | 1) => {
-    const qtd = slidesDaPagina.length
+    const qtd = passos
     if (dir === 1 && sub < qtd - 1) { setSubEstado({ pagina: indice, sub: sub + 1 }); return }
     if (dir === -1 && sub > 0) { setSubEstado({ pagina: indice, sub: sub - 1 }); return }
     const novo = Math.min(Math.max(indice + dir, 0), topicos.length)
@@ -576,7 +587,7 @@ export default function Pregar() {
     }
     setIndice(novo)
     setSubEstado({ pagina: novo, sub: dir === -1 ? 999 : 0 })
-  }, [slidesDaPagina.length, sub, indice, topicos.length])
+  }, [passos, sub, indice, topicos.length])
 
   useEffect(() => { localStorage.setItem(CHAVE_ESCALA, String(escala)) }, [escala])
   useEffect(() => { indiceAtual.current = indice }, [indice])
@@ -586,10 +597,6 @@ export default function Pregar() {
     if (codigoTelao) localStorage.setItem(CHAVE_TELAO, codigoTelao)
     else localStorage.removeItem(CHAVE_TELAO)
   }, [codigoTelao])
-
-  // Respostas ao vivo: nos estudos e em qualquer mensagem que tenha pergunta ou atividade
-  const usaAoVivo = mensagem?.tipo === 'estudo' || topicos.some(aceitaResposta)
-  const ao = useAulaAoVivo(usaAoVivo ? mensagem : null, topicos, usaAoVivo && indice > 0 ? topicos[indice - 1] ?? null : null)
 
   // Envia para o telão o que deve aparecer agora
   useEffect(() => {
@@ -608,8 +615,8 @@ export default function Pregar() {
 
     const topico = indice > 0 ? topicos[indice - 1] : null
 
-    // Pergunta aberta ou atividade com as respostas ao vivo abertas: o telão vira o mural
-    if (ao.aula && ao.muralNoTelao && topico && aceitaResposta(topico) && !ehMultipla(topico)) {
+    // Passo do mural: o telão mostra a pergunta, o QR Code e as respostas chegando
+    if (noMural && ao.aula && topico) {
       const visiveis = ao.respostasDoBloco.filter((r) => !r.oculta && r.texto?.trim())
       const exibidas = [...visiveis].reverse().sort((a, b) => Number(b.destaque) - Number(a.destaque)).slice(0, 9)
       enviar({
@@ -643,7 +650,7 @@ export default function Pregar() {
       })
       .catch(() => {})
     return () => { ativo = false }
-  }, [mensagem, topicos, indice, sub, slidesDaPagina, codigoTelao, telaoApagado, versiculoProjetado, enviar, ao.aula, ao.muralNoTelao, ao.respostasDoBloco, ao.anonimo])
+  }, [mensagem, topicos, indice, sub, slidesDaPagina, codigoTelao, telaoApagado, versiculoProjetado, enviar, noMural, ao.aula, ao.respostasDoBloco, ao.anonimo])
 
   // Relógio: a cada segundo parado, a cada 250ms com o cronômetro rodando
   useEffect(() => {
@@ -894,7 +901,7 @@ export default function Pregar() {
           <div className="relative mx-auto mt-2 flex max-w-3xl items-center justify-between gap-3 px-3">
             <span className="rotulo shrink-0">
               {indice === 0 ? 'Capa' : `${nomeParte} ${indice} de ${topicos.length}`}
-              {slidesDaPagina.length > 1 && ` · slide ${sub + 1}/${slidesDaPagina.length}`}
+              {passos > 1 && ` · ${noMural ? 'mural no telão' : 'slide'} ${sub + 1}/${passos}`}
             </span>
             <button onClick={() => setListaTopicos((v) => !v)} aria-expanded={listaTopicos}
               className="flex min-w-0 max-w-[65%] items-center gap-1.5 rounded-lg px-1 py-1 text-left text-xs hover:bg-superficie-2">
