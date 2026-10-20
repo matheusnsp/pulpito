@@ -77,7 +77,7 @@ export function PainelAoVivo({ ao, onFechar }: { ao: AoVivo; onFechar: () => voi
               <span>
                 <b className="block">Mostrar o mural no telão</b>
                 <span className="text-sm text-texto-2">
-                  {ao.muralNoTelao ? 'Nas perguntas abertas e atividades, avance para o slide do mural: o telão mostra o QR Code, o código e as respostas chegando.' : 'O telão continua mostrando só o slide normal.'}
+                  {ao.muralNoTelao ? 'Nas perguntas abertas e atividades, o telão mostra a pergunta junto com o QR Code, o código e as respostas chegando.' : 'O telão continua mostrando só o slide normal.'}
                 </span>
               </span>
             </label>

@@ -568,12 +568,15 @@ export default function Pregar() {
   // Primeiro vem a pergunta (ou os slides dela) e, ao avançar, o telão vira o mural com o QR Code.
   const blocoAtual = indice > 0 ? topicos[indice - 1] ?? null : null
   const temMural = !!(ao.aula && ao.muralNoTelao && blocoAtual && aceitaResposta(blocoAtual) && !ehMultipla(blocoAtual))
-  const passos = Math.max(1, slidesDaPagina.length) + (temMural ? 1 : 0)
+  // Sem slides personalizados, o mural É o slide da pergunta (não vira um passo a mais).
+  // Com slides personalizados, continua como último passo do tópico.
+  const muralNoLugar = temMural && slidesDaPagina.length === 0
+  const passos = Math.max(1, slidesDaPagina.length) + (temMural && !muralNoLugar ? 1 : 0)
 
   const sub = subEstado.pagina === indice
     ? Math.max(0, Math.min(subEstado.sub, passos - 1))
     : 0
-  const noMural = temMural && sub === passos - 1
+  const noMural = temMural && (muralNoLugar || sub === passos - 1)
 
   // Próximo/anterior: passa pelos slides do tópico antes de mudar de tópico
   const ir = useCallback((dir: -1 | 1) => {
