@@ -1,7 +1,7 @@
 import { supabase } from './supabase'
 import { CAMPOS_TOPICO, type Mensagem, type Slide, type Topico, type TipoProjeto } from './tipos'
 import { MODELOS, defBloco, ehBloco, itensDaLista } from './blocos'
-import { formatarReferencia, parseReferencia } from './biblia'
+import { formatarReferencia, parseReferencia, dividirReferencias } from './biblia'
 
 const NAO_COPIAR = new Set(['id', 'mensagem_id', 'criado_em', 'atualizado_em'])
 const copiavel = (linha: object) =>
@@ -84,10 +84,8 @@ export async function duplicarMensagem(m: Mensagem): Promise<Mensagem> {
 
 /* Esboço em texto puro, bom para colar no WhatsApp ou nas notas */
 export function esbocoEmTexto(m: Mensagem, topicos: Topico[]) {
-  const ref = (t: string | null) => {
-    const r = t ? parseReferencia(t) : null
-    return r ? formatarReferencia(r) : t?.trim() || ''
-  }
+  const ref = (t: string | null) =>
+    dividirReferencias(t).map((x) => { const r = parseReferencia(x); return r ? formatarReferencia(r) : x }).join('; ')
   if (m.tipo === 'estudo' || topicos.some((t) => ehBloco(t.tipo))) return estudoEmTexto(m, topicos, ref)
   const linhas: string[] = [`*${m.titulo || 'Sem título'}*`]
   if (m.texto_base) linhas.push(`Texto base: ${ref(m.texto_base)}`)

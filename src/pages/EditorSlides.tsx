@@ -21,7 +21,7 @@ import { ehBloco } from '../lib/blocos'
 import {
   ESTILO_PADRAO, FUNDOS_PRONTOS, type Disposicao, type Elemento, type EstiloSlide, type LayoutSlide, type TipoElemento, type Mensagem, type Slide, type Topico,
 } from '../lib/tipos'
-import { formatarReferencia, lerReferencia, parseReferencia } from '../lib/biblia'
+import { formatarReferencia, lerReferencia, parseReferencia, dividirReferencias } from '../lib/biblia'
 
 const CORES_TEXTO = ['#ffffff', '#000000', '#fde68a', '#7dd3fc', '#fca5a5']
 const CAMPOS_SLIDE = ['topico_id', 'ordem', 'titulo', 'subtitulo', 'texto', 'fundo', 'estilo'] as const
@@ -369,11 +369,14 @@ export default function EditorSlides() {
 
     // O mesmo versículo não é repetido em vários tópicos
     const usados = new Set<string>()
-    const versiculos = async (topicoId: string | null, ref: string | null) => {
-      const chave = referenciaBonita(ref)
-      if (!chave || usados.has(chave)) return
-      usados.add(chave)
-      for (const b of await blocosDoVersiculo(ref)) novo(topicoId, 'versiculo', { titulo: b.referencia, texto: b.texto })
+    const versiculos = async (topicoId: string | null, valor: string | null) => {
+      // Um tópico pode ter vários versículos (separados por ;): cada um gera os próprios slides
+      for (const ref of dividirReferencias(valor)) {
+        const chave = referenciaBonita(ref)
+        if (!chave || usados.has(chave)) continue
+        usados.add(chave)
+        for (const b of await blocosDoVersiculo(ref)) novo(topicoId, 'versiculo', { titulo: b.referencia, texto: b.texto })
+      }
     }
 
     // Slide em modo livre, montado por um modelo editável (usado nos estudos)
@@ -395,7 +398,7 @@ export default function EditorSlides() {
     for (const [i, t] of topicos.entries()) {
       if (!estudo && !ehBloco(t.tipo)) {
         novo(t.id, 'topico', {
-          subtitulo: `Tópico ${i + 1}`, titulo: t.titulo || 'Sem título', texto: referenciaBonita(t.versiculo),
+          subtitulo: `Tópico ${i + 1}`, titulo: t.titulo || 'Sem título', texto: dividirReferencias(t.versiculo).map((v) => referenciaBonita(v)).join(' · ') || null,
         })
         await versiculos(t.id, t.versiculo)
         if (comFrase && t.frase_chave?.trim())
@@ -416,7 +419,7 @@ export default function EditorSlides() {
         case 'atividade': livre(t.id, 'tituloTexto', { titulo: `${t.titulo || 'Atividade'}${min ? ` · ${min}` : ''}`, texto: t.observacao || ' ' }); break
         case 'referencia':
           await versiculos(t.id, t.versiculo)
-          if (t.observacao?.trim()) livre(t.id, 'tituloTexto', { titulo: t.titulo || 'Referência', texto: t.observacao })
+          if (t.observacao?.trim()) livre(t.id, 'tituloTexto', { titulo: t.titulo?.trim() || ' ', texto: t.observacao })
           break
         case 'imagem':
           livre(t.id, 'branco', { titulo: t.titulo }, [

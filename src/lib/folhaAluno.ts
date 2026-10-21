@@ -1,6 +1,6 @@
 import type { Mensagem, Topico } from './tipos'
 import { defBloco, ehBloco, itensDaLista } from './blocos'
-import { formatarReferencia, lerReferencia, parseReferencia } from './biblia'
+import { formatarReferencia, lerReferencia, parseReferencia, dividirReferencias } from './biblia'
 import { lerVersao } from './preferencias'
 
 /*
@@ -67,6 +67,19 @@ export async function gerarFolhaAluno(m: Mensagem, blocos: Topico[]) {
   y += 6
 
   const versao = lerVersao()
+  // Um ou vários versículos (separados por ;): referência e texto de cada um
+  const escreverVersiculos = async (valor: string | null) => {
+    for (const ref of dividirReferencias(valor)) {
+      const r = parseReferencia(ref)
+      if (r) {
+        escrever(`${formatarReferencia(r)} (${versao})`, 10.5, 'bold', [150, 110, 0])
+        try {
+          const vs = await lerReferencia(versao, r)
+          escrever(vs.map((v) => `${v.numero} ${v.texto}`).join(' '), 11, 'normal', [40, 40, 40])
+        } catch { /* sem o texto: fica só a referência */ }
+      } else escrever(ref, 10.5, 'bold', [150, 110, 0])
+    }
+  }
   // Num estudo todos os itens são blocos; no lado Palavra, o que não é bloco é tópico
   const ehEstudo = m.tipo === 'estudo'
   for (const [i, b] of blocos.entries()) {
@@ -76,16 +89,7 @@ export async function gerarFolhaAluno(m: Mensagem, blocos: Topico[]) {
       y += 0.5
       if (b.titulo) escrever(b.titulo, 13, 'bold')
       if (b.frase_chave) escrever(b.frase_chave, 11, 'italic', [60, 60, 60])
-      if (b.versiculo) {
-        const r = parseReferencia(b.versiculo)
-        if (r) {
-          escrever(`${formatarReferencia(r)} (${versao})`, 10.5, 'bold', [150, 110, 0])
-          try {
-            const vs = await lerReferencia(versao, r)
-            escrever(vs.map((v) => `${v.numero} ${v.texto}`).join(' '), 11, 'normal', [40, 40, 40])
-          } catch { /* sem o texto: fica só a referência */ }
-        } else escrever(b.versiculo, 10.5, 'bold', [150, 110, 0])
-      }
+      if (b.versiculo) await escreverVersiculos(b.versiculo)
       y += 5
       continue
     }
@@ -107,16 +111,7 @@ export async function gerarFolhaAluno(m: Mensagem, blocos: Topico[]) {
       if (b.titulo) escrever(b.titulo, tipo === 'pergunta' ? 13 : 12.5, 'bold')
       if (tipo === 'lista') itensDaLista(b.observacao).forEach((it) => escrever(`•  ${it}`, 11, 'normal', [25, 25, 25], 3))
       else if (tipo !== 'pergunta' && b.observacao) escrever(b.observacao, 11)
-      if (tipo === 'referencia' && b.versiculo) {
-        const r = parseReferencia(b.versiculo)
-        if (r) {
-          escrever(`${formatarReferencia(r)} (${versao})`, 10.5, 'bold', [150, 110, 0])
-          try {
-            const vs = await lerReferencia(versao, r)
-            escrever(vs.map((v) => `${v.numero} ${v.texto}`).join(' '), 11, 'normal', [40, 40, 40])
-          } catch { /* sem o texto: fica só a referência */ }
-        } else escrever(b.versiculo, 10.5, 'bold', [150, 110, 0])
-      }
+      if (tipo === 'referencia' && b.versiculo) await escreverVersiculos(b.versiculo)
       if (tipo === 'link' && b.extra?.url) escrever(b.extra.url, 10, 'normal', [30, 90, 200])
       if (tipo === 'imagem' && b.extra?.url) {
         const img = await imagemComoDados(b.extra.url)
