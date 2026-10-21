@@ -58,30 +58,19 @@ export function versaoAmigavel(v: string) {
 
 
 
+
 /* Novidades recentes, mostradas em Ajustes. A mais nova primeiro. */
 export const NOVIDADES: { titulo: string; texto: string }[] = [
   {
-    titulo: 'Projetos compartilhados',
-    texto: 'Agora você pode convidar outras pessoas para trabalhar nas suas mensagens e estudos, compartilhando o projeto por link ou código.'
+    titulo: 'Compartilhamento de projetos',
+    texto: 'Nova área para convidar colaboradores por link ou código, definir permissões de edição ou visualização e gerenciar acessos. Em fase de ativação.'
   },
   {
-    titulo: 'Permissões de acesso',
-    texto: 'Você decide quem pode editar ou apenas visualizar seus projetos. Gerencie colaboradores, altere permissões e revogue acessos quando quiser.'
+    titulo: 'Palavra, Estudos e slides aprimorados',
+    texto: 'Novos formatos, blocos personalizados, múltiplas referências bíblicas e geração de slides, esboços e materiais de estudo.'
   },
   {
-    titulo: 'Entrar em um projeto',
-    texto: 'Recebeu um convite? Entre diretamente pelo Púlpito usando o código ou abra o link compartilhado para acessar o projeto.'
-  },
-  {
-    titulo: 'Mural no telão',
-    texto: 'Com as respostas ao vivo abertas, avance a partir da pergunta e o telão mostra o QR Code, o código e as respostas chegando.'
-  },
-  {
-    titulo: 'Respostas anônimas',
-    texto: 'Escolha o sigilo antes de abrir: ninguém informa o nome e as respostas aparecem sem autor.'
-  },
-  {
-    titulo: 'Tutorial completo',
-    texto: 'Reveja tudo em Ajustes › Ver tutorial.'
+    titulo: 'Interatividade ao vivo',
+    texto: 'Perguntas, quizzes e mural de respostas no telão, com QR Code, participação anônima e recursos para aulas e pregações.'
   },
 ]
