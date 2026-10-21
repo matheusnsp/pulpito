@@ -94,7 +94,7 @@ function Slide({ slide }: { slide: SlideTelao }) {
       {slide.tipo === 'topico' && (
         <p className="text-[1.6vw] text-white/50">{slide.numero} de {slide.total}</p>
       )}
-      <h1 className={`${slide.tipo === 'capa' ? 'text-[6vw]' : 'text-[5vw]'} font-display font-bold leading-[1.1]`}>
+      <h1 className={`${slide.tipo === 'capa' ? 'text-[6vw]' : 'text-[5vw]'} empty:hidden font-display font-bold leading-[1.1]`}>
         {slide.titulo}
       </h1>
       {slide.tipo === 'topico' && slide.frase && (

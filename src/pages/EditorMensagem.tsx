@@ -13,7 +13,7 @@ import { supabase } from '../lib/supabase'
 import { useSalvamento } from '../lib/salvamento'
 import { useHistorico } from '../lib/historico'
 import { CAMPOS_TOPICO, type Mensagem, type Pasta, type Topico } from '../lib/tipos'
-import { parseReferencia, formatarReferencia, lerReferencia } from '../lib/biblia'
+import { parseReferencia, formatarReferencia, lerReferencia, dividirReferencias } from '../lib/biblia'
 import { esbocoEmTexto } from '../lib/mensagens'
 import { BLOCOS, FORMATOS_PALAVRA, ICONE_FORMATO, ORDEM_BLOCOS, defBloco, ehBloco, itensDaLista, type TipoBloco } from '../lib/blocos'
 import { CORES_OPCOES, LETRAS } from '../lib/aoVivo'
@@ -130,6 +130,40 @@ function TituloCrescente({ value, onChange, onFocus, placeholder, className = ''
 }
 
 const iconeBotao = 'flex h-9 w-9 items-center justify-center rounded-xl text-texto-2 hover:bg-superficie-2 hover:text-texto disabled:opacity-25'
+
+/* Um ou mais versículos: cada um no seu campo, guardados juntos no mesmo campo do banco, separados por ; */
+function CampoVersiculos({ rotulo, valor, onChange }: { rotulo: string; valor: string | null; onChange: (v: string) => void }) {
+  const itens = (valor ?? '').split(';').map((s) => s.trimStart())
+  const salvar = (lista: string[]) => onChange(lista.join('; '))
+  return (
+    <div>
+      <span className="mb-1.5 block text-sm font-semibold text-texto-2">{rotulo}</span>
+      <div className="space-y-3">
+        {itens.map((item, k) => (
+          <div key={k}>
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <BookOpen size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-texto-2" />
+                <input value={item} placeholder={k === 0 ? 'Jo 3:16' : 'Rm 8:28'} aria-label={`${rotulo} ${k + 1}`}
+                  onChange={(e) => salvar(itens.map((x, j) => (j === k ? e.target.value.replace(/;/g, '') : x)))}
+                  className="campo pl-10" />
+              </div>
+              {itens.length > 1 && (
+                <button type="button" aria-label="Tirar versículo" onClick={() => salvar(itens.filter((_, j) => j !== k))} className={iconeBotao}>
+                  <Trash2 size={16} />
+                </button>
+              )}
+            </div>
+            <PreviaVersiculo texto={item} />
+          </div>
+        ))}
+      </div>
+      <button type="button" onClick={() => salvar([...itens, ''])} className="botao-fantasma -ml-2 mt-2 px-2 text-sm">
+        <Plus size={16} /> Adicionar versículo
+      </button>
+    </div>
+  )
+}
 
 export default function EditorMensagem() {
   const { id } = useParams()
@@ -597,7 +631,7 @@ export default function EditorMensagem() {
                     onChange={(v) => alterarTopico(t.id, { titulo: v })}
                     onFocus={() => setAberto(t.id)}
                     className="w-full bg-transparent font-display text-lg font-bold leading-snug outline-none placeholder:text-texto-2/50 md:text-xl" />
-                  {!estaAberto && t.versiculo && <p className="truncate text-sm font-semibold text-tinta">{t.versiculo}</p>}
+                  {!estaAberto && dividirReferencias(t.versiculo).length > 0 && <p className="truncate text-sm font-semibold text-tinta">{dividirReferencias(t.versiculo).join(' · ')}</p>}
                   {!estaAberto && def && tipoB === 'lista' && itensDaLista(t.observacao).length > 0 && (
                     <p className="truncate text-sm text-texto-2">{itensDaLista(t.observacao).join(' · ')}</p>
                   )}
@@ -639,14 +673,8 @@ export default function EditorMensagem() {
                     </Campo>
                   )}
                   {def.referencia && (
-                    <Campo rotulo="Referência bíblica (opcional)">
-                      <div className="relative">
-                        <BookOpen size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-texto-2" />
-                        <input value={t.versiculo ?? ''} placeholder="Jo 3:16"
-                          onChange={(e) => alterarTopico(t.id, { versiculo: e.target.value })} className="campo pl-10" />
-                      </div>
-                      <PreviaVersiculo texto={t.versiculo ?? ''} />
-                    </Campo>
+                    <CampoVersiculos rotulo="Referência bíblica (opcional)" valor={t.versiculo ?? null}
+                      onChange={(v) => alterarTopico(t.id, { versiculo: v })} />
                   )}
                   {def.url === 'link' && (
                     <Campo rotulo="Endereço">
@@ -745,14 +773,8 @@ export default function EditorMensagem() {
 
               {estaAberto && !def && (
                 <div className="space-y-5 border-t border-borda p-4">
-                  <Campo rotulo="Versículo base">
-                    <div className="relative">
-                      <BookOpen size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-texto-2" />
-                      <input value={t.versiculo ?? ''} placeholder="Jo 3:16"
-                        onChange={(e) => alterarTopico(t.id, { versiculo: e.target.value })} className="campo pl-10" />
-                    </div>
-                    <PreviaVersiculo texto={t.versiculo ?? ''} />
-                  </Campo>
+                  <CampoVersiculos rotulo="Versículo base" valor={t.versiculo ?? null}
+                    onChange={(v) => alterarTopico(t.id, { versiculo: v })} />
 
                   {CAMPOS_TOPICO.map((c) => (
                     <Campo key={c.chave} rotulo={c.rotulo}>

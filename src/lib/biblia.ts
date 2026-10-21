@@ -160,3 +160,7 @@ export async function buscarTexto(versao: VersaoId, consulta: string, limite = 3
   })
   return { achados, total }
 }
+
+/* Vários versículos num campo só, separados por ponto e vírgula: "Jo 3:16; Rm 8:28" */
+export const dividirReferencias = (texto?: string | null) =>
+  (texto ?? '').split(/[;\n]/).map((s) => s.trim()).filter(Boolean)

@@ -12,7 +12,7 @@ import {
 import { supabase } from '../lib/supabase'
 import type { Mensagem, Slide, Topico } from '../lib/tipos'
 import {
-  parseReferencia, formatarReferencia, lerCapitulo, lerReferencia, nomeDoLivro,
+  parseReferencia, formatarReferencia, lerCapitulo, lerReferencia, nomeDoLivro, dividirReferencias,
 } from '../lib/biblia'
 import { CHAVE_TELAO, codigoValido, useEmissorTelao, type SlideTelao } from '../lib/telao'
 import { usePinca } from '../lib/pinca'
@@ -305,8 +305,8 @@ function BlocoAula({ bloco, n, ao }: { bloco: Topico; n: number; ao: AoVivo }) {
           {bloco.frase_chave && <p className="text-[length:var(--fs-corpo)] italic" style={{ color: def.cor }}>{bloco.frase_chave}</p>}
         </div>
       ) : (
-        <h1 className={`font-display font-extrabold leading-[1.12] tracking-tight ${tipo === 'pergunta' ? 'text-[length:var(--fs-titulo)]' : 'text-[length:var(--fs-topico)]'}`}>
-          {bloco.titulo || def.nome}
+        <h1 className={`empty:hidden font-display font-extrabold leading-[1.12] tracking-tight ${tipo === 'pergunta' ? 'text-[length:var(--fs-titulo)]' : 'text-[length:var(--fs-topico)]'}`}>
+          {bloco.titulo || (tipo === 'referencia' ? '' : def.nome)}
         </h1>
       )}
 
@@ -357,7 +357,7 @@ function BlocoAula({ bloco, n, ao }: { bloco: Topico; n: number; ao: AoVivo }) {
 /* ── Versículo base fixo embaixo, com o texto (recolhível) ── */
 const CHAVE_VERSICULO_ABERTO = 'pulpito-pregar-versiculo-aberto'
 
-function VersiculoBase({ referencia, onAbrir }: { referencia: string; onAbrir: () => void }) {
+function VersiculoBase({ referencia, onAbrir, contagem }: { referencia: string; onAbrir: () => void; contagem?: string }) {
   const ref = parseReferencia(referencia)
   const chave = ref ? `${versaoAtual()}:${formatarReferencia(ref)}` : ''
   const [res, setRes] = useState<{ chave: string; texto: string } | null>(null)
@@ -394,7 +394,7 @@ function VersiculoBase({ referencia, onAbrir }: { referencia: string; onAbrir: (
         <button onClick={onAbrir} className="flex min-w-0 flex-1 items-center gap-2 text-left">
           <BookOpen size={16} className="shrink-0 text-tinta" />
           <span className="min-w-0">
-            <span className="block text-[10px] font-bold uppercase tracking-[0.12em] text-texto-2">Versículo base</span>
+            <span className="block text-[10px] font-bold uppercase tracking-[0.12em] text-texto-2">Versículo base{contagem ? ` · ${contagem}` : ''}</span>
             <span className="block truncate font-bold text-tinta">{formatarReferencia(ref)}</span>
           </span>
         </button>
@@ -571,12 +571,21 @@ export default function Pregar() {
   // Sem slides personalizados, o mural É o slide da pergunta (não vira um passo a mais).
   // Com slides personalizados, continua como último passo do tópico.
   const muralNoLugar = temMural && slidesDaPagina.length === 0
-  const passos = Math.max(1, slidesDaPagina.length) + (temMural && !muralNoLugar ? 1 : 0)
+  // Vários versículos no mesmo tópico: cada um ganha um slide inteiro, depois do slide do tópico
+  const versiculos = indice > 0 ? dividirReferencias(topicos[indice - 1]?.versiculo) : []
+  const variosVersiculos = versiculos.length > 1 && slidesDaPagina.length === 0
+  // Bloco Referência sem título: não sobra um slide em branco antes dos versículos
+  const semTituloReferencia = variosVersiculos && !temMural && blocoAtual?.tipo === 'referencia' && !blocoAtual.titulo?.trim()
+  const passosBase = slidesDaPagina.length > 0 ? slidesDaPagina.length : semTituloReferencia ? 0 : 1
+  const passos = passosBase + (variosVersiculos ? versiculos.length : 0) + (temMural && !muralNoLugar ? 1 : 0)
 
   const sub = subEstado.pagina === indice
     ? Math.max(0, Math.min(subEstado.sub, passos - 1))
     : 0
-  const noMural = temMural && (muralNoLugar || sub === passos - 1)
+  const noMural = temMural && (muralNoLugar ? sub === 0 : sub === passos - 1)
+  const versiculoDoPasso = variosVersiculos && !noMural && sub >= passosBase && sub < passosBase + versiculos.length
+    ? versiculos[sub - passosBase]
+    : null
 
   // Próximo/anterior: passa pelos slides do tópico antes de mudar de tópico
   const ir = useCallback((dir: -1 | 1) => {
@@ -630,13 +639,30 @@ export default function Pregar() {
       return
     }
 
-    const refTexto = topico ? topico.versiculo : mensagem.texto_base
+    // Vários versículos: cada um vira um slide inteiro, só com a referência e o texto
+    if (versiculoDoPasso) {
+      const rv = parseReferencia(versiculoDoPasso)
+      const rotulo = rv ? formatarReferencia(rv) : versiculoDoPasso.trim()
+      enviar({ tipo: 'versiculo', referencia: rotulo, texto: '' })
+      if (!rv?.inicio) return
+      let ativo = true
+      lerReferencia(versaoAtual(), rv)
+        .then((vs) => {
+          if (ativo && vs.length) {
+            enviar({ tipo: 'versiculo', referencia: rotulo, texto: vs.map((v) => v.texto).join(' '), versos: vs.map((v) => ({ n: v.numero, t: v.texto })) })
+          }
+        })
+        .catch(() => {})
+      return () => { ativo = false }
+    }
+
+    const refTexto = topico ? (variosVersiculos ? null : topico.versiculo) : mensagem.texto_base
     const r = refTexto ? parseReferencia(refTexto) : null
     const referencia = r ? formatarReferencia(r) : refTexto?.trim() || undefined
 
     const montar = (textoVersiculo?: string): SlideTelao => topico
       ? {
-          tipo: 'topico', titulo: topico.titulo || 'Sem título', numero: indice, total: topicos.length,
+          tipo: 'topico', titulo: topico.titulo?.trim() || (topico.tipo === 'referencia' ? '' : 'Sem título'), numero: indice, total: topicos.length,
           referencia, textoVersiculo, frase: topico.frase_chave?.trim() || undefined,
         }
       : { tipo: 'capa', titulo: mensagem.titulo, referencia, textoVersiculo }
@@ -653,7 +679,7 @@ export default function Pregar() {
       })
       .catch(() => {})
     return () => { ativo = false }
-  }, [mensagem, topicos, indice, sub, slidesDaPagina, codigoTelao, telaoApagado, versiculoProjetado, enviar, noMural, ao.aula, ao.respostasDoBloco, ao.anonimo])
+  }, [mensagem, topicos, indice, sub, slidesDaPagina, codigoTelao, telaoApagado, versiculoProjetado, enviar, noMural, versiculoDoPasso, variosVersiculos, ao.aula, ao.respostasDoBloco, ao.anonimo])
 
   // Relógio: a cada segundo parado, a cada 250ms com o cronômetro rodando
   useEffect(() => {
@@ -707,7 +733,7 @@ export default function Pregar() {
       if ((e.target as HTMLElement).closest('input, textarea') || e.metaKey || e.ctrlKey || e.altKey) return
       const k = e.key.toLowerCase()
       if (k === 'f') alternarTelaCheia()
-      if (k === 'b') setBiblia(topicos[indice - 1]?.versiculo || mensagem?.texto_base || '')
+      if (k === 'b') setBiblia(versiculoDoPasso ?? versiculos[0] ?? mensagem?.texto_base ?? '')
       if (k === 't') setPainelTelao(true)
       if (e.key === '+' || e.key === '=') mudarEscala(escala + 0.1)
       if (e.key === '-') mudarEscala(escala - 0.1)
@@ -868,7 +894,7 @@ export default function Pregar() {
         <button onClick={() => setPainelTexto((v) => !v)} aria-label="Ajustes da tela" title="Tamanho do texto (+ e −, ou pinça)" className={iconeBotao}>
           <Settings size={20} />
         </button>
-        <button onClick={() => setBiblia(topico?.versiculo || mensagem.texto_base || '')}
+        <button onClick={() => setBiblia(versiculoDoPasso ?? versiculos[0] ?? mensagem.texto_base ?? '')}
           aria-label="Abrir Bíblia" title="Bíblia (B)" className={`${iconeBotao} max-sm:hidden`}>
           <BookOpen size={20} />
         </button>
@@ -1040,9 +1066,11 @@ export default function Pregar() {
       <footer className="relative z-40 mx-auto w-full max-w-5xl px-3 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-2">
         <div>
 
-        {(topico?.versiculo || (!topico && mensagem.texto_base)) && (
-          <VersiculoBase key={topico?.id ?? 'capa'} referencia={(topico ? topico.versiculo : mensagem.texto_base) ?? ''}
-            onAbrir={() => setBiblia((topico ? topico.versiculo : mensagem.texto_base) || '')} />
+        {(versiculos.length > 0 || (!topico && mensagem.texto_base)) && (
+          <VersiculoBase key={`${topico?.id ?? 'capa'}-${versiculoDoPasso ?? ''}`}
+            referencia={(topico ? (versiculoDoPasso ?? versiculos[0]) : mensagem.texto_base) ?? ''}
+            contagem={variosVersiculos ? `${Math.max(0, versiculos.indexOf(versiculoDoPasso ?? versiculos[0])) + 1} de ${versiculos.length}` : undefined}
+            onAbrir={() => setBiblia((topico ? (versiculoDoPasso ?? versiculos[0]) : mensagem.texto_base) || '')} />
         )}
         </div>
       </footer>
