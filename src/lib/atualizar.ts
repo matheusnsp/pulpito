@@ -56,9 +56,32 @@ export function versaoAmigavel(v: string) {
   return `${Number(m[1])} de ${mes}, ${m[4]}`
 }
 
+
+
 /* Novidades recentes, mostradas em Ajustes. A mais nova primeiro. */
 export const NOVIDADES: { titulo: string; texto: string }[] = [
-    { titulo: 'Mural no telão', texto: 'Com as respostas ao vivo abertas, avance a partir da pergunta e o telão mostra o QR Code, o código e as respostas chegando.' },
-    { titulo: 'Respostas anônimas', texto: 'Escolha o sigilo antes de abrir: ninguém informa o nome e as respostas aparecem sem autor.' },
-    { titulo: 'Tutorial completo', texto: 'Reveja tudo em Ajustes › Ver tutorial.' },
-  ]
+  {
+    titulo: 'Projetos compartilhados',
+    texto: 'Agora você pode convidar outras pessoas para trabalhar nas suas mensagens e estudos, compartilhando o projeto por link ou código.'
+  },
+  {
+    titulo: 'Permissões de acesso',
+    texto: 'Você decide quem pode editar ou apenas visualizar seus projetos. Gerencie colaboradores, altere permissões e revogue acessos quando quiser.'
+  },
+  {
+    titulo: 'Entrar em um projeto',
+    texto: 'Recebeu um convite? Entre diretamente pelo Púlpito usando o código ou abra o link compartilhado para acessar o projeto.'
+  },
+  {
+    titulo: 'Mural no telão',
+    texto: 'Com as respostas ao vivo abertas, avance a partir da pergunta e o telão mostra o QR Code, o código e as respostas chegando.'
+  },
+  {
+    titulo: 'Respostas anônimas',
+    texto: 'Escolha o sigilo antes de abrir: ninguém informa o nome e as respostas aparecem sem autor.'
+  },
+  {
+    titulo: 'Tutorial completo',
+    texto: 'Reveja tudo em Ajustes › Ver tutorial.'
+  },
+]

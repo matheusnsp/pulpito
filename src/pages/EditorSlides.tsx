@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
+import { usePapelAtual } from '../components/ProjetoGate'
 import { useSalvamento } from '../lib/salvamento'
 import { useHistorico } from '../lib/historico'
 import { lerArquivos } from '../lib/importar'
@@ -129,6 +130,7 @@ function Segmentos<T extends string>({ valor, opcoes, onChange }: {
 
 export default function EditorSlides() {
   const { id } = useParams()
+  const papelAtual = usePapelAtual()
   const { sessao } = useAuth()
   const { status, agendar, cancelar } = useSalvamento()
   const historico = useHistorico<Slide[]>()
@@ -740,6 +742,9 @@ export default function EditorSlides() {
         <Link to={`/mensagem/${mensagem.id}`} className="botao-fantasma -ml-2 px-2">
           <ChevronLeft size={20} /> Mensagem
         </Link>
+        {papelAtual === 'dono' && <Link to={`/mensagem/${mensagem.id}/compartilhar`} className="botao-secundario px-2 py-1.5 text-xs sm:text-sm">
+          Convidar
+        </Link>}
         <span className={`ml-auto mr-2 flex items-center gap-1.5 text-sm ${status === 'erro' ? 'text-perigo' : 'text-texto-2'}`}>
           {indicador}
         </span>

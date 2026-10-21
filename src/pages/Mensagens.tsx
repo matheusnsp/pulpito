@@ -6,7 +6,7 @@ import {
   type DragEndEvent, type DragStartEvent,
 } from '@dnd-kit/core'
 import {
-  BookOpen, CalendarDays, Check, ChevronRight, Settings, Copy, Ellipsis, GraduationCap, Mic, MonitorPlay, NotebookPen, FolderInput, GripVertical, Pencil, Play, Plus, Search, Target, Trash2, X,
+  BookOpen, CalendarDays, Check, ChevronRight, Settings, Copy, Ellipsis, GraduationCap, Mic, MonitorPlay, NotebookPen, FolderInput, GripVertical, Pencil, Play, Plus, Search, Target, Trash2, Users, X,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
@@ -101,8 +101,9 @@ function ChipPasta({ valor, rotulo, qtd, ativo, soltavel, onClick }: {
 }
 
 /* ── Linha da lista: arrasta pela alça, ações no menu ⋯ ── */
-function LinhaMensagem({ m, blocos, pasta, pastas, hoje, menuAberto, onAbrirMenu, onFecharMenu, onMover, onDuplicar, onExcluir }: {
+function LinhaMensagem({ m, compartilhada, blocos, pasta, pastas, hoje, menuAberto, onAbrirMenu, onFecharMenu, onMover, onDuplicar, onExcluir }: {
   m: Mensagem
+  compartilhada: boolean
   blocos?: Record<string, number>
   pasta: Pasta | null
   pastas: Pasta[]
@@ -114,7 +115,7 @@ function LinhaMensagem({ m, blocos, pasta, pastas, hoje, menuAberto, onAbrirMenu
   onDuplicar: () => void
   onExcluir: () => void
 }) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: m.id })
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: m.id, disabled: compartilhada })
   const ref = refCurta(m.texto_base)
   const item = 'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-superficie-2'
   const estudo = tipoDe(m) === 'estudo'
@@ -129,7 +130,7 @@ function LinhaMensagem({ m, blocos, pasta, pastas, hoje, menuAberto, onAbrirMenu
   return (
     <li ref={setNodeRef}
       className={`cartao group relative flex animate-entrar items-center gap-1 py-1 pl-1 pr-2 transition hover:border-texto-2/40 ${isDragging ? 'opacity-30' : ''} ${menuAberto ? 'z-30' : ''}`}>
-      <button {...listeners} {...attributes} aria-label="Arrastar para uma pasta"
+      <button {...listeners} {...attributes} aria-label="Arrastar para uma pasta" disabled={compartilhada}
         className="cursor-grab touch-none self-stretch px-1.5 text-texto-2/40 hover:text-texto-2 active:cursor-grabbing">
         <GripVertical size={18} />
       </button>
@@ -146,6 +147,7 @@ function LinhaMensagem({ m, blocos, pasta, pastas, hoje, menuAberto, onAbrirMenu
       )}
       <Link to={`/mensagem/${m.id}`} className={`min-w-0 flex-1 py-3 ${estudo || formato ? 'pl-2' : ''}`}>
         <p className="truncate font-display text-[17px] font-bold leading-snug">{m.titulo || 'Sem título'}</p>
+        {compartilhada && <span className="mt-1 inline-block rounded-full bg-ouro-suave px-2 py-0.5 text-[11px] font-bold text-tinta">Compartilhado comigo</span>}
         {(estudo || formato) && m.detalhes?.objetivo && (
           <p className="mt-1 flex items-center gap-1.5 truncate text-sm text-texto/80"><Target size={13} className="shrink-0 text-texto-2" /> <span className="truncate">{m.detalhes.objetivo}</span></p>
         )}
@@ -187,10 +189,10 @@ function LinhaMensagem({ m, blocos, pasta, pastas, hoje, menuAberto, onAbrirMenu
             <Link to={`/pregar/${m.id}`} className={item}>
               <Play size={18} className="text-tinta" /> {acaoNome}
             </Link>
-            <button onClick={onDuplicar} className={item}>
+            {!compartilhada && <button onClick={onDuplicar} className={item}>
               <Copy size={18} className="text-texto-2" /> Duplicar
-            </button>
-            <label className={`${item} cursor-pointer`}>
+            </button>}
+            {!compartilhada && <label className={`${item} cursor-pointer`}>
               <FolderInput size={18} className="text-texto-2" />
               Mover para
               <select value={m.pasta_id ?? 'sem'} onChange={(e) => onMover(e.target.value)}
@@ -198,10 +200,13 @@ function LinhaMensagem({ m, blocos, pasta, pastas, hoje, menuAberto, onAbrirMenu
                 <option value="sem">Sem pasta</option>
                 {pastas.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
               </select>
-            </label>
-            <button onClick={onExcluir} className={`${item} text-perigo`}>
+            </label>}
+            {!compartilhada && <Link to={`/mensagem/${m.id}/compartilhar`} onClick={onFecharMenu} className={item}>
+              <Users size={18} className="text-tinta" /> Compartilhar projeto
+            </Link>}
+            {!compartilhada && <button onClick={onExcluir} className={`${item} text-perigo`}>
               <Trash2 size={18} /> Excluir
-            </button>
+            </button>}
           </div>
         </>
       )}
@@ -357,6 +362,7 @@ export default function Mensagens() {
   async function moverPara(m: Mensagem, destino: string) {
     setMenu(null)
     const pasta_id = destino === 'sem' ? null : destino
+    if (m.proprietario_compartilhamento && m.proprietario_compartilhamento !== sessao?.user.id) return
     if (pasta_id === m.pasta_id) return
     setMensagens((lista) => lista?.map((x) => (x.id === m.id ? { ...x, pasta_id } : x)) ?? null)
     const { error } = await supabase.from('mensagens').update({ pasta_id }).eq('id', m.id)
@@ -418,7 +424,7 @@ export default function Mensagens() {
   const termo = normalizar(busca.trim())
   const filtradas = todas.filter((m) => {
     const naPasta = filtroAtivo === 'todas' ? true
-      : filtroAtivo === 'sem' ? !m.pasta_id : m.pasta_id === filtroAtivo
+      : filtroAtivo === 'sem' ? (!m.pasta_id || (m.proprietario_compartilhamento != null && m.proprietario_compartilhamento !== sessao?.user.id)) : m.pasta_id === filtroAtivo
     const naBusca = !termo || normalizar(m.titulo).includes(termo) || normalizar(m.texto_base).includes(termo)
     return naPasta && naBusca
   })
@@ -696,7 +702,7 @@ export default function Mensagens() {
         {filtradas.length > 0 && (
           <ul className="grid grid-cols-[minmax(0,1fr)] gap-3 md:grid-cols-2 2xl:grid-cols-3">
             {filtradas.map((m) => (
-              <LinhaMensagem key={m.id} m={m} blocos={contagem[m.id]} pastas={pastas} hoje={hoje}
+              <LinhaMensagem key={m.id} m={m} compartilhada={!!m.proprietario_compartilhamento && m.proprietario_compartilhamento !== sessao?.user.id} blocos={contagem[m.id]} pastas={pastas} hoje={hoje}
                 pasta={filtroAtivo === 'todas' ? pastas.find((p) => p.id === m.pasta_id) ?? null : null}
                 menuAberto={menu === m.id}
                 onAbrirMenu={() => setMenu(m.id)}

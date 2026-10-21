@@ -2,6 +2,9 @@ import { lazy, Suspense } from 'react'
 import { Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from './lib/auth'
 import Layout from './components/Layout'
+import ProjetoGate from './components/ProjetoGate'
+import EntrarProjeto from './pages/EntrarProjeto'
+import CompartilharProjeto from './pages/CompartilharProjeto'
 import Login from './pages/Login'
 import CriarConta from './pages/CriarConta'
 import Mensagens from './pages/Mensagens'
@@ -43,12 +46,15 @@ export default function App() {
         <Route path="/responder" element={<Responder />} />
         <Route path="/responder/:codigo" element={<Responder />} />
         <Route element={<Protegido />}>
-          <Route path="/pregar/:id" element={<Pregar />} />
+          <Route path="/pregar/:id" element={<ProjetoGate><Pregar /></ProjetoGate>} />
           <Route element={<Layout />}>
             <Route path="/" element={<Mensagens />} />
-            <Route path="/mensagem/:id" element={<EditorMensagem />} />
-            <Route path="/mensagem/:id/slides" element={<EditorSlides />} />
-            <Route path="/mensagem/:id/respostas" element={<RespostasEstudo />} />
+            <Route path="/mensagem/:id" element={<ProjetoGate><EditorMensagem /></ProjetoGate>} />
+            <Route path="/mensagem/:id/slides" element={<ProjetoGate><EditorSlides /></ProjetoGate>} />
+            <Route path="/mensagem/:id/respostas" element={<ProjetoGate><RespostasEstudo /></ProjetoGate>} />
+            <Route path="/entrar-projeto" element={<EntrarProjeto />} />
+            <Route path="/convite/:codigo" element={<EntrarProjeto />} />
+            <Route path="/mensagem/:id/compartilhar" element={<CompartilharProjeto />} />
             <Route path="/biblia" element={<Biblia />} />
             <Route path="/agenda" element={<Agenda />} />
             <Route path="/perguntas" element={<Perguntas />} />

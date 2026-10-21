@@ -20,6 +20,7 @@ import { CORES_OPCOES, LETRAS } from '../lib/aoVivo'
 import { lerModo, salvarModo } from '../lib/criar'
 import { enviarImagem } from '../lib/imagens'
 import { useAuth } from '../lib/auth'
+import { usePapelAtual } from '../components/ProjetoGate'
 import type { DetalhesEstudo } from '../lib/tipos'
 
 type Foto = { mensagem: Mensagem; topicos: Topico[] }
@@ -167,6 +168,7 @@ function CampoVersiculos({ rotulo, valor, onChange }: { rotulo: string; valor: s
 
 export default function EditorMensagem() {
   const { id } = useParams()
+  const papelAtual = usePapelAtual()
   const { status, agendar, cancelar } = useSalvamento()
   const historico = useHistorico<Foto>()
   const [mensagem, setMensagem] = useState<Mensagem | null | undefined>(undefined)
@@ -414,6 +416,9 @@ export default function EditorMensagem() {
         <Link to="/" className="botao-fantasma -ml-2 px-2">
           <ChevronLeft size={20} /> <span className="hidden sm:inline">Início</span>
         </Link>
+        {papelAtual === 'dono' && <Link to={`/mensagem/${mensagem.id}/compartilhar`} className="botao-secundario px-2 py-1.5 text-xs sm:text-sm">
+          <Share2 size={15} /> Convidar
+        </Link>}
         <span className={`ml-auto mr-1 flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${status === 'erro' ? 'bg-perigo/10 text-perigo' : 'text-texto-2'}`}>
           {indicador}
         </span>

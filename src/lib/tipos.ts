@@ -1,5 +1,6 @@
 export type Mensagem = {
   id: string
+  proprietario_compartilhamento?: string // identidade imutável do dono
   titulo: string
   texto_base: string | null
   tempo_minutos: number

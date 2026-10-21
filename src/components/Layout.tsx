@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
-import { BookOpen, CalendarDays, MessagesSquare, NotebookPen, Plus, Settings } from 'lucide-react'
+import { BookOpen, CalendarDays, MessagesSquare, NotebookPen, Plus, Settings, Users } from 'lucide-react'
 import { useAuth } from '../lib/auth'
 import { emailParaUsuario, nomeDeExibicao } from '../lib/usuario'
 import Marca from './Marca'
@@ -14,6 +14,7 @@ const BIBLIA: Item = { para: '/biblia', rotulo: 'Bíblia', Icone: BookOpen, fim:
 /* Nos estudos, o Banco de perguntas entra no lugar da Bíblia */
 const PERGUNTAS: Item = { para: '/perguntas', rotulo: 'Perguntas', Icone: MessagesSquare, fim: false }
 const FIM: Item[] = [
+  { para: '/entrar-projeto', rotulo: 'Convites', Icone: Users, fim: false },
   { para: '/agenda', rotulo: 'Agenda', Icone: CalendarDays, fim: false },
   { para: '/ajustes', rotulo: 'Ajustes', Icone: Settings, fim: false },
 ]
@@ -103,7 +104,7 @@ export default function Layout() {
       <Tutorial />
       <CriarNovo />
 
-      {!semTopo && <nav className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-20 grid grid-cols-4 gap-1 rounded-[1.4rem] border border-borda bg-superficie/90 p-1.5 shadow-cartao backdrop-blur-xl md:hidden">
+      {!semTopo && <nav className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-20 grid grid-cols-5 gap-1 rounded-[1.4rem] border border-borda bg-superficie/90 p-1.5 shadow-cartao backdrop-blur-xl md:hidden">
         {ITENS.map(({ para, rotulo, Icone, fim, novaAba }) => (
           <NavLink key={para} to={para} end={fim} target={novaAba ? '_blank' : undefined}
             className={({ isActive }) => `flex flex-col items-center gap-0.5 rounded-2xl py-2 text-[11px] font-bold transition-colors ${isActive ? 'bg-acao text-acao-texto' : 'text-texto-2 active:bg-superficie-2'}`}>
