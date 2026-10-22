@@ -1,5 +1,5 @@
 import { lerVersao } from '../lib/preferencias'
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ComponentProps, type ReactNode } from 'react'
 import {
   DndContext, PointerSensor, TouchSensor, pointerWithin, useDraggable, useDroppable, useSensor, useSensors, type DragEndEvent,
   type DraggableAttributes, type DraggableSyntheticListeners,
@@ -117,8 +117,8 @@ function CampoTextoVersiculo({ rotulo, valor, onChange, placeholder, linhas = 3,
           <BookOpen size={13} /> Versículo
         </button>
       </div>
-      <textarea ref={caixa} rows={linhas} placeholder={placeholder} value={valor ?? ''} aria-label={rotulo}
-        onChange={(e) => onChange(e.target.value)} className={`campo resize-y leading-relaxed ${className}`} />
+      <AreaTexto ref={caixa} rows={linhas} placeholder={placeholder} value={valor ?? ''} aria-label={rotulo}
+        onChange={(e) => onChange(e.target.value)} className={`campo leading-relaxed ${className}`} />
       {refs.map((r, k) => <PreviaVersiculo key={`${r}-${k}`} texto={r} />)}
     </div>
   )
@@ -152,6 +152,34 @@ function Arrastavel({ id, children }: {
 }
 
 /* Título que quebra linha em vez de cortar (no celular o texto inteiro aparece). Enter não cria linha nova. */
+/* Caixa de texto que cresce com o conteúdo: o texto aparece inteiro, sem rolar por dentro (bom no celular e no iPad) */
+function AreaTexto({ ref: refExterno, className = '', ...props }: ComponentProps<'textarea'>) {
+  const interno = useRef<HTMLTextAreaElement | null>(null)
+  useLayoutEffect(() => {
+    const el = interno.current
+    if (!el) return
+    const ajustar = () => { el.style.height = 'auto'; el.style.height = `${el.scrollHeight + 2}px` }
+    ajustar()
+    // Reajusta quando a largura muda (girar o aparelho, abrir o painel); a altura não dispara de novo
+    let largura = el.clientWidth
+    const obs = new ResizeObserver(() => {
+      if (el.clientWidth === largura) return
+      largura = el.clientWidth
+      ajustar()
+    })
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [props.value])
+  return (
+    <textarea {...props} className={`resize-none overflow-hidden ${className}`}
+      ref={(el) => {
+        interno.current = el
+        if (typeof refExterno === 'function') refExterno(el)
+        else if (refExterno) refExterno.current = el
+      }} />
+  )
+}
+
 function TituloCrescente({ value, onChange, onFocus, placeholder, className = '' }: {
   value: string; onChange: (v: string) => void; onFocus?: () => void; placeholder?: string; className?: string
 }) {
@@ -622,8 +650,8 @@ export default function EditorMensagem() {
               <Campo rotulo="Objetivo">
                 <div className="relative">
                   <Target size={18} className="pointer-events-none absolute left-3.5 top-3 text-texto-2" />
-                  <textarea rows={2} value={detalhes.objetivo ?? ''} placeholder={estudo ? 'Ao final, a turma consegue…' : 'O que as pessoas levam para a semana'}
-                    onChange={(e) => alterarDetalhes({ objetivo: e.target.value })} className="campo resize-y pl-10 leading-relaxed" />
+                  <AreaTexto rows={2} value={detalhes.objetivo ?? ''} placeholder={estudo ? 'Ao final, a turma consegue…' : 'O que as pessoas levam para a semana'}
+                    onChange={(e) => alterarDetalhes({ objetivo: e.target.value })} className="campo pl-10 leading-relaxed" />
                 </div>
               </Campo>
             </div>
@@ -641,8 +669,8 @@ export default function EditorMensagem() {
               <div className="mt-3 space-y-2">
                 <input value={detalhes.esperaTitulo ?? ''} placeholder="Preste atenção na aula" maxLength={80}
                   onChange={(e) => alterarDetalhes({ esperaTitulo: e.target.value })} className="campo font-semibold" />
-                <textarea rows={2} value={detalhes.esperaTexto ?? ''} placeholder="Quando chegar uma pergunta, ela aparece aqui." maxLength={240}
-                  onChange={(e) => alterarDetalhes({ esperaTexto: e.target.value })} className="campo resize-y" />
+                <AreaTexto rows={2} value={detalhes.esperaTexto ?? ''} placeholder="Quando chegar uma pergunta, ela aparece aqui." maxLength={240}
+                  onChange={(e) => alterarDetalhes({ esperaTexto: e.target.value })} className="campo" />
               </div>
             </details>
           </>
@@ -810,8 +838,8 @@ export default function EditorMensagem() {
                 <div className="space-y-5 border-t border-borda p-4">
                   {def.corpo && (tipoB === 'lista' || tipoB === 'pergunta' ? (
                     <Campo rotulo={def.corpo.rotulo}>
-                      <textarea rows={def.corpo.linhas ?? 3} placeholder={def.corpo.dica} value={t.observacao ?? ''}
-                        onChange={(e) => alterarTopico(t.id, { observacao: e.target.value })} className="campo resize-y leading-relaxed" />
+                      <AreaTexto rows={def.corpo.linhas ?? 3} placeholder={def.corpo.dica} value={t.observacao ?? ''}
+                        onChange={(e) => alterarTopico(t.id, { observacao: e.target.value })} className="campo leading-relaxed" />
                     </Campo>
                   ) : (
                     <CampoTextoVersiculo rotulo={def.corpo.rotulo} linhas={def.corpo.linhas ?? 3} placeholder={def.corpo.dica}
@@ -910,8 +938,8 @@ export default function EditorMensagem() {
                     </div>
                   )}
                   <Campo rotulo="Só para você (não aparece para a turma)">
-                    <textarea rows={2} placeholder="Lembretes, uma história para contar, o que fazer se ninguém responder…" value={t.notas ?? ''}
-                      onChange={(e) => alterarTopico(t.id, { notas: e.target.value })} className="campo resize-y leading-relaxed" />
+                    <AreaTexto rows={2} placeholder="Lembretes, uma história para contar, o que fazer se ninguém responder…" value={t.notas ?? ''}
+                      onChange={(e) => alterarTopico(t.id, { notas: e.target.value })} className="campo leading-relaxed" />
                   </Campo>
                   <div className="flex flex-wrap items-center gap-2">
                     <label className="flex items-center gap-2 text-sm text-texto-2">
@@ -938,10 +966,10 @@ export default function EditorMensagem() {
                       onChange={(v) => alterarTopico(t.id, { [c.chave]: v } as Partial<Topico>)} />
                   ) : (
                     <Campo key={c.chave} rotulo={c.rotulo}>
-                      <textarea rows={c.chave === 'frase_chave' ? 2 : 3} placeholder={c.dica}
+                      <AreaTexto rows={c.chave === 'frase_chave' ? 2 : 3} placeholder={c.dica}
                         value={t[c.chave] ?? ''}
                         onChange={(e) => alterarTopico(t.id, { [c.chave]: e.target.value } as Partial<Topico>)}
-                        className={`campo resize-y leading-relaxed ${c.chave === 'frase_chave' ? 'border-l-4 border-l-ouro font-semibold' : ''}`} />
+                        className={`campo leading-relaxed ${c.chave === 'frase_chave' ? 'border-l-4 border-l-ouro font-semibold' : ''}`} />
                     </Campo>
                   ))}
 
