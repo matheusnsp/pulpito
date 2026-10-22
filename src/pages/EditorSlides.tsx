@@ -128,6 +128,42 @@ function Segmentos<T extends string>({ valor, opcoes, onChange }: {
   )
 }
 
+/*
+  Divide um texto longo em mais slides. Até uns 600 caracteres fica num slide só
+  (o auto ajuste diminui a letra para caber); passando disso, continua no próximo.
+  Corta entre parágrafos e, se preciso, entre frases; uma frase gigante é cortada entre palavras.
+*/
+const CABE_NO_SLIDE = 600
+function partirTexto(texto: string, max = CABE_NO_SLIDE): string[] {
+  const t = texto.trim()
+  if (t.length + (t.match(/\n\s*\n/g)?.length ?? 0) * 60 <= max) return [t || ' ']
+  const pedacos: string[] = []
+  for (const par of t.split(/\n\s*\n|\n/)) {
+    const frases = par.trim().split(/(?<=[.!?…:;])\s+/).filter(Boolean)
+    for (let f of frases) {
+      while (f.length > max) { // frase maior que um slide: corta entre palavras
+        const corte = f.lastIndexOf(' ', max)
+        pedacos.push(f.slice(0, corte > 0 ? corte : max).trim())
+        f = f.slice(corte > 0 ? corte : max).trim()
+      }
+      pedacos.push(f)
+    }
+    pedacos.push('\n') // marca fim de parágrafo
+  }
+  // Junta frases enquanto couber; parágrafo novo vira quebra de linha dentro do mesmo slide
+  const slides: string[] = []
+  let atual = ''
+  for (const p of pedacos) {
+    if (p === '\n') { if (atual) atual += '\n\n'; continue }
+    const junto = atual ? (atual.endsWith('\n\n') ? atual + p : `${atual} ${p}`) : p
+    // Linha em branco entre parágrafos ocupa espaço de uma linha inteira (~60 letras)
+    const tamanho = (x: string) => x.length + (x.match(/\n\n/g)?.length ?? 0) * 60
+    if (tamanho(junto) > max && atual.trim()) { slides.push(atual.trim()); atual = p } else atual = junto
+  }
+  if (atual.trim()) slides.push(atual.trim())
+  return slides
+}
+
 export default function EditorSlides() {
   const { id } = useParams()
   const papelAtual = usePapelAtual()
@@ -390,6 +426,14 @@ export default function EditorSlides() {
       })
     }
 
+    // Título + texto: se o texto não cabe num slide, continua nos próximos ("Aplicação 1/2", "2/2")
+    const tituloTexto = (topico_id: string, titulo: string | null | undefined, corpo: string) => {
+      const partes = partirTexto(corpo)
+      partes.forEach((parte, k) => livre(topico_id, 'tituloTexto', {
+        titulo: `${titulo || ' '}${partes.length > 1 ? ` (${k + 1}/${partes.length})` : ''}`, texto: parte,
+      }))
+    }
+
     // Capa
     const estudo = mensagem.tipo === 'estudo'
     novo(null, 'capa', { titulo: mensagem.titulo, subtitulo: estudo ? mensagem.detalhes?.publico || referenciaBonita(mensagem.texto_base) : referenciaBonita(mensagem.texto_base) })
@@ -403,9 +447,9 @@ export default function EditorSlides() {
           subtitulo: `Tópico ${i + 1}`, titulo: t.titulo || 'Sem título', texto: dividirReferencias(t.versiculo).map((v) => referenciaBonita(v)).join(' · ') || null,
         })
         await versiculos(t.id, t.versiculo)
-        if (t.observacao?.trim()) livre(t.id, 'tituloTexto', { titulo: t.titulo || 'Observação', texto: t.observacao.trim() })
-        if (t.ilustracao?.trim()) livre(t.id, 'tituloTexto', { titulo: 'Ilustração', texto: t.ilustracao.trim() })
-        if (t.aplicacao?.trim()) livre(t.id, 'tituloTexto', { titulo: 'Aplicação', texto: t.aplicacao.trim() })
+        if (t.observacao?.trim()) tituloTexto(t.id, t.titulo || 'Observação', t.observacao)
+        if (t.ilustracao?.trim()) tituloTexto(t.id, 'Ilustração', t.ilustracao)
+        if (t.aplicacao?.trim()) tituloTexto(t.id, 'Aplicação', t.aplicacao)
         if (t.frase_chave?.trim())
           novo(t.id, 'frase', { texto: t.frase_chave.trim().replace(/^["“]|["”]$/g, '') })
         continue
@@ -423,10 +467,10 @@ export default function EditorSlides() {
         case 'lista': livre(t.id, 'lista', { titulo: t.titulo, texto: t.observacao }); break
         case 'citacao': livre(t.id, 'citacao', { texto: t.titulo, subtitulo: t.extra?.autor ? `— ${t.extra.autor}` : ' ' }); break
         case 'definicao': livre(t.id, 'definicao', { titulo: t.titulo, subtitulo: t.frase_chave || ' ', texto: t.observacao }); break
-        case 'atividade': livre(t.id, 'tituloTexto', { titulo: `${t.titulo || 'Atividade'}${min ? ` · ${min}` : ''}`, texto: t.observacao || ' ' }); break
+        case 'atividade': tituloTexto(t.id, `${t.titulo || 'Atividade'}${min ? ` · ${min}` : ''}`, t.observacao || ' '); break
         case 'referencia':
           await versiculos(t.id, t.versiculo)
-          if (t.observacao?.trim()) livre(t.id, 'tituloTexto', { titulo: t.titulo?.trim() || ' ', texto: t.observacao })
+          if (t.observacao?.trim()) tituloTexto(t.id, t.titulo?.trim() || ' ', t.observacao)
           break
         case 'imagem':
           livre(t.id, 'branco', { titulo: t.titulo }, [
@@ -434,8 +478,8 @@ export default function EditorSlides() {
             ...(t.titulo ? [{ id: crypto.randomUUID(), tipo: 'texto' as const, x: 10, y: 80, w: 80, h: 12, texto: t.titulo, tam: 2.6, cor: estiloSel.cor || '#FFFFFF', peso: 700 }] : []),
           ])
           break
-        case 'link': livre(t.id, 'tituloTexto', { titulo: t.titulo || 'Assista', texto: [t.observacao, t.extra?.url].filter(Boolean).join('\n\n') || ' ' }); break
-        default: livre(t.id, 'tituloTexto', { titulo: t.titulo, texto: t.observacao || ' ' })
+        case 'link': tituloTexto(t.id, t.titulo || 'Assista', [t.observacao, t.extra?.url].filter(Boolean).join('\n\n') || ' '); break
+        default: tituloTexto(t.id, t.titulo, t.observacao || ' ')
       }
     }
 

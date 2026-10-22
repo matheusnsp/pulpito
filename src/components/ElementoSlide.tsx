@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react'
+import { useLayoutEffect, useRef, type CSSProperties, type ReactNode } from 'react'
 import { Cross } from 'lucide-react'
 import type { Elemento } from '../lib/tipos'
 import { ICONES } from '../lib/icones'
@@ -14,6 +14,39 @@ export function TextoMarcado({ texto, destaque }: { texto: string; destaque: str
         : <span key={i}>{p}</span>))}
     </>
   )
+}
+
+/*
+  Auto ajuste: se o texto não cabe na caixa, a letra diminui até caber (até 45% do tamanho escolhido).
+  Mexe direto no estilo, sem re-renderizar; refaz quando o texto, a caixa ou as fontes mudam.
+*/
+const MENOR_ESCALA = 0.45
+function TextoAjustavel({ tam, chave, style, children }: { tam: number; chave: string; style: CSSProperties; children: ReactNode }) {
+  const caixa = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => {
+    const div = caixa.current
+    if (!div) return
+    const ajustar = () => {
+      const conteudo = div.firstElementChild as HTMLElement | null
+      if (!conteudo) return
+      let escala = 1
+      div.style.fontSize = `${tam}cqw`
+      const altura = div.clientHeight, largura = div.clientWidth
+      if (!altura || !largura) return
+      // Diminui aos poucos até caber
+      while (escala > MENOR_ESCALA && (conteudo.offsetHeight > altura + 1 || conteudo.scrollWidth > largura + 1)) {
+        escala -= 0.04
+        div.style.fontSize = `${tam * escala}cqw`
+      }
+    }
+    ajustar()
+    const ro = new ResizeObserver(ajustar)
+    ro.observe(div)
+    let vivo = true
+    document.fonts?.ready.then(() => { if (vivo) ajustar() })
+    return () => { vivo = false; ro.disconnect() }
+  }, [tam, chave])
+  return <div ref={caixa} style={style}>{children}</div>
 }
 
 /* Preenchimento: cor única ou degradê com a segunda cor */
@@ -118,7 +151,7 @@ export default function ElementoSlide({ el }: { el: Elemento }) {
         textShadow: el.sombra ? '0 0.25cqw 1cqw rgba(0,0,0,.65)' : undefined,
       }
       conteudo = (
-        <div style={{
+        <TextoAjustavel tam={tam} chave={`${texto}|${el.fonte}|${el.peso}|${el.entrelinha}|${el.caixaAlta}|${el.espaco}`} style={{
           width: '100%', height: '100%', display: 'flex', flexDirection: 'column',
           justifyContent: vertical, alignItems: justificar, textAlign: el.alinh ?? 'center',
           color: cor, fontFamily: fonteCss(el.fonte), fontWeight: fixo ?? el.peso ?? 800,
@@ -133,7 +166,7 @@ export default function ElementoSlide({ el }: { el: Elemento }) {
           }}>
             <TextoMarcado texto={texto} destaque={el.destaque || '#FFC107'} />
           </span>
-        </div>
+        </TextoAjustavel>
       )
       // A sombra do texto já vai nas letras
       return <div style={{ ...caixa, filter: undefined }}>{conteudo}</div>
