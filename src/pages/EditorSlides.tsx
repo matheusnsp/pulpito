@@ -52,20 +52,22 @@ const sobrescrito = (n: number) => String(n).split('').map((d) => SOBRESCRITO[Nu
 /*
   Quanto texto vai em cada slide ao gerar.
   Tamanhos em pontos do PowerPoint (slide 16:9 = 960 pt de largura; 1 pt = 100/960 da largura).
-  O menor ("Mais texto") é a referência mínima: título 32 pt e texto 24 pt.
-  "caracteres" é quanto cabe na caixa de texto do slide naquele tamanho (86% x 52% do slide),
-  contando ~0,5 em por letra e entrelinha 1,4; passando disso, o texto continua no slide seguinte.
+  "Mais texto" é o tamanho normal de leitura no telão: título 32 pt e texto 24 pt.
+  "Máximo" vai até o menor que ainda se lê de longe: título 28 pt e texto 20 pt.
+  "caracteres" é quanto cabe na caixa de texto do slide naquele tamanho (92% x 69% do slide),
+  contando ~0,5 em por letra e entrelinha 1,35; passando disso, o texto continua no slide seguinte.
 */
-type Densidade = 'menos' | 'normal' | 'mais'
+type Densidade = 'menos' | 'normal' | 'mais' | 'maximo'
 const pt = (n: number) => Math.round((n / 960) * 100 * 100) / 100 // pontos → % da largura (cqw)
 const DENSIDADES: Record<Densidade, { nome: string; dica: string; caracteres: number; letra: number; titulo: number; versiculo: number }> = {
-  menos: { nome: 'Menos texto', dica: 'Título 48 · texto 36', caracteres: 200, letra: pt(36), titulo: pt(48), versiculo: 180 },
-  normal: { nome: 'Equilibrado', dica: 'Título 40 · texto 28', caracteres: 360, letra: pt(28), titulo: pt(40), versiculo: 280 },
-  mais: { nome: 'Mais texto', dica: 'Título 32 · texto 24', caracteres: 480, letra: pt(24), titulo: pt(32), versiculo: 420 },
+  menos: { nome: 'Menos texto', dica: 'Título 48 · texto 36', caracteres: 280, letra: pt(36), titulo: pt(48), versiculo: 250 },
+  normal: { nome: 'Equilibrado', dica: 'Título 40 · texto 28', caracteres: 500, letra: pt(28), titulo: pt(40), versiculo: 390 },
+  mais: { nome: 'Mais texto', dica: 'Título 32 · texto 24', caracteres: 670, letra: pt(24), titulo: pt(32), versiculo: 580 },
+  maximo: { nome: 'Máximo', dica: 'Título 28 · texto 20', caracteres: 960, letra: pt(20), titulo: pt(28), versiculo: 800 },
 }
 const CHAVE_DENSIDADE = 'pulpito-densidade-slides'
 const lerDensidade = (): Densidade => {
-  try { const v = localStorage.getItem(CHAVE_DENSIDADE); return v === 'menos' || v === 'mais' ? v : 'normal' } catch { return 'normal' }
+  try { const v = localStorage.getItem(CHAVE_DENSIDADE); return v === 'menos' || v === 'mais' || v === 'maximo' ? v : 'normal' } catch { return 'normal' }
 }
 
 async function blocosDoVersiculo(ref: string | null, limite = 280) {
@@ -829,14 +831,14 @@ export default function EditorSlides() {
       <p className="text-sm text-texto-2">Tudo o que você escreveu vira slide, menos as <b className="text-texto">notas pessoais</b>.</p>
       <div>
         <span className="mb-1.5 block text-sm font-semibold text-texto-2">Texto em cada slide</span>
-        <div role="radiogroup" aria-label="Texto em cada slide" className="grid max-w-xl grid-cols-3 gap-2">
+        <div role="radiogroup" aria-label="Texto em cada slide" className="grid max-w-xl grid-cols-2 gap-2 sm:grid-cols-4">
           {(Object.keys(DENSIDADES) as Densidade[]).map((d) => {
             const ativo = densidade === d
             const { nome, dica } = DENSIDADES[d]
             return (
               <button key={d} role="radio" aria-checked={ativo} onClick={() => mudarDensidade(d)}
                 className={`rounded-xl border-2 px-3 py-2 text-left transition ${ativo ? 'border-acao bg-ouro-suave' : 'border-borda hover:border-texto-2'}`}>
-                <span aria-hidden className="block h-6 font-display font-extrabold leading-6" style={{ fontSize: d === 'menos' ? 22 : d === 'normal' ? 17 : 12 }}>Aa</span>
+                <span aria-hidden className="block h-6 font-display font-extrabold leading-6" style={{ fontSize: d === 'menos' ? 22 : d === 'normal' ? 17 : d === 'mais' ? 13 : 10 }}>Aa</span>
                 <b className="mt-1 block text-sm leading-tight">{nome}</b>
                 <span className="block text-xs leading-tight text-texto-2">{dica}</span>
               </button>

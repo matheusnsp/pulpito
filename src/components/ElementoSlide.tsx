@@ -18,12 +18,12 @@ export function TextoMarcado({ texto, destaque }: { texto: string; destaque: str
 
 /*
   Auto ajuste: se o texto não cabe na caixa, a letra diminui até caber, mas nunca abaixo do mínimo
-  para ler no telão: título 28 pt (2,92% da largura) e texto 24 pt (2,5%).
+  para ler no telão: título 24 pt (2,5% da largura) e texto 20 pt (2,08%).
   Textos já pensados menores que isso (legendas) não diminuem.
   Mexe direto no estilo, sem re-renderizar; refaz quando o texto, a caixa ou as fontes mudam.
 */
-const MINIMO_TITULO = 2.92
-const MINIMO_TEXTO = 2.5
+const MINIMO_TITULO = 2.5
+const MINIMO_TEXTO = 2.08
 const tamanhoMinimo = (tam: number) => (tam >= 3.2 ? MINIMO_TITULO : Math.min(tam, MINIMO_TEXTO))
 function TextoAjustavel({ tam, chave, style, children }: { tam: number; chave: string; style: CSSProperties; children: ReactNode }) {
   const caixa = useRef<HTMLDivElement>(null)

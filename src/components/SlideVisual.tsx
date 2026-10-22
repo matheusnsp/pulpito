@@ -99,7 +99,7 @@ export default function SlideVisual({ slide, preencher = false, className = '' }
   } else if (layout === 'versiculo') {
     miolo = (
       <>
-        <p style={{ fontFamily: SERIF, lineHeight: 1.38, fontSize: `${tamanhoPorTexto(texto, 4.4, 2.5) * k}cqw`, whiteSpace: 'pre-wrap' }}>
+        <p style={{ fontFamily: SERIF, lineHeight: 1.38, fontSize: `${tamanhoPorTexto(texto, 4.4, 2.08) * k}cqw`, whiteSpace: 'pre-wrap' }}>
           {m(texto)}
         </p>
         {titulo && (
@@ -126,7 +126,7 @@ export default function SlideVisual({ slide, preencher = false, className = '' }
         )}
         {subtitulo && <p style={{ fontSize: `${2.8 * k}cqw`, opacity: 0.8 }}>{m(subtitulo)}</p>}
         {texto && (
-          <p style={{ fontFamily: e.fonteTexto ? SERIF : undefined, fontSize: `${tamanhoPorTexto(texto, 3.8, 2.4) * k}cqw`, lineHeight: 1.35, whiteSpace: 'pre-wrap' }}>{m(texto)}</p>
+          <p style={{ fontFamily: e.fonteTexto ? SERIF : undefined, fontSize: `${tamanhoPorTexto(texto, 3.8, 2.08) * k}cqw`, lineHeight: 1.35, whiteSpace: 'pre-wrap' }}>{m(texto)}</p>
         )}
       </>
     )
@@ -136,7 +136,7 @@ export default function SlideVisual({ slide, preencher = false, className = '' }
     <div className={`relative flex min-w-0 flex-1 flex-col justify-center overflow-hidden ${alinhar}`}
       style={{
         color: e.cor,
-        padding: lateral ? '6cqh 5cqw' : disp === 'cima' ? '3cqh 8cqw 5cqh' : '6cqh 9cqw',
+        padding: lateral ? '5cqh 4cqw' : disp === 'cima' ? '3cqh 5cqw 4cqh' : '5cqh 5cqw',
         gap: lateral || disp === 'cima' ? '2.2cqh' : '3cqh',
         fontFamily: e.fonte === 'serif' ? SERIF : 'inherit',
       }}>
