@@ -52,20 +52,23 @@ const sobrescrito = (n: number) => String(n).split('').map((d) => SOBRESCRITO[Nu
 /*
   Quanto texto vai em cada slide ao gerar.
   Tamanhos em pontos do PowerPoint (slide 16:9 = 960 pt de largura; 1 pt = 100/960 da largura).
+  É o tamanho em que o texto começa: cada bloco escrito vira um slide só e, se não couber,
+  a letra diminui sozinha até o mínimo (título 24 pt, texto 20 pt).
   "Mais texto" é o tamanho normal de leitura no telão: título 32 pt e texto 24 pt.
-  "Máximo" vai até o menor que ainda se lê de longe: título 28 pt e texto 20 pt.
-  "caracteres" é quanto cabe na caixa de texto do slide naquele tamanho (92% x 69% do slide),
-  contando ~0,5 em por letra e entrelinha 1,35; passando disso, o texto continua no slide seguinte.
+  "Máximo" já começa no menor que ainda se lê de longe: título 28 pt e texto 20 pt.
+  "versiculo" é quanto texto bíblico vai em cada slide de versículo.
 */
 type Densidade = 'menos' | 'normal' | 'mais' | 'maximo'
 const pt = (n: number) => Math.round((n / 960) * 100 * 100) / 100 // pontos → % da largura (cqw)
-const DENSIDADES: Record<Densidade, { nome: string; dica: string; caracteres: number; letra: number; titulo: number; versiculo: number }> = {
-  menos: { nome: 'Menos texto', dica: 'Título 48 · texto 36', caracteres: 280, letra: pt(36), titulo: pt(48), versiculo: 250 },
-  normal: { nome: 'Equilibrado', dica: 'Título 40 · texto 28', caracteres: 500, letra: pt(28), titulo: pt(40), versiculo: 390 },
-  mais: { nome: 'Mais texto', dica: 'Título 32 · texto 24', caracteres: 670, letra: pt(24), titulo: pt(32), versiculo: 580 },
-  maximo: { nome: 'Máximo', dica: 'Título 28 · texto 20', caracteres: 960, letra: pt(20), titulo: pt(28), versiculo: 800 },
+const DENSIDADES: Record<Densidade, { nome: string; dica: string; letra: number; titulo: number; versiculo: number }> = {
+  menos: { nome: 'Menos texto', dica: 'Título 48 · texto 36', letra: pt(36), titulo: pt(48), versiculo: 250 },
+  normal: { nome: 'Equilibrado', dica: 'Título 40 · texto 28', letra: pt(28), titulo: pt(40), versiculo: 390 },
+  mais: { nome: 'Mais texto', dica: 'Título 32 · texto 24', letra: pt(24), titulo: pt(32), versiculo: 580 },
+  maximo: { nome: 'Máximo', dica: 'Título 28 · texto 20', letra: pt(20), titulo: pt(28), versiculo: 800 },
 }
 const CHAVE_DENSIDADE = 'pulpito-densidade-slides'
+const CHAVE_REVELAR = 'pulpito-revelar-slides'
+const lerRevelar = () => { try { return localStorage.getItem(CHAVE_REVELAR) === '1' } catch { return false } }
 const lerDensidade = (): Densidade => {
   try { const v = localStorage.getItem(CHAVE_DENSIDADE); return v === 'menos' || v === 'mais' || v === 'maximo' ? v : 'normal' } catch { return 'normal' }
 }
@@ -151,39 +154,37 @@ function Segmentos<T extends string>({ valor, opcoes, onChange }: {
 }
 
 /*
-  Divide um texto longo em mais slides. Até uns 600 caracteres fica num slide só
-  (o auto ajuste diminui a letra para caber); passando disso, continua no próximo.
-  Corta entre parágrafos e, se preciso, entre frases; uma frase gigante é cortada entre palavras.
+  Divide um texto longo em mais slides, só onde existe linha em branco entre parágrafos.
 */
 const CABE_NO_SLIDE = 600
+/* Quanto texto cabe na caixa (92% x 74% do slide) na menor letra que ainda se lê no telão (20 pt) */
+const CABE_NO_MINIMO = 1230
+/*
+  Regra: um bloco escrito nunca é partido no meio.
+  A única divisão possível é onde você mesmo deixou uma linha em branco entre dois parágrafos;
+  parágrafos seguidos vão juntos enquanto couberem. Se um parágrafo sozinho for enorme,
+  ele fica inteiro num slide e a letra diminui até caber.
+*/
+/* Tamanho de letra (em % da largura) em que um texto desse tamanho cabe na caixa */
+function tamanhoQueCabe(texto: string) {
+  const n = texto.length + (texto.match(/\n\s*\n/g)?.length ?? 0) * 40
+  if (n <= 0) return 3.4
+  return Math.max(1.4, Math.round(2.08 * Math.sqrt(1100 / n) * 100) / 100)
+}
+
 function partirTexto(texto: string, max = CABE_NO_SLIDE): string[] {
   const t = texto.trim()
-  if (t.length + (t.match(/\n\s*\n/g)?.length ?? 0) * 60 <= max) return [t || ' ']
-  const pedacos: string[] = []
-  for (const par of t.split(/\n\s*\n|\n/)) {
-    const frases = par.trim().split(/(?<=[.!?…:;])\s+/).filter(Boolean)
-    for (let f of frases) {
-      while (f.length > max) { // frase maior que um slide: corta entre palavras
-        const corte = f.lastIndexOf(' ', max)
-        pedacos.push(f.slice(0, corte > 0 ? corte : max).trim())
-        f = f.slice(corte > 0 ? corte : max).trim()
-      }
-      pedacos.push(f)
-    }
-    pedacos.push('\n') // marca fim de parágrafo
-  }
-  // Junta frases enquanto couber; parágrafo novo vira quebra de linha dentro do mesmo slide
+  // A linha em branco entre parágrafos ocupa o espaço de uma linha (~40 letras)
+  const tamanho = (x: string) => x.length + (x.match(/\n\s*\n/g)?.length ?? 0) * 40
+  if (tamanho(t) <= max) return [t || ' ']
+  const paragrafos = t.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean)
   const slides: string[] = []
-  let atual = ''
-  for (const p of pedacos) {
-    if (p === '\n') { if (atual) atual += '\n\n'; continue }
-    const junto = atual ? (atual.endsWith('\n\n') ? atual + p : `${atual} ${p}`) : p
-    // Linha em branco entre parágrafos ocupa espaço de uma linha inteira (~60 letras)
-    const tamanho = (x: string) => x.length + (x.match(/\n\n/g)?.length ?? 0) * 60
-    if (tamanho(junto) > max && atual.trim()) { slides.push(atual.trim()); atual = p } else atual = junto
+  for (const par of paragrafos) {
+    const atual = slides[slides.length - 1]
+    if (atual && tamanho(`${atual}\n\n${par}`) <= max) slides[slides.length - 1] = `${atual}\n\n${par}`
+    else slides.push(par)
   }
-  if (atual.trim()) slides.push(atual.trim())
-  return slides
+  return slides.length ? slides : [t]
 }
 
 export default function EditorSlides() {
@@ -201,6 +202,8 @@ export default function EditorSlides() {
   const [gerando, setGerando] = useState(false)
   const [densidade, setDensidade] = useState<Densidade>(lerDensidade)
   const mudarDensidade = (d: Densidade) => { setDensidade(d); try { localStorage.setItem(CHAVE_DENSIDADE, d) } catch { /* sem armazenamento */ } }
+  const [revelar, setRevelar] = useState(lerRevelar)
+  const mudarRevelar = (v: boolean) => { setRevelar(v); try { localStorage.setItem(CHAVE_REVELAR, v ? '1' : '0') } catch { /* sem armazenamento */ } }
   const [enviando, setEnviando] = useState(false)
   const disposicaoPendente = useRef<Disposicao | null>(null)
   const arquivoElemento = useRef<HTMLInputElement>(null)
@@ -466,6 +469,24 @@ export default function EditorSlides() {
       })
     }
 
+    // Lista revelada: o mesmo slide repetido, mostrando mais um item de cada vez
+    const listaRevelando = (topico_id: string | null, modeloId: string, c: { titulo?: string | null; subtitulo?: string | null; texto?: string | null }) => {
+      const m = MODELOS.find((x) => x.id === modeloId)!
+      const base = m.fabrica(c, coresDoEstilo(estiloSel))
+      const itens = Math.floor((base.length - 1) / 2) // pares de bolinha + texto
+      if (!revelar || itens < 2) { livre(topico_id, modeloId, c); return }
+      for (let i = 1; i <= itens; i++) {
+        linhas.push({
+          mensagem_id: mensagem.id, topico_id, ordem: linhas.length,
+          titulo: c.titulo ?? null, subtitulo: c.subtitulo ?? null, texto: c.texto ?? null, fundo,
+          estilo: {
+            ...estiloSel, layout: 'vazio',
+            elementos: base.map((e, k) => ({ ...e, id: crypto.randomUUID(), ...(k > 2 * i ? { oculto: true } : {}) })),
+          },
+        })
+      }
+    }
+
     // Título + texto: se o texto não cabe num slide, continua nos próximos ("Aplicação 1/2", "2/2")
     // Título + texto. Versículo no meio do texto ([Jo 3:16]) vira os slides do versículo naquele ponto.
     // Texto que não cabe num slide continua no próximo ("Aplicação 1/2", "2/2").
@@ -478,16 +499,26 @@ export default function EditorSlides() {
           continue
         }
         // Numera só quando um mesmo trecho não coube e continuou no slide seguinte
-        const pedacos = partirTexto(p.texto, dens.caracteres)
+        // Cada bloco escrito vira um slide só: se for longo, a letra diminui até caber.
+        // Só divide onde você deixou uma linha em branco entre parágrafos.
+        const pedacos = partirTexto(p.texto, CABE_NO_MINIMO)
         pedacos.forEach((pedaco, k) => {
-          livre(topico_id, 'tituloTexto', {
-            titulo: `${titulo || ' '}${pedacos.length > 1 ? ` (${k + 1}/${pedacos.length})` : ''}`, texto: pedaco,
-          })
-          // Tamanho do título e do texto conforme a quantidade escolhida
-          const els = linhas[linhas.length - 1].estilo?.elementos
-          const corpo = els?.[els.length - 1]
-          if (corpo?.tipo === 'texto') corpo.tam = dens.letra
-          if (els?.[0]?.tipo === 'texto') els[0].tam = dens.titulo
+          const nome = `${titulo || ' '}${pedacos.length > 1 ? ` (${k + 1}/${pedacos.length})` : ''}`
+          // "Revelar aos poucos": o mesmo slide vai aparecendo parágrafo por parágrafo.
+          // A letra já sai no tamanho do texto inteiro, para nada pular de um passo para o outro.
+          const paragrafos = pedaco.split(/\n\s*\n/).map((x) => x.trim()).filter(Boolean)
+          const passos = revelar && paragrafos.length > 1
+            ? paragrafos.map((_, i) => paragrafos.slice(0, i + 1).join('\n\n'))
+            : [pedaco]
+          const tamCorpo = Math.min(dens.letra, tamanhoQueCabe(pedaco))
+          for (const passo of passos) {
+            livre(topico_id, 'tituloTexto', { titulo: nome, texto: passo })
+            // Tamanho do título e do texto conforme a quantidade escolhida
+            const els = linhas[linhas.length - 1].estilo?.elementos
+            const corpo = els?.[els.length - 1]
+            if (corpo?.tipo === 'texto') corpo.tam = tamCorpo
+            if (els?.[0]?.tipo === 'texto') els[0].tam = dens.titulo
+          }
         })
       }
     }
@@ -518,11 +549,11 @@ export default function EditorSlides() {
       switch (t.tipo) {
         case 'pergunta': {
           const ops = (t.extra?.opcoes ?? []).filter((o) => o.trim())
-          if (ops.length >= 2) livre(t.id, 'lista', { titulo: t.titulo, texto: ops.map((o, k) => `${'ABCDEF'[k]}) ${o}`).join('\n') })
+          if (ops.length >= 2) listaRevelando(t.id, 'lista', { titulo: t.titulo, texto: ops.map((o, k) => `${'ABCDEF'[k]}) ${o}`).join('\n') })
           else livre(t.id, 'pergunta', { titulo: t.titulo, subtitulo: [t.observacao?.trim() || (min ? 'Converse em grupo' : 'Converse com quem está ao seu lado'), min].filter(Boolean).join(' · ') })
           break
         }
-        case 'lista': livre(t.id, 'lista', { titulo: t.titulo, texto: t.observacao }); break
+        case 'lista': listaRevelando(t.id, 'lista', { titulo: t.titulo, texto: t.observacao }); break
         case 'citacao': livre(t.id, 'citacao', { texto: t.titulo, subtitulo: t.extra?.autor ? `— ${t.extra.autor}` : ' ' }); break
         case 'definicao': livre(t.id, 'definicao', { titulo: t.titulo, subtitulo: t.frase_chave || ' ', texto: t.observacao }); break
         case 'atividade': await tituloTexto(t.id, `${t.titulo || 'Atividade'}${min ? ` · ${min}` : ''}`, t.observacao || ' '); break
@@ -830,7 +861,7 @@ export default function EditorSlides() {
     <div className="space-y-3">
       <p className="text-sm text-texto-2">Tudo o que você escreveu vira slide, menos as <b className="text-texto">notas pessoais</b>.</p>
       <div>
-        <span className="mb-1.5 block text-sm font-semibold text-texto-2">Texto em cada slide</span>
+        <span className="mb-1.5 block text-sm font-semibold text-texto-2">Tamanho do texto no slide</span>
         <div role="radiogroup" aria-label="Texto em cada slide" className="grid max-w-xl grid-cols-2 gap-2 sm:grid-cols-4">
           {(Object.keys(DENSIDADES) as Densidade[]).map((d) => {
             const ativo = densidade === d
@@ -845,7 +876,21 @@ export default function EditorSlides() {
             )
           })}
         </div>
+        <p className="mt-1.5 text-xs text-texto-2">Cada bloco que você escreveu vira um slide só. Se o texto for longo, a letra diminui até caber.</p>
       </div>
+      <button type="button" role="switch" aria-checked={revelar} onClick={() => mudarRevelar(!revelar)}
+        className={`flex w-full max-w-xl items-center gap-3 rounded-xl border-2 p-3 text-left transition ${revelar ? 'border-acao bg-ouro-suave' : 'border-borda hover:border-texto-2'}`}>
+        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${revelar ? 'bg-acao text-acao-texto' : 'bg-superficie-2 text-texto-2'}`}>
+          <Layers size={18} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <b className="block text-sm leading-tight">Revelar aos poucos</b>
+          <span className="block text-xs leading-snug text-texto-2">Cada parágrafo (e cada item de lista) aparece num avanço, como a animação do PowerPoint. Precisa de uma linha em branco entre os parágrafos.</span>
+        </span>
+        <span className={`relative h-6 w-11 shrink-0 rounded-full transition ${revelar ? 'bg-acao' : 'bg-superficie-2'}`}>
+          <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-fundo transition-all ${revelar ? 'left-[1.4rem]' : 'left-0.5'}`} />
+        </span>
+      </button>
       <button onClick={gerar} disabled={gerando} className={slides.length ? 'botao-secundario' : 'botao-primario'}>
         <ListPlus size={18} />
         {gerando ? 'Gerando…' : `${slides.length ? 'Gerar de novo' : 'Gerar'} a partir ${mensagem?.tipo === 'estudo' ? 'dos blocos' : topicos.some((t) => ehBloco(t.tipo)) ? 'do roteiro' : 'dos tópicos'}`}

@@ -24,8 +24,11 @@ export function TextoMarcado({ texto, destaque }: { texto: string; destaque: str
 */
 const MINIMO_TITULO = 2.5
 const MINIMO_TEXTO = 2.08
-const tamanhoMinimo = (tam: number) => (tam >= 3.2 ? MINIMO_TITULO : Math.min(tam, MINIMO_TEXTO))
-function TextoAjustavel({ tam, chave, style, children }: { tam: number; chave: string; style: CSSProperties; children: ReactNode }) {
+/* Título (letra grossa e grande) para no 24 pt; corpo de texto pode ir até 20 pt */
+const ABSOLUTO = 1.4
+const tamanhoMinimo = (tam: number, peso = 800) =>
+  (tam >= 3.2 && peso >= 700 ? MINIMO_TITULO : Math.min(tam, MINIMO_TEXTO))
+function TextoAjustavel({ tam, peso, chave, style, children }: { tam: number; peso?: number; chave: string; style: CSSProperties; children: ReactNode }) {
   const caixa = useRef<HTMLDivElement>(null)
   useLayoutEffect(() => {
     const div = caixa.current
@@ -34,13 +37,18 @@ function TextoAjustavel({ tam, chave, style, children }: { tam: number; chave: s
       const conteudo = div.firstElementChild as HTMLElement | null
       if (!conteudo) return
       let atual = tam
-      const minimo = tamanhoMinimo(tam)
+      const minimo = tamanhoMinimo(tam, peso)
       div.style.fontSize = `${tam}cqw`
       const altura = div.clientHeight, largura = div.clientWidth
       if (!altura || !largura) return
       // Diminui aos poucos até caber (ou até o mínimo)
       while (atual > minimo && (conteudo.offsetHeight > altura + 1 || conteudo.scrollWidth > largura + 1)) {
         atual = Math.max(minimo, atual - tam * 0.04)
+        div.style.fontSize = `${atual}cqw`
+      }
+      // Bloco grande demais até no mínimo: melhor a letra menor do que o texto cortado
+      while (atual > ABSOLUTO && (conteudo.offsetHeight > altura + 1 || conteudo.scrollWidth > largura + 1)) {
+        atual = Math.max(ABSOLUTO, atual - tam * 0.04)
         div.style.fontSize = `${atual}cqw`
       }
     }
@@ -59,7 +67,7 @@ function TextoAjustavel({ tam, chave, style, children }: { tam: number; chave: s
     let vivo = true
     document.fonts?.ready.then(() => { if (vivo) ajustar() })
     return () => { vivo = false; cancelAnimationFrame(quadro); ro.disconnect() }
-  }, [tam, chave])
+  }, [tam, peso, chave])
   return <div ref={caixa} style={style}>{children}</div>
 }
 
@@ -165,7 +173,7 @@ export default function ElementoSlide({ el }: { el: Elemento }) {
         textShadow: el.sombra ? '0 0.25cqw 1cqw rgba(0,0,0,.65)' : undefined,
       }
       conteudo = (
-        <TextoAjustavel tam={tam} chave={`${texto}|${el.fonte}|${el.peso}|${el.entrelinha}|${el.caixaAlta}|${el.espaco}`} style={{
+        <TextoAjustavel tam={tam} peso={fixo ?? el.peso ?? 800} chave={`${texto}|${el.fonte}|${el.peso}|${el.entrelinha}|${el.caixaAlta}|${el.espaco}`} style={{
           width: '100%', height: '100%', display: 'flex', flexDirection: 'column',
           justifyContent: vertical, alignItems: justificar, textAlign: el.alinh ?? 'center',
           color: cor, fontFamily: fonteCss(el.fonte), fontWeight: fixo ?? el.peso ?? 800,

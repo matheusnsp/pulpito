@@ -33,13 +33,13 @@ const topico: Fabrica = (c, k) => [
 ]
 
 const tituloTexto: Fabrica = (c, k) => [
-  texto(k, { x: 4, y: 5, w: 92, h: 14, texto: c.titulo || 'Título', tam: 4.8, alinh: 'left' }),
-  forma('retangulo', { x: 4, y: 20.5, w: 8, h: 1.1, cor: k.destaque, preenchido: true, raio: 1 }),
-  texto(k, { x: 4, y: 25, w: 92, h: 69, texto: c.texto || c.subtitulo || 'Escreva o texto aqui', tam: 3.4, peso: 500, alinh: 'left', alinhV: 'top', entrelinha: 1.35, fonte: k.fonteTexto ?? 'moderna' }),
+  texto(k, { x: 4, y: 3.5, w: 92, h: 13, texto: c.titulo || 'Título', tam: 4.8, alinh: 'left' }),
+  forma('retangulo', { x: 4, y: 18, w: 8, h: 1.1, cor: k.destaque, preenchido: true, raio: 1 }),
+  texto(k, { x: 4, y: 22, w: 92, h: 74, texto: c.texto || c.subtitulo || 'Escreva o texto aqui', tam: 3.4, peso: 500, alinh: 'left', alinhV: 'top', entrelinha: 1.32, fonte: k.fonteTexto ?? 'moderna' }),
 ]
 
 const versiculo: Fabrica = (c, k) => [
-  texto(k, { x: 4, y: 9, w: 92, h: 65, texto: c.texto || 'Texto do versículo', tam: 3.6, peso: 400, fonte: k.fonteTexto ?? 'classica', entrelinha: 1.4 }),
+  texto(k, { x: 4, y: 7, w: 92, h: 69, texto: c.texto || 'Texto do versículo', tam: 3.6, peso: 400, fonte: k.fonteTexto ?? 'classica', entrelinha: 1.4 }),
   forma('linha', { x: 44, y: 76, w: 12, h: 2, cor: k.destaque, borda: 0.3 }),
   texto(k, { x: 10, y: 79, w: 80, h: 9, texto: c.titulo || 'Referência', tam: 2.2, cor: k.destaque }),
 ]
@@ -53,12 +53,12 @@ const citacao: Fabrica = (c, k) => [
 const lista: Fabrica = (c, k) => {
   const itens = linhas(c.texto).slice(0, 5)
   const pontos = itens.length ? itens : ['Primeiro ponto', 'Segundo ponto', 'Terceiro ponto']
-  const passo = Math.min(15, 70 / pontos.length)
+  const passo = Math.min(15, 74 / pontos.length)
   return [
-    texto(k, { x: 4, y: 5, w: 92, h: 15, texto: c.titulo || 'Título da lista', tam: 4.4, alinh: 'left' }),
+    texto(k, { x: 4, y: 3.5, w: 92, h: 14, texto: c.titulo || 'Título da lista', tam: 4.4, alinh: 'left' }),
     ...pontos.flatMap((t, i) => [
-      forma('circulo', { x: 4.5, y: 24 + i * passo + passo / 2 - 2.3, w: 2.6, h: 4.6, cor: k.destaque, preenchido: true }),
-      texto(k, { x: 9.5, y: 24 + i * passo, w: 86, h: passo, texto: t, tam: 2.8, peso: 600, alinh: 'left', fonte: k.fonteTexto ?? 'moderna' }),
+      forma('circulo', { x: 4.5, y: 21 + i * passo + passo / 2 - 2.3, w: 2.6, h: 4.6, cor: k.destaque, preenchido: true }),
+      texto(k, { x: 9.5, y: 21 + i * passo, w: 86, h: passo, texto: t, tam: 2.8, peso: 600, alinh: 'left', fonte: k.fonteTexto ?? 'moderna' }),
     ]),
   ]
 }

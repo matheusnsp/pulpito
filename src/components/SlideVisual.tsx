@@ -136,7 +136,7 @@ export default function SlideVisual({ slide, preencher = false, className = '' }
     <div className={`relative flex min-w-0 flex-1 flex-col justify-center overflow-hidden ${alinhar}`}
       style={{
         color: e.cor,
-        padding: lateral ? '5cqh 4cqw' : disp === 'cima' ? '3cqh 5cqw 4cqh' : '5cqh 5cqw',
+        padding: lateral ? '4cqh 4cqw' : disp === 'cima' ? '3cqh 5cqw 4cqh' : '4cqh 5cqw',
         gap: lateral || disp === 'cima' ? '2.2cqh' : '3cqh',
         fontFamily: e.fonte === 'serif' ? SERIF : 'inherit',
       }}>
