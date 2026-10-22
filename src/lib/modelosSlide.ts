@@ -35,7 +35,7 @@ const topico: Fabrica = (c, k) => [
 const tituloTexto: Fabrica = (c, k) => [
   texto(k, { x: 7, y: 9, w: 86, h: 18, texto: c.titulo || 'Título', tam: 4.8, alinh: 'left' }),
   forma('retangulo', { x: 7, y: 29, w: 8, h: 1.2, cor: k.destaque, preenchido: true, raio: 1 }),
-  texto(k, { x: 7, y: 35, w: 86, h: 52, texto: c.texto || c.subtitulo || 'Escreva o texto aqui', tam: 2.8, peso: 500, alinh: 'left', alinhV: 'top', entrelinha: 1.4, fonte: k.fonteTexto ?? 'moderna' }),
+  texto(k, { x: 7, y: 35, w: 86, h: 52, texto: c.texto || c.subtitulo || 'Escreva o texto aqui', tam: 3.4, peso: 500, alinh: 'left', alinhV: 'top', entrelinha: 1.4, fonte: k.fonteTexto ?? 'moderna' }),
 ]
 
 const versiculo: Fabrica = (c, k) => [
@@ -82,7 +82,7 @@ const pergunta: Fabrica = (c, k) => [
   forma('circulo', { x: 42.5, y: 10, w: 15, h: 26.7, cor: k.destaque, preenchido: true }),
   texto(k, { x: 42.5, y: 10, w: 15, h: 26.7, texto: '?', tam: 9, cor: '#111111', fonte: 'geometrica', peso: 900 }),
   texto(k, { x: 8, y: 42, w: 84, h: 30, texto: c.titulo || c.texto || 'Qual é a sua pergunta?', tam: 4.4, entrelinha: 1.15 }),
-  texto(k, { x: 15, y: 74, w: 70, h: 10, texto: c.subtitulo || 'Converse com quem está ao seu lado', tam: 2, peso: 500, cor: k.destaque }),
+  texto(k, { x: 12, y: 74, w: 76, h: 14, texto: c.subtitulo || 'Converse com quem está ao seu lado', tam: 2.4, peso: 600, cor: k.destaque }),
 ]
 
 const linhaTempo: Fabrica = (c, k) => {

@@ -32,16 +32,19 @@ export async function buscarServiceWorkerNovo() {
   } catch { /* sem service worker */ }
 }
 
+/* Espera no máximo "ms": o Safari às vezes nunca responde ao desligar o service worker */
+const noMaximo = <T,>(p: Promise<T>, ms: number) => Promise.race([p, new Promise<void>((ok) => setTimeout(ok, ms))])
+
 export async function carregarUltimaVersao() {
   try {
-    const registros = await navigator.serviceWorker?.getRegistrations() ?? []
-    await Promise.all(registros.map((r) => r.unregister()))
+    const registros = await noMaximo(navigator.serviceWorker?.getRegistrations() ?? Promise.resolve([]), 1500) ?? []
+    await noMaximo(Promise.all((registros as ServiceWorkerRegistration[]).map((r) => r.unregister())), 1500)
   } catch { /* navegador sem service worker */ }
   try {
-    const nomes = await caches.keys()
+    const nomes = await noMaximo(caches.keys(), 1500) ?? []
     // Só apaga o código do app. A Bíblia baixada e a cópia dos dados (supabase-api) ficam:
     // essa cópia é o que permite abrir sem internet e até recuperar algo apagado sem querer.
-    await Promise.all(nomes.filter((n) => n !== 'biblia' && n !== 'supabase-api').map((n) => caches.delete(n)))
+    await noMaximo(Promise.all((nomes as string[]).filter((n) => n !== 'biblia' && n !== 'supabase-api').map((n) => caches.delete(n))), 1500)
   } catch { /* sem cache */ }
   // Endereço diferente, para o navegador não reaproveitar a página guardada
   const url = new URL(window.location.href)

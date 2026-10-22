@@ -4,7 +4,7 @@ import { Link, useParams } from 'react-router-dom'
 import {
   ArrowDown, ArrowUp, Check, ChevronLeft, CircleAlert, CircleCheck, Copy, Download, FileText, ImagePlus, ListChecks,
   Circle, Diamond, Eye, EyeOff, Heading, Layers, LayoutTemplate, ListPlus, LoaderCircle, Lock, MessageSquare, Minus,
-  MoveRight, Play, Plus, Presentation, Redo2, Shapes, Square, Star, Trash2, Triangle, Type as TypeIcon, Undo2, Upload, Wand2, X,
+  Image as ImageIcon, MoveRight, Play, Plus, Presentation, Redo2, Shapes, Square, Star, Trash2, Triangle, Type as TypeIcon, Undo2, Upload, Wand2, X,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
@@ -327,6 +327,19 @@ export default function EditorSlides() {
     if (error) setErro('Não foi possível excluir os slides. Verifique a internet.')
   }
 
+  /* Apaga todos os slides da mensagem (dá para desfazer com Ctrl/Cmd + Z) */
+  async function apagarTodos() {
+    if (!mensagem || !slides.length) return
+    if (!confirm(`Apagar os ${slides.length} slides desta mensagem? Dá para desfazer logo em seguida.`)) return
+    historico.registrar(slides)
+    slides.forEach((s) => cancelar(`s:${s.id}:`))
+    setSlides([])
+    setSelId(null)
+    setSelecao(null)
+    const { error } = await supabase.from('slides').delete().eq('mensagem_id', mensagem.id)
+    if (error) setErro('Não foi possível apagar os slides. Verifique a internet.')
+  }
+
   async function inserirDepois(base: Partial<Slide>) {
     const antes = slides
     const pos = iSel >= 0 ? iSel + 1 : slides.length
@@ -369,7 +382,7 @@ export default function EditorSlides() {
     setSlides(salvarOrdem(lista))
   }
 
-  async function exportar(formato: 'pptx' | 'pdf') {
+  async function exportar(formato: 'pptx' | 'pptx-imagem' | 'pdf') {
     if (!mensagem || !slides.length) return
     setMenuExportar(false)
     setErro('')
@@ -377,7 +390,7 @@ export default function EditorSlides() {
     setExportando('Preparando…')
     try {
       const { exportarPdf, exportarPowerPoint } = await import('../lib/exportar')
-      if (formato === 'pptx') await exportarPowerPoint(mensagem.titulo, slides, topicos, progresso)
+      if (formato !== 'pdf') await exportarPowerPoint(mensagem.titulo, slides, topicos, progresso, formato === 'pptx')
       else await exportarPdf(mensagem.titulo, slides, progresso)
     } catch {
       setErro('Não foi possível exportar. Se algum slide usa foto, confira a internet e tente de novo.')
@@ -441,10 +454,10 @@ export default function EditorSlides() {
 
     // Na ordem do roteiro. Tópico: título → versículo(s) → observação → ilustração → aplicação → frase-chave.
     // Bloco: o modelo editável que combina com ele. Só as notas pessoais ficam de fora.
-    for (const [i, t] of topicos.entries()) {
+    for (const t of topicos) {
       if (!estudo && !ehBloco(t.tipo)) {
         novo(t.id, 'topico', {
-          subtitulo: `Tópico ${i + 1}`, titulo: t.titulo || 'Sem título', texto: dividirReferencias(t.versiculo).map((v) => referenciaBonita(v)).join(' · ') || null,
+          titulo: t.titulo || 'Sem título', texto: dividirReferencias(t.versiculo).map((v) => referenciaBonita(v)).join(' · ') || null,
         })
         await versiculos(t.id, t.versiculo)
         if (t.observacao?.trim()) tituloTexto(t.id, t.titulo || 'Observação', t.observacao)
@@ -825,7 +838,11 @@ export default function EditorSlides() {
                   <p className="rotulo px-3 pb-1 pt-2 sm:hidden">Exportar slides</p>
                   <button onClick={() => exportar('pptx')} className="flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-superficie-2">
                     <Presentation size={18} className="mt-0.5 shrink-0 text-tinta" />
-                    <span><b className="block text-sm">PowerPoint (.pptx)</b><span className="text-xs text-texto-2">Com suas anotações nas notas do apresentador</span></span>
+                    <span><b className="block text-sm">PowerPoint editável</b><span className="text-xs text-texto-2">Textos que dá para mudar no PowerPoint, com suas anotações nas notas</span></span>
+                  </button>
+                  <button onClick={() => exportar('pptx-imagem')} className="flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-superficie-2">
+                    <ImageIcon size={18} className="mt-0.5 shrink-0 text-tinta" />
+                    <span><b className="block text-sm">PowerPoint igual ao telão</b><span className="text-xs text-texto-2">Cada slide como imagem, idêntico ao que aparece aqui</span></span>
                   </button>
                   <button onClick={() => exportar('pdf')} className="flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-superficie-2">
                     <FileText size={18} className="mt-0.5 shrink-0 text-tinta" />
@@ -924,10 +941,17 @@ export default function EditorSlides() {
               </p>
             </div>
           ) : (
-            <button onClick={() => { setSelecao(new Set()); setAncora(null) }}
-              className="botao-fantasma -ml-2 mt-6 px-2 text-sm">
-              <ListChecks size={18} /> Selecionar vários
-            </button>
+            <div className="mt-6 flex items-center gap-2">
+              <button onClick={() => { setSelecao(new Set()); setAncora(null) }}
+                className="botao-fantasma -ml-2 px-2 text-sm">
+                <ListChecks size={18} /> Selecionar vários
+              </button>
+              {slides.length > 0 && (
+                <button onClick={apagarTodos} className="botao-fantasma ml-auto px-2 text-sm hover:text-perigo">
+                  <Trash2 size={17} /> Apagar todos
+                </button>
+              )}
+            </div>
           )}
 
           <div className="mt-3 grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">

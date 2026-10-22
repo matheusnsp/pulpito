@@ -40,11 +40,20 @@ function TextoAjustavel({ tam, chave, style, children }: { tam: number; chave: s
       }
     }
     ajustar()
-    const ro = new ResizeObserver(ajustar)
+    // Reajusta só quando a caixa muda de tamanho de verdade (nunca por causa do próprio ajuste)
+    let ultimo = `${div.clientWidth}x${div.clientHeight}`
+    let quadro = 0
+    const ro = new ResizeObserver(() => {
+      const agora = `${div.clientWidth}x${div.clientHeight}`
+      if (agora === ultimo) return
+      ultimo = agora
+      cancelAnimationFrame(quadro)
+      quadro = requestAnimationFrame(() => { ajustar(); ultimo = `${div.clientWidth}x${div.clientHeight}` })
+    })
     ro.observe(div)
     let vivo = true
     document.fonts?.ready.then(() => { if (vivo) ajustar() })
-    return () => { vivo = false; ro.disconnect() }
+    return () => { vivo = false; cancelAnimationFrame(quadro); ro.disconnect() }
   }, [tam, chave])
   return <div ref={caixa} style={style}>{children}</div>
 }
