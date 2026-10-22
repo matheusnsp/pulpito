@@ -35,8 +35,12 @@ export default function AvisoAtualizacao() {
 
   function atualizar() {
     setAtualizando(true)
-    if (precisa) updateServiceWorker(true)
-    else carregarUltimaVersao()
+    if (!precisa) { carregarUltimaVersao(); return }
+    // Caminho rápido: ativa o service worker novo e recarrega.
+    // No Safari às vezes ele não avisa que trocou e a tela ficava presa em "Atualizando…":
+    // se em 4 segundos não recarregou, faz a atualização completa.
+    void updateServiceWorker(true)
+    setTimeout(() => { void carregarUltimaVersao() }, 4000)
   }
   const depois = () => { setPrecisa(false); setDispensado(true) }
 
