@@ -50,14 +50,18 @@ const sobrescrito = (n: number) => String(n).split('').map((d) => SOBRESCRITO[Nu
 
 /* Versículos de uma referência divididos em blocos que cabem bem num slide */
 /*
-  Quanto texto vai em cada slide ao gerar. No telão a letra fica grande,
-  então dá para colocar mais; quem prefere slides limpos escolhe "Menos".
+  Quanto texto vai em cada slide ao gerar.
+  Tamanhos em pontos do PowerPoint (slide 16:9 = 960 pt de largura; 1 pt = 100/960 da largura).
+  O menor ("Mais texto") é a referência mínima: título 32 pt e texto 24 pt.
+  "caracteres" é quanto cabe na caixa de texto do slide naquele tamanho (86% x 52% do slide),
+  contando ~0,5 em por letra e entrelinha 1,4; passando disso, o texto continua no slide seguinte.
 */
 type Densidade = 'menos' | 'normal' | 'mais'
-const DENSIDADES: Record<Densidade, { nome: string; dica: string; caracteres: number; letra: number; versiculo: number }> = {
-  menos: { nome: 'Menos texto', dica: 'Letra grande, mais slides', caracteres: 350, letra: 4, versiculo: 180 },
-  normal: { nome: 'Equilibrado', dica: 'O padrão', caracteres: 600, letra: 3.4, versiculo: 280 },
-  mais: { nome: 'Mais texto', dica: 'Letra menor, menos slides', caracteres: 1000, letra: 2.8, versiculo: 480 },
+const pt = (n: number) => Math.round((n / 960) * 100 * 100) / 100 // pontos → % da largura (cqw)
+const DENSIDADES: Record<Densidade, { nome: string; dica: string; caracteres: number; letra: number; titulo: number; versiculo: number }> = {
+  menos: { nome: 'Menos texto', dica: 'Título 48 · texto 36', caracteres: 200, letra: pt(36), titulo: pt(48), versiculo: 180 },
+  normal: { nome: 'Equilibrado', dica: 'Título 40 · texto 28', caracteres: 360, letra: pt(28), titulo: pt(40), versiculo: 280 },
+  mais: { nome: 'Mais texto', dica: 'Título 32 · texto 24', caracteres: 480, letra: pt(24), titulo: pt(32), versiculo: 420 },
 }
 const CHAVE_DENSIDADE = 'pulpito-densidade-slides'
 const lerDensidade = (): Densidade => {
@@ -477,10 +481,11 @@ export default function EditorSlides() {
           livre(topico_id, 'tituloTexto', {
             titulo: `${titulo || ' '}${pedacos.length > 1 ? ` (${k + 1}/${pedacos.length})` : ''}`, texto: pedaco,
           })
-          // Tamanho da letra do texto conforme a quantidade escolhida
+          // Tamanho do título e do texto conforme a quantidade escolhida
           const els = linhas[linhas.length - 1].estilo?.elementos
           const corpo = els?.[els.length - 1]
           if (corpo?.tipo === 'texto') corpo.tam = dens.letra
+          if (els?.[0]?.tipo === 'texto') els[0].tam = dens.titulo
         })
       }
     }

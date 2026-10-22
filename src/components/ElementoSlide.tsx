@@ -17,10 +17,14 @@ export function TextoMarcado({ texto, destaque }: { texto: string; destaque: str
 }
 
 /*
-  Auto ajuste: se o texto não cabe na caixa, a letra diminui até caber (até 45% do tamanho escolhido).
+  Auto ajuste: se o texto não cabe na caixa, a letra diminui até caber, mas nunca abaixo do mínimo
+  para ler no telão: título 28 pt (2,92% da largura) e texto 24 pt (2,5%).
+  Textos já pensados menores que isso (legendas) não diminuem.
   Mexe direto no estilo, sem re-renderizar; refaz quando o texto, a caixa ou as fontes mudam.
 */
-const MENOR_ESCALA = 0.45
+const MINIMO_TITULO = 2.92
+const MINIMO_TEXTO = 2.5
+const tamanhoMinimo = (tam: number) => (tam >= 3.2 ? MINIMO_TITULO : Math.min(tam, MINIMO_TEXTO))
 function TextoAjustavel({ tam, chave, style, children }: { tam: number; chave: string; style: CSSProperties; children: ReactNode }) {
   const caixa = useRef<HTMLDivElement>(null)
   useLayoutEffect(() => {
@@ -29,14 +33,15 @@ function TextoAjustavel({ tam, chave, style, children }: { tam: number; chave: s
     const ajustar = () => {
       const conteudo = div.firstElementChild as HTMLElement | null
       if (!conteudo) return
-      let escala = 1
+      let atual = tam
+      const minimo = tamanhoMinimo(tam)
       div.style.fontSize = `${tam}cqw`
       const altura = div.clientHeight, largura = div.clientWidth
       if (!altura || !largura) return
-      // Diminui aos poucos até caber
-      while (escala > MENOR_ESCALA && (conteudo.offsetHeight > altura + 1 || conteudo.scrollWidth > largura + 1)) {
-        escala -= 0.04
-        div.style.fontSize = `${tam * escala}cqw`
+      // Diminui aos poucos até caber (ou até o mínimo)
+      while (atual > minimo && (conteudo.offsetHeight > altura + 1 || conteudo.scrollWidth > largura + 1)) {
+        atual = Math.max(minimo, atual - tam * 0.04)
+        div.style.fontSize = `${atual}cqw`
       }
     }
     ajustar()
