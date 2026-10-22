@@ -285,7 +285,7 @@ export default function Agenda() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-4 pb-12 pt-2 md:px-8 md:pt-10">
+    <div className="mx-auto max-w-5xl px-3 sm:px-4 pb-12 pt-2 md:px-8 md:pt-10">
       <header className="flex items-center justify-between gap-3">
         <h1 className="titulo-pagina">Agenda</h1>
         <button onClick={novo} className="botao-primario"><Plus size={18} /> Novo</button>

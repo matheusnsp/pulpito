@@ -7,12 +7,14 @@ import '@fontsource-variable/literata'
 import '@fontsource-variable/plus-jakarta-sans'
 import { AuthProvider } from './lib/auth'
 import { iniciarTema } from './lib/tema'
+import { travarZoomNoToque } from './lib/tamanhoTexto'
 import App from './App'
 import AvisoAtualizacao from './components/AvisoAtualizacao'
 import AvisoOffline from './components/AvisoOffline'
 import './index.css'
 
 iniciarTema()
+travarZoomNoToque()
 
 /* Tira o ?v= deixado pelo botão "Carregar última versão" */
 if (new URLSearchParams(window.location.search).has('v')) {

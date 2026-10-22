@@ -352,7 +352,7 @@ export default function Biblia() {
   const botaoNav = 'flex h-11 w-11 items-center justify-center rounded-full border border-borda bg-superficie text-texto-2 shadow-cartao hover:text-texto disabled:opacity-30'
 
   return (
-    <div className="mx-auto max-w-3xl px-4 pb-10 pt-2 md:px-8 md:pt-10">
+    <div className="mx-auto max-w-3xl px-3 sm:px-4 pb-10 pt-2 md:px-8 md:pt-10">
       <div ref={topo} className="scroll-mt-4" />
 
       {/* Topo: busca, versão e tamanho da letra */}

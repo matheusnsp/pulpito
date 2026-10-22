@@ -852,7 +852,7 @@ export default function EditorSlides() {
   )
 
   return (
-    <div className="mx-auto max-w-6xl px-4 pb-28 pt-4 md:pt-8">
+    <div className="mx-auto max-w-6xl px-3 sm:px-4 pb-28 pt-4 md:pt-8">
       {/* Barra do topo */}
       <div className="flex items-center gap-1">
         <Link to={`/mensagem/${mensagem.id}`} className="botao-fantasma -ml-2 px-2">

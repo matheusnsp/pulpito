@@ -513,7 +513,7 @@ export default function EditorMensagem() {
   }
 
   if (mensagem === undefined) return (
-    <div className="mx-auto max-w-3xl space-y-4 px-4 pt-16 md:px-8" aria-label="Carregando">
+    <div className="mx-auto max-w-3xl space-y-4 px-3 sm:px-4 pt-16 md:px-8" aria-label="Carregando">
       <div className="h-10 w-2/3 animate-pulse rounded-xl bg-superficie-2" />
       <div className="h-24 animate-pulse rounded-2xl bg-superficie-2" />
       <div className="h-16 animate-pulse rounded-2xl bg-superficie-2" />
@@ -543,7 +543,7 @@ export default function EditorMensagem() {
   const minutosBlocos = topicos.reduce((s, t) => s + (t.extra?.minutos ?? 0), 0)
 
   return (
-    <div className="mx-auto max-w-3xl px-4 pb-28 md:px-8 lg:max-w-6xl">
+    <div className="mx-auto max-w-3xl px-3 sm:px-4 pb-28 md:px-8 lg:max-w-6xl">
       {/* Barra do topo (fixa ao rolar) */}
       <div className="sticky top-0 z-20 -mx-4 flex items-center gap-1 bg-fundo/90 px-4 py-2 backdrop-blur md:-mx-8 md:px-8 md:py-4">
         <Link to="/" className="botao-fantasma -ml-2 px-2">

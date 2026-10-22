@@ -53,7 +53,7 @@ function Entrar({ codigoUrl }: { codigoUrl?: string }) {
   }
 
   return (
-    <div className="mx-auto max-w-xl px-4 pb-24 pt-8 md:pt-14">
+    <div className="mx-auto max-w-xl px-3 sm:px-4 pb-24 pt-8 md:pt-14">
       <Link to="/" className="text-sm font-bold text-tinta hover:underline">← Voltar</Link>
       <div className="cartao mt-5 p-6 md:p-8">
         <span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-ouro-suave text-tinta"><Users size={24} /></span>

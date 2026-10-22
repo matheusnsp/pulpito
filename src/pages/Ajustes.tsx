@@ -10,6 +10,7 @@ import { emailParaUsuario, nomeDeExibicao } from '../lib/usuario'
 import { NOVIDADES, NUMERO_VERSAO, VERSAO_APP, buscarServiceWorkerNovo, carregarUltimaVersao, verificarVersao, versaoAmigavel } from '../lib/atualizar'
 import { abrirTutorial } from '../lib/tutorial'
 import { ANO_INICIO, AUTOR } from '../lib/autor'
+import { TAMANHOS_TEXTO, lerTamanhoTexto, salvarTamanhoTexto, type TamanhoTexto } from '../lib/tamanhoTexto'
 import { aoMudarVersao, lerVersao, salvarVersao } from '../lib/preferencias'
 
 
@@ -105,6 +106,7 @@ export default function Ajustes() {
   }
 
   const [senhaAberta, setSenhaAberta] = useState(false)
+  const [tamTexto, setTamTexto] = useState<TamanhoTexto>(lerTamanhoTexto)
   const atalhos = [
     { nome: 'Ver tutorial', texto: 'Tudo o que o app faz', Icone: GraduationCap, acao: () => abrirTutorial() },
     { nome: 'Entrar com convite', texto: 'Projeto de outra pessoa', Icone: Users, para: '/entrar-projeto' },
@@ -113,7 +115,7 @@ export default function Ajustes() {
   ]
 
   return (
-    <div className="mx-auto max-w-2xl px-4 pb-12 pt-2 md:max-w-3xl md:px-8 md:pt-10 lg:max-w-4xl xl:max-w-7xl">
+    <div className="mx-auto max-w-2xl px-3 sm:px-4 pb-12 pt-2 md:max-w-3xl md:px-8 md:pt-10 lg:max-w-4xl xl:max-w-7xl">
       <div className="flex items-end justify-between gap-3">
         <h1 className="titulo-pagina">Ajustes</h1>
         <span className="mb-1 rounded-full bg-superficie-2 px-3 py-1 text-xs font-bold text-texto-2">Pulpito {NUMERO_VERSAO}</span>
@@ -124,7 +126,7 @@ export default function Ajustes() {
         <div className="contents xl:col-span-7 xl:block xl:space-y-5">
         {/* Conta: perfil, trocar senha e sair */}
         <section className="cartao order-1 overflow-hidden">
-          <div className="relative flex flex-wrap items-center gap-4 p-5">
+          <div className="relative flex flex-wrap items-center gap-4 p-4 sm:p-5">
             <div aria-hidden className="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full bg-acao/15 blur-3xl" />
             <span className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-acao font-display text-2xl font-extrabold text-acao-texto">
               {iniciais}
@@ -144,7 +146,7 @@ export default function Ajustes() {
             </div>
           </div>
           {senhaAberta && email && (
-            <div className="border-t border-borda bg-superficie-2/40 p-5">
+            <div className="border-t border-borda bg-superficie-2/40 p-4 sm:p-5">
               <p className="mb-3 text-sm text-texto-2">Para trocar, confirme primeiro a senha que você usa hoje.</p>
               <TrocarSenha email={email} />
             </div>
@@ -152,7 +154,7 @@ export default function Ajustes() {
         </section>
 
         {/* Preferências: tema e Bíblia */}
-        <section className="cartao order-3 p-5">
+        <section className="cartao order-3 p-4 sm:p-5">
           <Titulo Icone={Palette} titulo="Aparência" texto="O modo pregação e o telão são sempre escuros, nas cores do tema." />
           <div role="radiogroup" aria-label="Tema" className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
             {TEMAS.map((t) => {
@@ -174,6 +176,23 @@ export default function Ajustes() {
                 </button>
               )
             })}
+          </div>
+
+          <div className="mt-6">
+            <span className="mb-2 block text-sm font-semibold text-texto-2">Tamanho do texto do app</span>
+            <div role="radiogroup" aria-label="Tamanho do texto do app" className="grid grid-cols-4 gap-2">
+              {TAMANHOS_TEXTO.map((t) => {
+                const ativo = tamTexto === t.id
+                return (
+                  <button key={t.id} role="radio" aria-checked={ativo} onClick={() => { setTamTexto(t.id); salvarTamanhoTexto(t.id) }}
+                    className={`flex flex-col items-center gap-1 rounded-xl border-2 px-1 py-2 transition ${ativo ? 'border-acao bg-ouro-suave' : 'border-borda hover:border-texto-2'}`}>
+                    <span aria-hidden className="flex h-7 items-end font-display font-extrabold leading-none" style={{ fontSize: `${t.pct * 0.2}px` }}>Aa</span>
+                    <span className="text-center text-[11px] font-bold leading-tight">{t.rotulo}</span>
+                  </button>
+                )
+              })}
+            </div>
+            <p className="mt-2 text-xs text-texto-2">No celular e no tablet a tela não tem zoom; use isto para aumentar a letra. No modo pregação e na Bíblia, a pinça continua mudando o tamanho do texto.</p>
           </div>
 
           <div className="mt-6 border-t border-borda pt-5">
@@ -256,7 +275,7 @@ function Sobre() {
   ]
   return (
     <section>
-      <div className="cartao flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
+      <div className="cartao flex flex-col gap-4 p-4 sm:p-5 sm:flex-row sm:items-center">
         <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-acao font-display text-xl font-extrabold text-acao-texto">MN</span>
         <div className="min-w-0 flex-1">
           <p className="text-sm text-texto-2">O Pulpito foi idealizado e criado por</p>
@@ -304,7 +323,7 @@ function AtualizarApp() {
 
   return (
     <section className={`cartao overflow-hidden ${estado === 'nova' ? 'border-acao ring-4 ring-acao/15' : ''}`}>
-        <div className="flex items-center gap-4 p-5">
+        <div className="flex items-center gap-4 p-4 sm:p-5">
           <span className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl" style={{ background: visual.fundo, color: visual.cor }}>
             {estado === 'verificando' || atualizando ? <LoaderCircle size={26} className="animate-spin" />
               : estado === 'em-dia' ? <CircleCheck size={28} />

@@ -519,7 +519,7 @@ export default function Mensagens() {
   return (
     <DndContext sensors={sensores} onDragStart={aoComecar} onDragEnd={aoSoltar}
       onDragCancel={() => setArrastando(null)}>
-      <div className="mx-auto max-w-5xl px-4 pb-10 pt-2 md:px-8 md:pt-10 xl:max-w-7xl">
+      <div className="mx-auto max-w-5xl px-3 sm:px-4 pb-10 pt-2 md:px-8 md:pt-10 xl:max-w-7xl">
       <div className="xl:grid xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-start xl:gap-8">
       <div className="min-w-0">
 
@@ -554,7 +554,7 @@ export default function Mensagens() {
 
         {/* Próxima pregação */}
         {proximo && (
-          <section className="escuro relative mt-6 overflow-hidden rounded-3xl border border-borda p-5 text-texto shadow-cartao md:p-7" style={{ background: 'var(--hero)' }}>
+          <section className="escuro relative mt-6 overflow-hidden rounded-3xl border border-borda p-4 text-texto shadow-cartao sm:p-5 md:p-7" style={{ background: 'var(--hero)' }}>
             <div aria-hidden className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-acao/20 blur-3xl" />
             <div className="relative">
               <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-tinta">

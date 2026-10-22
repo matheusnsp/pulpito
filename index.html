@@ -25,6 +25,12 @@
           if (t !== 'claro') h.classList.add('escuro')
           document.querySelector('meta[name="theme-color"]').setAttribute('content', cores[t])
         } catch (e) { document.documentElement.classList.add('tema-amarelo', 'escuro') }
+        // Tamanho do texto do app (Ajustes), antes de desenhar a tela
+        try {
+          var tamanhos = { p: '87.5%', g: '112.5%', gg: '125%' }
+          var tt = localStorage.getItem('pulpito-tamanho-texto')
+          if (tamanhos[tt]) document.documentElement.style.fontSize = tamanhos[tt]
+        } catch (e) {}
       })()
     </script>
   </head>

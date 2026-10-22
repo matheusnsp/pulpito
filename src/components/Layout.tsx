@@ -25,7 +25,7 @@ const SEM_TOPO = [/^\/mensagem\//]
 export function Avatar({ nome, className = '' }: { nome: string; className?: string }) {
   const iniciais = nome.split(' ').map((p) => p[0]).slice(0, 2).join('') || '?'
   return (
-    <span className={`flex shrink-0 items-center justify-center rounded-full bg-texto font-display font-bold text-fundo ${className}`}>
+    <span className={`flex shrink-0 items-center justify-center rounded-full bg-acao font-display font-bold text-acao-texto ${className}`}>
       {iniciais}
     </span>
   )
@@ -87,7 +87,7 @@ export default function Layout() {
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Celular: topo com marca e conta */}
         {!semTopo && (
-          <header className="flex shrink-0 items-center justify-between bg-fundo/90 px-4 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur md:hidden">
+          <header className="flex shrink-0 items-center justify-between bg-fundo/90 px-3 pb-2 sm:px-4 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur md:hidden">
             <Marca icone modo={modo} className="text-xl" />
             <Link to="/ajustes" aria-label="Sua conta"><Avatar nome={nome} className="h-9 w-9 text-sm" /></Link>
           </header>

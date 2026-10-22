@@ -94,7 +94,7 @@ export default function Perguntas() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 pb-10 pt-2 md:px-8 md:pt-10 lg:max-w-6xl">
+    <div className="mx-auto max-w-3xl px-3 sm:px-4 pb-10 pt-2 md:px-8 md:pt-10 lg:max-w-6xl">
       <h1 className="titulo-pagina">Banco de perguntas</h1>
       <p className="mt-1 text-texto-2">As perguntas e atividades de todos os seus estudos. Reuse numa aula nova com um toque.</p>
 

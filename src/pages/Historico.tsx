@@ -47,7 +47,7 @@ export default function Historico() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 pb-16 md:px-8">
+    <div className="mx-auto max-w-3xl px-3 sm:px-4 pb-16 md:px-8">
       <div className="sticky top-0 z-20 -mx-4 flex items-center bg-fundo/90 px-4 py-2 backdrop-blur md:-mx-8 md:px-8 md:py-4">
         <Link to={`/mensagem/${id}`} className="botao-fantasma -ml-2 px-2"><ChevronLeft size={20} /> Voltar</Link>
         {versoes && (

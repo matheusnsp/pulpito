@@ -32,7 +32,7 @@ export default function LeituraProjeto() {
   if (!mensagem) return <div className="p-8"><p>Projeto indisponível.</p><Link to="/" className="botao-secundario mt-3">Voltar</Link></div>
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 px-4 pb-28 pt-8 md:px-8">
+    <div className="mx-auto max-w-5xl space-y-6 px-3 sm:px-4 pb-28 pt-8 md:px-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link to="/" className="text-sm font-bold text-tinta hover:underline">← Início</Link>
         <span className="inline-flex items-center gap-2 rounded-full bg-ouro-suave px-3 py-1.5 text-xs font-bold text-tinta"><Eye size={15} /> Somente leitura</span>
