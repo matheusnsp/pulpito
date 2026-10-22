@@ -95,19 +95,24 @@ export async function gerarEsbocoPdf(m: Mensagem, itens: Topico[], opcoes: { com
     texto(t.titulo || 'Sem título', 14, 'bold', TINTA, 11)
     y += 1.5
     if (t.versiculo) await versiculos(t.versiculo, 11)
+    const partes: [string, string | null][] = [['Observação', t.observacao], ['Ilustração', t.ilustracao], ['Aplicação', t.aplicacao]]
+    for (const [rot, val] of partes) {
+      if (!val?.trim()) continue
+      texto(rot.toUpperCase(), 8, 'bold', CINZA, 11)
+      y += 1.4
+      texto(val.trim(), 10.5, 'normal', TINTA, 11)
+      y += 1.5
+    }
     if (t.frase_chave?.trim()) {
       const ini = y
       texto(`“${t.frase_chave.trim().replace(/^["“]|["”]$/g, '')}”`, 11.5, 'bolditalic', OURO, 15)
       pdf.setDrawColor(234, 179, 8); pdf.setLineWidth(0.8); pdf.line(M + 12, ini - 4, M + 12, y - 3)
       y += 1.5
     }
-    const partes: [string, string | null][] = [['Observação', t.observacao], ['Aplicação', t.aplicacao], ['Ilustração', t.ilustracao]]
-    if (opcoes.comNotas) partes.push(['Notas', t.notas])
-    for (const [rot, val] of partes) {
-      if (!val?.trim()) continue
-      texto(rot.toUpperCase(), 8, 'bold', CINZA, 11)
+    if (opcoes.comNotas && t.notas?.trim()) {
+      texto('NOTAS', 8, 'bold', CINZA, 11)
       y += 1.4
-      texto(val.trim(), 10.5, 'normal', TINTA, 11)
+      texto(t.notas.trim(), 10.5, 'italic', CINZA, 11)
       y += 1.5
     }
     y += 6

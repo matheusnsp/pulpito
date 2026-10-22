@@ -32,7 +32,7 @@ export const BLOCOS: Record<TipoBloco, DefBloco> = {
   pergunta: {
     nome: 'Pergunta', cor: '#38BDF8', Icone: MessagesSquare, minutos: 5,
     titulo: { rotulo: 'Pergunta', dica: 'Qual compra você mais se arrependeu de ter feito?' },
-    corpo: { rotulo: 'Como conduzir (aparece na aula, não na folha)', dica: 'Peça para 2 ou 3 pessoas responderem…', linhas: 2 },
+    corpo: { rotulo: 'Como conduzir (aparece na aula e no slide, não na folha)', dica: 'Peça para 2 ou 3 pessoas responderem…', linhas: 2 },
   },
   atividade: {
     nome: 'Atividade', cor: '#14B8A6', Icone: Users, minutos: 10,

@@ -140,7 +140,6 @@ export default function EditorSlides() {
   const [selId, setSelId] = useState<string | null>(null)
   const [selecao, setSelecao] = useState<Set<string> | null>(null)
   const [ancora, setAncora] = useState<string | null>(null)
-  const [comFrase, setComFrase] = useState(true)
   const [gerando, setGerando] = useState(false)
   const [enviando, setEnviando] = useState(false)
   const disposicaoPendente = useRef<Disposicao | null>(null)
@@ -396,23 +395,29 @@ export default function EditorSlides() {
     novo(null, 'capa', { titulo: mensagem.titulo, subtitulo: estudo ? mensagem.detalhes?.publico || referenciaBonita(mensagem.texto_base) : referenciaBonita(mensagem.texto_base) })
     await versiculos(null, mensagem.texto_base)
 
-    // Na ordem do roteiro: tópico → título, versículo(s) e frase-chave; bloco → o modelo editável que combina com ele
+    // Na ordem do roteiro. Tópico: título → versículo(s) → observação → ilustração → aplicação → frase-chave.
+    // Bloco: o modelo editável que combina com ele. Só as notas pessoais ficam de fora.
     for (const [i, t] of topicos.entries()) {
       if (!estudo && !ehBloco(t.tipo)) {
         novo(t.id, 'topico', {
           subtitulo: `Tópico ${i + 1}`, titulo: t.titulo || 'Sem título', texto: dividirReferencias(t.versiculo).map((v) => referenciaBonita(v)).join(' · ') || null,
         })
         await versiculos(t.id, t.versiculo)
-        if (comFrase && t.frase_chave?.trim())
+        if (t.observacao?.trim()) livre(t.id, 'tituloTexto', { titulo: t.titulo || 'Observação', texto: t.observacao.trim() })
+        if (t.ilustracao?.trim()) livre(t.id, 'tituloTexto', { titulo: 'Ilustração', texto: t.ilustracao.trim() })
+        if (t.aplicacao?.trim()) livre(t.id, 'tituloTexto', { titulo: 'Aplicação', texto: t.aplicacao.trim() })
+        if (t.frase_chave?.trim())
           novo(t.id, 'frase', { texto: t.frase_chave.trim().replace(/^["“]|["”]$/g, '') })
         continue
       }
+      // Blocos com versículo (fora o bloco Referência, que já é só isso) ganham os slides do texto bíblico antes
+      if (t.tipo !== 'referencia' && t.versiculo?.trim()) await versiculos(t.id, t.versiculo)
       const min = t.extra?.minutos ? `${t.extra.minutos} min` : ''
       switch (t.tipo) {
         case 'pergunta': {
           const ops = (t.extra?.opcoes ?? []).filter((o) => o.trim())
           if (ops.length >= 2) livre(t.id, 'lista', { titulo: t.titulo, texto: ops.map((o, k) => `${'ABCDEF'[k]}) ${o}`).join('\n') })
-          else livre(t.id, 'pergunta', { titulo: t.titulo, subtitulo: min ? `Converse em grupo · ${min}` : 'Converse com quem está ao seu lado' })
+          else livre(t.id, 'pergunta', { titulo: t.titulo, subtitulo: [t.observacao?.trim() || (min ? 'Converse em grupo' : 'Converse com quem está ao seu lado'), min].filter(Boolean).join(' · ') })
           break
         }
         case 'lista': livre(t.id, 'lista', { titulo: t.titulo, texto: t.observacao }); break
@@ -721,13 +726,7 @@ export default function EditorSlides() {
 
   const blocoGerar = (
     <div className="space-y-3">
-      {mensagem?.tipo !== 'estudo' && (
-        <label className="flex items-center gap-2.5 text-sm">
-          <input type="checkbox" checked={comFrase} onChange={(e) => setComFrase(e.target.checked)}
-            className="h-4 w-4 accent-[var(--acao)]" />
-          Criar também um slide com a frase-chave de cada tópico
-        </label>
-      )}
+      <p className="text-sm text-texto-2">Tudo o que você escreveu vira slide, menos as <b className="text-texto">notas pessoais</b>.</p>
       <button onClick={gerar} disabled={gerando} className={slides.length ? 'botao-secundario' : 'botao-primario'}>
         <ListPlus size={18} />
         {gerando ? 'Gerando…' : `${slides.length ? 'Gerar de novo' : 'Gerar'} a partir ${mensagem?.tipo === 'estudo' ? 'dos blocos' : topicos.some((t) => ehBloco(t.tipo)) ? 'do roteiro' : 'dos tópicos'}`}

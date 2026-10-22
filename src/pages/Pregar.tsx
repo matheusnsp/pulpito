@@ -1039,18 +1039,18 @@ export default function Pregar() {
                 <TextoRico texto={topico.observacao} className={`${tam.corpo} text-texto`} />
               )}
 
-              {topico.frase_chave?.trim() && (
-                <blockquote className={`${tam.corpo} whitespace-pre-wrap border-l-2 border-acao py-1 pl-4 font-escritura italic leading-relaxed text-tinta`}>
-                  “{topico.frase_chave.replace(/^["“]|["”]$/g, '')}”
-                </blockquote>
-              )}
-
-              {([['Aplicação', topico.aplicacao], ['Ilustração', topico.ilustracao]] as const)
+              {([['Ilustração', topico.ilustracao], ['Aplicação', topico.aplicacao]] as const)
                 .filter(([, v]) => v?.trim()).map(([rotulo, valor]) => (
                   <div key={rotulo} className="rounded-2xl border border-borda bg-superficie px-4 py-3">
                     <TextoRico texto={`${rotulo}: ${valor}`} className={`${tam.corpo} italic text-texto/85`} />
                   </div>
                 ))}
+
+              {topico.frase_chave?.trim() && (
+                <blockquote className={`${tam.corpo} whitespace-pre-wrap border-l-2 border-acao py-1 pl-4 font-escritura italic leading-relaxed text-tinta`}>
+                  “{topico.frase_chave.replace(/^["“]|["”]$/g, '')}”
+                </blockquote>
+              )}
 
               {topico.notas?.trim() && (
                 <TextoRico texto={topico.notas} className="text-base text-texto-2" />

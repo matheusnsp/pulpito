@@ -37,11 +37,12 @@ export type Topico = {
   extra?: { minutos?: number; url?: string; autor?: string; opcoes?: string[]; correta?: number }
 }
 
+/* Na mesma ordem em que viram slides (as notas pessoais nunca viram slide) */
 export const CAMPOS_TOPICO = [
-  { chave: 'frase_chave', rotulo: 'Frase-chave', dica: 'A frase que resume o ponto' },
   { chave: 'observacao', rotulo: 'Observação', dica: 'O que o texto diz' },
-  { chave: 'aplicacao', rotulo: 'Aplicação', dica: 'Como isso se aplica à vida' },
   { chave: 'ilustracao', rotulo: 'Ilustração', dica: 'História, exemplo ou comparação' },
+  { chave: 'aplicacao', rotulo: 'Aplicação', dica: 'Como isso se aplica à vida' },
+  { chave: 'frase_chave', rotulo: 'Frase-chave', dica: 'A frase que resume o ponto' },
   { chave: 'notas', rotulo: 'Notas pessoais', dica: 'Lembretes só para você' },
 ] as const satisfies readonly { chave: keyof Topico; rotulo: string; dica: string }[]
 
