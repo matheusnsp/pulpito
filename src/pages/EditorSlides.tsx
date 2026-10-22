@@ -49,6 +49,21 @@ const SOBRESCRITO = '⁰¹²³⁴⁵⁶⁷⁸⁹'
 const sobrescrito = (n: number) => String(n).split('').map((d) => SOBRESCRITO[Number(d)]).join('')
 
 /* Versículos de uma referência divididos em blocos que cabem bem num slide */
+/*
+  Quanto texto vai em cada slide ao gerar. No telão a letra fica grande,
+  então dá para colocar mais; quem prefere slides limpos escolhe "Menos".
+*/
+type Densidade = 'menos' | 'normal' | 'mais'
+const DENSIDADES: Record<Densidade, { nome: string; dica: string; caracteres: number; letra: number; versiculo: number }> = {
+  menos: { nome: 'Menos texto', dica: 'Letra grande, mais slides', caracteres: 350, letra: 4, versiculo: 180 },
+  normal: { nome: 'Equilibrado', dica: 'O padrão', caracteres: 600, letra: 3.4, versiculo: 280 },
+  mais: { nome: 'Mais texto', dica: 'Letra menor, menos slides', caracteres: 1000, letra: 2.8, versiculo: 480 },
+}
+const CHAVE_DENSIDADE = 'pulpito-densidade-slides'
+const lerDensidade = (): Densidade => {
+  try { const v = localStorage.getItem(CHAVE_DENSIDADE); return v === 'menos' || v === 'mais' ? v : 'normal' } catch { return 'normal' }
+}
+
 async function blocosDoVersiculo(ref: string | null, limite = 280) {
   const r = ref ? parseReferencia(ref) : null
   if (!r?.inicio) return [] as { referencia: string; texto: string }[]
@@ -178,6 +193,8 @@ export default function EditorSlides() {
   const [selecao, setSelecao] = useState<Set<string> | null>(null)
   const [ancora, setAncora] = useState<string | null>(null)
   const [gerando, setGerando] = useState(false)
+  const [densidade, setDensidade] = useState<Densidade>(lerDensidade)
+  const mudarDensidade = (d: Densidade) => { setDensidade(d); try { localStorage.setItem(CHAVE_DENSIDADE, d) } catch { /* sem armazenamento */ } }
   const [enviando, setEnviando] = useState(false)
   const disposicaoPendente = useRef<Disposicao | null>(null)
   const arquivoElemento = useRef<HTMLInputElement>(null)
@@ -405,6 +422,7 @@ export default function EditorSlides() {
   async function gerar() {
     if (!mensagem) return
     const antes = slides
+    const dens = DENSIDADES[densidade]
     setGerando(true)
     setErro('')
     // Fundo e cores do slide selecionado; se estiver no preto padrão, usa o "Noite dourada"
@@ -428,7 +446,7 @@ export default function EditorSlides() {
         const chave = referenciaBonita(ref)
         if (!chave || usados.has(chave)) continue
         usados.add(chave)
-        for (const b of await blocosDoVersiculo(ref)) novo(topicoId, 'versiculo', { titulo: b.referencia, texto: b.texto })
+        for (const b of await blocosDoVersiculo(ref, dens.versiculo)) novo(topicoId, 'versiculo', { titulo: b.referencia, texto: b.texto })
       }
     }
 
@@ -450,14 +468,20 @@ export default function EditorSlides() {
       if (!partes.length) partes.push({ tipo: 'texto', texto: ' ' })
       for (const p of partes) {
         if (p.tipo === 'versiculo') {
-          for (const b of await blocosDoVersiculo(p.ref)) novo(topico_id, 'versiculo', { titulo: b.referencia, texto: b.texto })
+          for (const b of await blocosDoVersiculo(p.ref, dens.versiculo)) novo(topico_id, 'versiculo', { titulo: b.referencia, texto: b.texto })
           continue
         }
         // Numera só quando um mesmo trecho não coube e continuou no slide seguinte
-        const pedacos = partirTexto(p.texto)
-        pedacos.forEach((pedaco, k) => livre(topico_id, 'tituloTexto', {
-          titulo: `${titulo || ' '}${pedacos.length > 1 ? ` (${k + 1}/${pedacos.length})` : ''}`, texto: pedaco,
-        }))
+        const pedacos = partirTexto(p.texto, dens.caracteres)
+        pedacos.forEach((pedaco, k) => {
+          livre(topico_id, 'tituloTexto', {
+            titulo: `${titulo || ' '}${pedacos.length > 1 ? ` (${k + 1}/${pedacos.length})` : ''}`, texto: pedaco,
+          })
+          // Tamanho da letra do texto conforme a quantidade escolhida
+          const els = linhas[linhas.length - 1].estilo?.elementos
+          const corpo = els?.[els.length - 1]
+          if (corpo?.tipo === 'texto') corpo.tam = dens.letra
+        })
       }
     }
 
@@ -798,6 +822,23 @@ export default function EditorSlides() {
   const blocoGerar = (
     <div className="space-y-3">
       <p className="text-sm text-texto-2">Tudo o que você escreveu vira slide, menos as <b className="text-texto">notas pessoais</b>.</p>
+      <div>
+        <span className="mb-1.5 block text-sm font-semibold text-texto-2">Texto em cada slide</span>
+        <div role="radiogroup" aria-label="Texto em cada slide" className="grid max-w-xl grid-cols-3 gap-2">
+          {(Object.keys(DENSIDADES) as Densidade[]).map((d) => {
+            const ativo = densidade === d
+            const { nome, dica } = DENSIDADES[d]
+            return (
+              <button key={d} role="radio" aria-checked={ativo} onClick={() => mudarDensidade(d)}
+                className={`rounded-xl border-2 px-3 py-2 text-left transition ${ativo ? 'border-acao bg-ouro-suave' : 'border-borda hover:border-texto-2'}`}>
+                <span aria-hidden className="block h-6 font-display font-extrabold leading-6" style={{ fontSize: d === 'menos' ? 22 : d === 'normal' ? 17 : 12 }}>Aa</span>
+                <b className="mt-1 block text-sm leading-tight">{nome}</b>
+                <span className="block text-xs leading-tight text-texto-2">{dica}</span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
       <button onClick={gerar} disabled={gerando} className={slides.length ? 'botao-secundario' : 'botao-primario'}>
         <ListPlus size={18} />
         {gerando ? 'Gerando…' : `${slides.length ? 'Gerar de novo' : 'Gerar'} a partir ${mensagem?.tipo === 'estudo' ? 'dos blocos' : topicos.some((t) => ehBloco(t.tipo)) ? 'do roteiro' : 'dos tópicos'}`}
