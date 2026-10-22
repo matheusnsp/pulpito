@@ -1,5 +1,5 @@
 import { lerVersao } from '../lib/preferencias'
-import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react'
+import { Fragment, useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
   ArrowDown, ArrowUp, Check, ChevronLeft, CircleAlert, CircleCheck, Copy, Download, FileText, ImagePlus, ListChecks,
@@ -19,6 +19,7 @@ import { CAMPOS_ESTILO, type AcaoElemento, type AlinharNoSlide } from '../lib/el
 import { MODELOS, MODELO_DO_LAYOUT, coresDoEstilo } from '../lib/modelosSlide'
 import { FONTES } from '../lib/fontes'
 import { ehBloco } from '../lib/blocos'
+import { partesDoTexto } from '../lib/versiculosNoTexto'
 import {
   ESTILO_PADRAO, FUNDOS_PRONTOS, type Disposicao, type Elemento, type EstiloSlide, type LayoutSlide, type TipoElemento, type Mensagem, type Slide, type Topico,
 } from '../lib/tipos'
@@ -340,19 +341,21 @@ export default function EditorSlides() {
     if (error) setErro('Não foi possível apagar os slides. Verifique a internet.')
   }
 
-  async function inserirDepois(base: Partial<Slide>) {
+  /* Cria um slide novo depois do selecionado, ou na posição pedida (copia o visual do slide de antes) */
+  async function inserirDepois(base: Partial<Slide>, posicao?: number) {
     const antes = slides
-    const pos = iSel >= 0 ? iSel + 1 : slides.length
+    const pos = posicao ?? (iSel >= 0 ? iSel + 1 : slides.length)
+    const vizinho = slides[pos - 1] ?? sel
     setErro('')
     const { data, error } = await supabase.from('slides').insert({
       mensagem_id: id,
-      topico_id: base.topico_id !== undefined ? base.topico_id : sel?.topico_id ?? null,
+      topico_id: base.topico_id !== undefined ? base.topico_id : vizinho?.topico_id ?? null,
       ordem: pos,
       titulo: base.titulo ?? 'Novo slide',
       subtitulo: base.subtitulo ?? null,
       texto: base.texto ?? null,
-      fundo: base.fundo ?? sel?.fundo ?? '#000000',
-      estilo: base.estilo ?? sel?.estilo ?? {},
+      fundo: base.fundo ?? vizinho?.fundo ?? '#000000',
+      estilo: base.estilo ?? (vizinho?.estilo ? { ...vizinho.estilo, layout: 'livre', elementos: undefined } : {}),
     }).select().single()
     if (error || !data) { setErro('Não foi possível criar o slide.'); return }
     historico.registrar(antes)
@@ -440,11 +443,22 @@ export default function EditorSlides() {
     }
 
     // Título + texto: se o texto não cabe num slide, continua nos próximos ("Aplicação 1/2", "2/2")
-    const tituloTexto = (topico_id: string, titulo: string | null | undefined, corpo: string) => {
-      const partes = partirTexto(corpo)
-      partes.forEach((parte, k) => livre(topico_id, 'tituloTexto', {
-        titulo: `${titulo || ' '}${partes.length > 1 ? ` (${k + 1}/${partes.length})` : ''}`, texto: parte,
-      }))
+    // Título + texto. Versículo no meio do texto ([Jo 3:16]) vira os slides do versículo naquele ponto.
+    // Texto que não cabe num slide continua no próximo ("Aplicação 1/2", "2/2").
+    const tituloTexto = async (topico_id: string, titulo: string | null | undefined, corpo: string) => {
+      const partes = partesDoTexto(corpo)
+      if (!partes.length) partes.push({ tipo: 'texto', texto: ' ' })
+      for (const p of partes) {
+        if (p.tipo === 'versiculo') {
+          for (const b of await blocosDoVersiculo(p.ref)) novo(topico_id, 'versiculo', { titulo: b.referencia, texto: b.texto })
+          continue
+        }
+        // Numera só quando um mesmo trecho não coube e continuou no slide seguinte
+        const pedacos = partirTexto(p.texto)
+        pedacos.forEach((pedaco, k) => livre(topico_id, 'tituloTexto', {
+          titulo: `${titulo || ' '}${pedacos.length > 1 ? ` (${k + 1}/${pedacos.length})` : ''}`, texto: pedaco,
+        }))
+      }
     }
 
     // Capa
@@ -460,9 +474,9 @@ export default function EditorSlides() {
           titulo: t.titulo || 'Sem título', texto: dividirReferencias(t.versiculo).map((v) => referenciaBonita(v)).join(' · ') || null,
         })
         await versiculos(t.id, t.versiculo)
-        if (t.observacao?.trim()) tituloTexto(t.id, t.titulo || 'Observação', t.observacao)
-        if (t.ilustracao?.trim()) tituloTexto(t.id, 'Ilustração', t.ilustracao)
-        if (t.aplicacao?.trim()) tituloTexto(t.id, 'Aplicação', t.aplicacao)
+        if (t.observacao?.trim()) await tituloTexto(t.id, t.titulo || 'Observação', t.observacao)
+        if (t.ilustracao?.trim()) await tituloTexto(t.id, 'Ilustração', t.ilustracao)
+        if (t.aplicacao?.trim()) await tituloTexto(t.id, 'Aplicação', t.aplicacao)
         if (t.frase_chave?.trim())
           novo(t.id, 'frase', { texto: t.frase_chave.trim().replace(/^["“]|["”]$/g, '') })
         continue
@@ -480,10 +494,10 @@ export default function EditorSlides() {
         case 'lista': livre(t.id, 'lista', { titulo: t.titulo, texto: t.observacao }); break
         case 'citacao': livre(t.id, 'citacao', { texto: t.titulo, subtitulo: t.extra?.autor ? `— ${t.extra.autor}` : ' ' }); break
         case 'definicao': livre(t.id, 'definicao', { titulo: t.titulo, subtitulo: t.frase_chave || ' ', texto: t.observacao }); break
-        case 'atividade': tituloTexto(t.id, `${t.titulo || 'Atividade'}${min ? ` · ${min}` : ''}`, t.observacao || ' '); break
+        case 'atividade': await tituloTexto(t.id, `${t.titulo || 'Atividade'}${min ? ` · ${min}` : ''}`, t.observacao || ' '); break
         case 'referencia':
           await versiculos(t.id, t.versiculo)
-          if (t.observacao?.trim()) tituloTexto(t.id, t.titulo?.trim() || ' ', t.observacao)
+          if (t.observacao?.trim()) await tituloTexto(t.id, t.titulo?.trim() || ' ', t.observacao)
           break
         case 'imagem':
           livre(t.id, 'branco', { titulo: t.titulo }, [
@@ -491,8 +505,8 @@ export default function EditorSlides() {
             ...(t.titulo ? [{ id: crypto.randomUUID(), tipo: 'texto' as const, x: 10, y: 80, w: 80, h: 12, texto: t.titulo, tam: 2.6, cor: estiloSel.cor || '#FFFFFF', peso: 700 }] : []),
           ])
           break
-        case 'link': tituloTexto(t.id, t.titulo || 'Assista', [t.observacao, t.extra?.url].filter(Boolean).join('\n\n') || ' '); break
-        default: tituloTexto(t.id, t.titulo, t.observacao || ' ')
+        case 'link': await tituloTexto(t.id, t.titulo || 'Assista', [t.observacao, t.extra?.url].filter(Boolean).join('\n\n') || ' '); break
+        default: await tituloTexto(t.id, t.titulo, t.observacao || ' ')
       }
     }
 
@@ -946,6 +960,9 @@ export default function EditorSlides() {
                 className="botao-fantasma -ml-2 px-2 text-sm">
                 <ListChecks size={18} /> Selecionar vários
               </button>
+              <button onClick={() => inserirDepois({})} className="botao-secundario ml-1 px-3 py-1.5 text-sm">
+                <Plus size={16} /> Novo slide
+              </button>
               {slides.length > 0 && (
                 <button onClick={apagarTodos} className="botao-fantasma ml-auto px-2 text-sm hover:text-perigo">
                   <Trash2 size={17} /> Apagar todos
@@ -961,7 +978,16 @@ export default function EditorSlides() {
                 const marcado = !!selecao?.has(s.id)
                 const destaque = selecao ? marcado : s.id === sel?.id
                 return (
-                  <button key={s.id} onClick={(e) => clicarMiniatura(s, e)} aria-pressed={selecao ? marcado : undefined}
+                  <Fragment key={s.id}>
+                  {i > 0 && !selecao && (
+                    <button onClick={() => inserirDepois({}, i)} aria-label={`Novo slide entre o ${i} e o ${i + 1}`} title="Novo slide aqui"
+                      className="group/mais -mx-1.5 flex shrink-0 items-center justify-center self-center lg:-my-2.5 lg:mx-0 lg:h-5">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full border border-borda bg-superficie text-texto-2 transition hover:border-acao hover:bg-acao hover:text-acao-texto lg:opacity-0 lg:group-hover/mais:opacity-100 lg:focus-visible:opacity-100">
+                        <Plus size={14} strokeWidth={2.5} />
+                      </span>
+                    </button>
+                  )}
+                  <button onClick={(e) => clicarMiniatura(s, e)} aria-pressed={selecao ? marcado : undefined}
                     className={`relative w-32 shrink-0 select-none sm:w-40 rounded-xl p-1 text-left transition lg:w-full ${destaque
                       ? 'bg-superficie ring-2 ring-acao' : 'ring-1 ring-borda hover:ring-texto-2'}`}>
                     <SlideVisual slide={s} className={`rounded-lg ${selecao && !marcado ? 'opacity-60' : ''}`} />
@@ -975,10 +1001,11 @@ export default function EditorSlides() {
                       <b className="text-texto">{i + 1}</b> {rotuloTopico(s.topico_id)}
                     </p>
                   </button>
+                  </Fragment>
                 )
               })}
               {!selecao && (
-                <button onClick={() => inserirDepois({})}
+                <button onClick={() => inserirDepois({}, slides.length)}
                   className="flex w-24 shrink-0 flex-col items-center sm:w-40 sm:flex-row justify-center gap-1.5 rounded-xl border border-dashed border-borda py-4 text-sm font-semibold text-texto-2 hover:border-acao hover:text-tinta lg:w-full">
                   <Plus size={16} /> Slide
                 </button>

@@ -2,6 +2,7 @@ import type { Mensagem, Topico } from './tipos'
 import { defBloco, ehBloco, itensDaLista, nomeFormato } from './blocos'
 import { formatarReferencia, lerReferencia, parseReferencia, dividirReferencias } from './biblia'
 import { lerVersao } from './preferencias'
+import { partesDoTexto } from './versiculosNoTexto'
 
 /*
   Folha impressa em PDF (A4), para quem participa: cabeçalho com formato e série,
@@ -189,7 +190,13 @@ export async function gerarFolhaAluno(m: Mensagem, blocos: Topico[]) {
           escrever(it, 11, 'normal', TINTA, 6)
           y += 0.8
         }
-      } else if (tipo !== 'pergunta' && b.observacao) escrever(b.observacao, 11)
+      } else if (tipo !== 'pergunta' && b.observacao) {
+        // Versículo no meio do texto: caixa com o versículo por extenso naquele ponto
+        for (const p of partesDoTexto(b.observacao)) {
+          if (p.tipo === 'versiculo') { y += 1.5; await caixaVersiculos(p.ref) }
+          else escrever(p.texto, 11)
+        }
+      }
       if (b.versiculo && def.referencia) { y += 1; await caixaVersiculos(b.versiculo) }
       if (tipo === 'link' && b.extra?.url) escrever(b.extra.url, 10, 'normal', [30, 90, 200])
       if (tipo === 'imagem' && b.extra?.url) {

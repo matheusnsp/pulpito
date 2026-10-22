@@ -2,6 +2,7 @@ import type { Mensagem, Topico } from './tipos'
 import { defBloco, ehBloco, itensDaLista, nomeFormato } from './blocos'
 import { dividirReferencias, formatarReferencia, lerReferencia, parseReferencia } from './biblia'
 import { lerVersao } from './preferencias'
+import { partesDoTexto } from './versiculosNoTexto'
 
 /*
   Esboço em PDF (A4), para enviar à liderança ou imprimir:
@@ -100,7 +101,11 @@ export async function gerarEsbocoPdf(m: Mensagem, itens: Topico[], opcoes: { com
       if (!val?.trim()) continue
       texto(rot.toUpperCase(), 8, 'bold', CINZA, 11)
       y += 1.4
-      texto(val.trim(), 10.5, 'normal', TINTA, 11)
+      // Versículo no meio do texto: sai por extenso naquele ponto
+      for (const p of partesDoTexto(val)) {
+        if (p.tipo === 'versiculo') { y += 1; await versiculos(p.ref, 14) }
+        else texto(p.texto, 10.5, 'normal', TINTA, 11)
+      }
       y += 1.5
     }
     if (t.frase_chave?.trim()) {

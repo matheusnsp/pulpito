@@ -23,6 +23,7 @@ import { useAuth } from '../lib/auth'
 import { usePapelAtual } from '../lib/papel'
 import type { DetalhesEstudo } from '../lib/tipos'
 import { useColaboracao, type Mudanca } from '../lib/colaboracao'
+import { referenciasNoTexto } from '../lib/versiculosNoTexto'
 import { versaoDaSessao } from '../lib/versoes'
 import { emailParaUsuario, nomeDeExibicao } from '../lib/usuario'
 import { daSerie, proximoNumero } from '../lib/series'
@@ -77,6 +78,48 @@ function PreviaVersiculo({ texto }: { texto: string }) {
           {inteiro ? 'Mostrar menos' : 'Ler tudo'}
         </button>
       )}
+    </div>
+  )
+}
+
+/*
+  Campo de texto que aceita versículo no meio: o botão "Versículo" põe [Jo 3:16] onde está o cursor,
+  e cada versículo citado aparece por extenso embaixo, para conferir.
+*/
+function CampoTextoVersiculo({ rotulo, valor, onChange, placeholder, linhas = 3, className = '' }: {
+  rotulo: string; valor: string | null; onChange: (v: string) => void; placeholder?: string; linhas?: number; className?: string
+}) {
+  const caixa = useRef<HTMLTextAreaElement>(null)
+  const refs = referenciasNoTexto(valor)
+  function inserir() {
+    const ref = prompt('Qual versículo? Ex.: Jo 3:16 ou Rm 8:28-30')?.trim()
+    if (!ref) return
+    if (!parseReferencia(ref)) { alert(`Não reconheci "${ref}". Tente assim: Jo 3:16`); return }
+    const atual = valor ?? ''
+    const el = caixa.current
+    const ini = el ? el.selectionStart : atual.length
+    const fim = el ? el.selectionEnd : atual.length
+    const antes = atual.slice(0, ini), depois = atual.slice(fim)
+    const marca = `${antes && !/\s$/.test(antes) ? ' ' : ''}[${ref}]${/^\s/.test(depois) ? '' : ' '}`
+    onChange(antes + marca + depois)
+    requestAnimationFrame(() => {
+      if (!el) return
+      const pos = antes.length + marca.length
+      el.focus(); el.setSelectionRange(pos, pos)
+    })
+  }
+  return (
+    <div>
+      <div className="mb-1.5 flex items-center justify-between gap-2">
+        <span className="text-sm font-semibold text-texto-2">{rotulo}</span>
+        <button type="button" onClick={inserir} title="Colocar um versículo no meio do texto"
+          className="flex items-center gap-1 rounded-lg px-2 py-0.5 text-xs font-bold text-tinta hover:bg-ouro-suave">
+          <BookOpen size={13} /> Versículo
+        </button>
+      </div>
+      <textarea ref={caixa} rows={linhas} placeholder={placeholder} value={valor ?? ''} aria-label={rotulo}
+        onChange={(e) => onChange(e.target.value)} className={`campo resize-y leading-relaxed ${className}`} />
+      {refs.map((r, k) => <PreviaVersiculo key={`${r}-${k}`} texto={r} />)}
     </div>
   )
 }
@@ -765,12 +808,15 @@ export default function EditorMensagem() {
 
               {estaAberto && def && (
                 <div className="space-y-5 border-t border-borda p-4">
-                  {def.corpo && (
+                  {def.corpo && (tipoB === 'lista' || tipoB === 'pergunta' ? (
                     <Campo rotulo={def.corpo.rotulo}>
                       <textarea rows={def.corpo.linhas ?? 3} placeholder={def.corpo.dica} value={t.observacao ?? ''}
                         onChange={(e) => alterarTopico(t.id, { observacao: e.target.value })} className="campo resize-y leading-relaxed" />
                     </Campo>
-                  )}
+                  ) : (
+                    <CampoTextoVersiculo rotulo={def.corpo.rotulo} linhas={def.corpo.linhas ?? 3} placeholder={def.corpo.dica}
+                      valor={t.observacao} onChange={(v) => alterarTopico(t.id, { observacao: v })} />
+                  ))}
                   {def.detalhe && (
                     <Campo rotulo={def.detalhe.rotulo}>
                       <input value={t.frase_chave ?? ''} placeholder={def.detalhe.dica}
@@ -887,7 +933,10 @@ export default function EditorMensagem() {
                   <CampoVersiculos rotulo="Versículo base" valor={t.versiculo ?? null}
                     onChange={(v) => alterarTopico(t.id, { versiculo: v })} />
 
-                  {CAMPOS_TOPICO.map((c) => (
+                  {CAMPOS_TOPICO.map((c) => c.chave === 'observacao' || c.chave === 'ilustracao' || c.chave === 'aplicacao' ? (
+                    <CampoTextoVersiculo key={c.chave} rotulo={c.rotulo} placeholder={c.dica} valor={t[c.chave]}
+                      onChange={(v) => alterarTopico(t.id, { [c.chave]: v } as Partial<Topico>)} />
+                  ) : (
                     <Campo key={c.chave} rotulo={c.rotulo}>
                       <textarea rows={c.chave === 'frase_chave' ? 2 : 3} placeholder={c.dica}
                         value={t[c.chave] ?? ''}

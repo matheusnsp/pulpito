@@ -189,6 +189,7 @@ const CAPITULOS: Capitulo[] = [
           { Icone: NotebookPen, texto: <>Observação, aplicação, ilustração, frase-chave e notas são <b>só para você</b>.</> },
           { Icone: Clock, texto: <>Defina o tempo da pregação; o app divide entre os tópicos.</> },
           { Icone: BookOpen, texto: <>Um tópico pode ter <b>vários versículos</b>: toque em <b>Adicionar versículo</b>. Cada um vira um slide.</> },
+          { Icone: BookOpen, texto: <>Para citar um versículo <b>no meio do texto</b> (observação, ilustração, aplicação), toque em <b>Versículo</b> acima do campo. No slide, o texto se divide: antes, o versículo e depois.</> },
         ],
       },
       {

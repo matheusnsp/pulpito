@@ -1,4 +1,5 @@
 import { lerVersao } from '../lib/preferencias'
+import { partesDoTexto } from '../lib/versiculosNoTexto'
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react'
 import { defBloco, ehBloco, itensDaLista } from '../lib/blocos'
 import { alternarTelaCheia as trocarTelaCheia } from '../lib/telaCheia'
@@ -208,7 +209,43 @@ function PainelTelao({ codigo, online, apagado, onConectar, onDesconectar, onAlt
 }
 
 /* Texto com marcadores: linhas que começam com "-", "•" ou "*" viram lista; com aspas viram citação */
+/* Versículo citado no meio do texto ([Jo 3:16]): aparece por extenso, em destaque */
+function VersiculoNoTexto({ referencia }: { referencia: string }) {
+  const [texto, setTexto] = useState<string | null>(null)
+  useEffect(() => {
+    const r = parseReferencia(referencia)
+    if (!r) return
+    let ativo = true
+    lerReferencia(versaoAtual(), r)
+      .then((vs) => { if (ativo) setTexto(vs.map((v) => `${v.numero} ${v.texto}`).join(' ')) })
+      .catch(() => { /* sem internet: fica só a referência */ })
+    return () => { ativo = false }
+  }, [referencia])
+  const r = parseReferencia(referencia)
+  return (
+    <div className="rounded-2xl border-l-4 border-acao bg-ouro-suave/60 px-4 py-3">
+      <p className="font-escritura leading-relaxed text-texto">{texto ?? '…'}</p>
+      <p className="mt-1 text-[0.7em] font-bold text-tinta">{r ? formatarReferencia(r) : referencia}</p>
+    </div>
+  )
+}
+
+/* Texto com versículos no meio: cada pedaço de texto segue as regras de sempre */
 function TextoRico({ texto, className }: { texto: string; className: string }) {
+  const partes = partesDoTexto(texto)
+  if (partes.some((p) => p.tipo === 'versiculo')) {
+    return (
+      <div className={`space-y-4 ${className}`}>
+        {partes.map((p, i) => (p.tipo === 'versiculo'
+          ? <VersiculoNoTexto key={i} referencia={p.ref} />
+          : <TextoSimples key={i} texto={p.texto} className="" />))}
+      </div>
+    )
+  }
+  return <TextoSimples texto={texto} className={className} />
+}
+
+function TextoSimples({ texto, className }: { texto: string; className: string }) {
   const blocos: ({ tipo: 'lista'; itens: string[] } | { tipo: 'citacao' | 'paragrafo'; t: string })[] = []
   for (const linha of texto.split('\n')) {
     const l = linha.trim()
