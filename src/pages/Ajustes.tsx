@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
-import { Check, ChevronDown, CircleCheck, Download, GraduationCap, KeyRound, LoaderCircle, LogOut, RefreshCw, Sparkles, WifiOff, Wrench, Globe, Users, Trash2 } from 'lucide-react'
+import { Check, ChevronDown, CircleCheck, Download, GraduationCap, KeyRound, LoaderCircle, LogOut, RefreshCw, Sparkles, WifiOff, Wrench, Globe, Users, Trash2, BookOpen, MessagesSquare, Palette } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
@@ -104,102 +104,133 @@ export default function Ajustes() {
     await sairDaConta()
   }
 
+  const [senhaAberta, setSenhaAberta] = useState(false)
+  const atalhos = [
+    { nome: 'Ver tutorial', texto: 'Tudo o que o app faz', Icone: GraduationCap, acao: () => abrirTutorial() },
+    { nome: 'Entrar com convite', texto: 'Projeto de outra pessoa', Icone: Users, para: '/entrar-projeto' },
+    { nome: 'Lixeira', texto: 'Excluídos nos últimos 30 dias', Icone: Trash2, para: '/lixeira' },
+    { nome: 'Banco de perguntas', texto: 'Perguntas de todos os estudos', Icone: MessagesSquare, para: '/perguntas' },
+  ]
+
   return (
-    <div className="mx-auto max-w-2xl space-y-10 px-4 pb-10 pt-2 md:px-8 md:pt-10 lg:grid lg:max-w-6xl lg:grid-cols-2 lg:items-start lg:gap-x-12 lg:gap-y-10 lg:space-y-0">
-      <h1 className="titulo-pagina lg:col-span-2">Ajustes</h1>
+    <div className="mx-auto max-w-2xl px-4 pb-12 pt-2 md:max-w-3xl md:px-8 md:pt-10 lg:max-w-4xl xl:max-w-7xl">
+      <div className="flex items-end justify-between gap-3">
+        <h1 className="titulo-pagina">Ajustes</h1>
+        <span className="mb-1 rounded-full bg-superficie-2 px-3 py-1 text-xs font-bold text-texto-2">Pulpito {NUMERO_VERSAO}</span>
+      </div>
 
-      <section className="space-y-3">
-        <h2 className="font-display text-lg font-bold">Conta</h2>
-        <div className="cartao flex items-center gap-4 p-4">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-texto font-display font-bold text-fundo">
-            {iniciais}
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="truncate font-semibold">{nome}</p>
-            <p className="truncate text-sm text-texto-2">{usuario}</p>
-          </div>
-          <button onClick={sair} disabled={saindo} className="botao-fantasma">
-            <LogOut size={18} />
-            {saindo ? 'Saindo…' : 'Sair'}
-          </button>
-        </div>
-      </section>
-
-      <section className="space-y-3 lg:row-span-2">
-        <div>
-          <h2 className="font-display text-lg font-bold">Aparência</h2>
-          <p className="text-sm text-texto-2">O modo pregação e o telão são sempre escuros, nas cores do tema.</p>
-        </div>
-        <div role="radiogroup" aria-label="Tema" className="grid grid-cols-2 gap-3">
-          {TEMAS.map((t) => {
-            const ativo = tema === t.valor
-            return (
-              <button key={t.valor} role="radio" aria-checked={ativo} onClick={() => mudarTema(t.valor)}
-                className={`overflow-hidden rounded-2xl border-2 text-left transition ${ativo ? 'border-acao' : 'border-borda hover:border-texto-2'}`}>
-                <span className="block p-3" style={{ background: t.fundo, color: t.texto }}>
-                  <span className="block font-display text-sm font-extrabold">Boa noite</span>
-                  <span className="mt-2 flex items-center gap-1.5">
-                    <span className="h-6 flex-1 rounded-md" style={{ background: t.acao }} />
-                    <span className="h-6 w-8 rounded-md opacity-15" style={{ background: t.texto }} />
-                  </span>
-                </span>
-                <span className="flex items-center justify-between gap-2 bg-superficie px-3 py-2 text-sm font-bold">
-                  {t.rotulo}
-                  {ativo && <Check size={16} className="shrink-0 text-tinta" />}
-                </span>
+      <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-5 xl:grid-cols-12 xl:items-start">
+        {/* No computador: duas colunas independentes (sem buracos). No celular: uma coluna, na ordem do "order". */}
+        <div className="contents xl:col-span-7 xl:block xl:space-y-5">
+        {/* Conta: perfil, trocar senha e sair */}
+        <section className="cartao order-1 overflow-hidden">
+          <div className="relative flex flex-wrap items-center gap-4 p-5">
+            <div aria-hidden className="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full bg-acao/15 blur-3xl" />
+            <span className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-acao font-display text-2xl font-extrabold text-acao-texto">
+              {iniciais}
+            </span>
+            <div className="relative min-w-0 flex-1">
+              <p className="truncate font-display text-xl font-extrabold">{nome}</p>
+              <p className="truncate text-sm text-texto-2">{usuario}</p>
+            </div>
+            <div className="relative flex w-full gap-2 sm:w-auto">
+              <button onClick={() => setSenhaAberta((v) => !v)} aria-expanded={senhaAberta}
+                className={`${senhaAberta ? 'botao-primario' : 'botao-secundario'} flex-1 py-2 text-sm sm:flex-none`}>
+                <KeyRound size={16} /> Trocar senha
               </button>
+              <button onClick={sair} disabled={saindo} className="botao-secundario flex-1 py-2 text-sm hover:text-perigo sm:flex-none">
+                <LogOut size={16} /> {saindo ? 'Saindo…' : 'Sair'}
+              </button>
+            </div>
+          </div>
+          {senhaAberta && email && (
+            <div className="border-t border-borda bg-superficie-2/40 p-5">
+              <p className="mb-3 text-sm text-texto-2">Para trocar, confirme primeiro a senha que você usa hoje.</p>
+              <TrocarSenha email={email} />
+            </div>
+          )}
+        </section>
+
+        {/* Preferências: tema e Bíblia */}
+        <section className="cartao order-3 p-5">
+          <Titulo Icone={Palette} titulo="Aparência" texto="O modo pregação e o telão são sempre escuros, nas cores do tema." />
+          <div role="radiogroup" aria-label="Tema" className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+            {TEMAS.map((t) => {
+              const ativo = tema === t.valor
+              return (
+                <button key={t.valor} role="radio" aria-checked={ativo} onClick={() => mudarTema(t.valor)}
+                  className={`overflow-hidden rounded-2xl border-2 text-left transition ${ativo ? 'border-acao' : 'border-borda hover:border-texto-2'}`}>
+                  <span className="block p-3" style={{ background: t.fundo, color: t.texto }}>
+                    <span className="block font-display text-sm font-extrabold">Boa noite</span>
+                    <span className="mt-2 flex items-center gap-1.5">
+                      <span className="h-5 flex-1 rounded-md" style={{ background: t.acao }} />
+                      <span className="h-5 w-6 rounded-md opacity-15" style={{ background: t.texto }} />
+                    </span>
+                  </span>
+                  <span className="flex items-center justify-between gap-2 bg-superficie px-3 py-2 text-xs font-bold">
+                    <span className="truncate">{t.rotulo}</span>
+                    {ativo && <Check size={15} className="shrink-0 text-tinta" />}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+
+          <div className="mt-6 border-t border-borda pt-5">
+            <Titulo Icone={BookOpen} titulo="Bíblia" texto="Versão usada no editor, no modo pregação e no telão. Fica salva na sua conta." />
+            <div role="radiogroup" aria-label="Versão da Bíblia" className="mt-4 grid grid-cols-3 gap-2">
+              {VERSOES.map((v) => {
+                const ativo = versao === v.id
+                return (
+                  <button key={v.id} role="radio" aria-checked={ativo} onClick={() => mudarVersao(v.id)}
+                    className={`rounded-xl border-2 px-3 py-2.5 text-left transition ${ativo ? 'border-acao bg-ouro-suave' : 'border-borda hover:border-texto-2'}`}>
+                    <b className="flex items-center justify-between font-display">{v.id}{ativo && <Check size={15} className="text-tinta" />}</b>
+                    <span className="mt-0.5 line-clamp-2 block text-[11px] leading-tight text-texto-2 sm:text-xs">{v.nome}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        </section>
+
+
+        <div className="order-5"><Sobre /></div>
+        </div>
+
+        <div className="contents xl:col-span-5 xl:block xl:space-y-5">
+        {/* Atalhos */}
+        <section className="order-2 grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-2">
+          {atalhos.map(({ nome: n, texto, Icone, acao, para }) => {
+            const conteudo = (
+              <>
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-ouro-suave text-tinta transition group-hover:bg-acao group-hover:text-acao-texto"><Icone size={20} /></span>
+                <span className="mt-3 block font-display font-bold leading-tight">{n}</span>
+                <span className="mt-0.5 block text-xs leading-snug text-texto-2">{texto}</span>
+              </>
             )
+            const classe = 'group cartao flex flex-col p-4 text-left transition hover:border-acao'
+            return para
+              ? <Link key={n} to={para} className={classe}>{conteudo}</Link>
+              : <button key={n} onClick={acao} className={classe}>{conteudo}</button>
           })}
+        </section>
+
+        <div className="order-4"><AtualizarApp /></div>
         </div>
-      </section>
+      </div>
+    </div>
+  )
+}
 
-      <section className="space-y-3">
-        <div>
-          <h2 className="font-display text-lg font-bold">Senha</h2>
-          <p className="text-sm text-texto-2">Para trocar, confirme primeiro a senha que você usa hoje.</p>
-        </div>
-        {email && <TrocarSenha email={email} />}
-      </section>
-
-
-      <section className="space-y-3">
-        <div>
-          <h2 className="font-display text-lg font-bold">Bíblia</h2>
-          <p className="text-sm text-texto-2">Versão usada no editor, no modo pregação e no telão. Fica salva na sua conta, em qualquer aparelho.</p>
-        </div>
-        <select value={versao} onChange={(e) => mudarVersao(e.target.value as VersaoId)} className="campo">
-          {VERSOES.map((v) => <option key={v.id} value={v.id}>{v.id}, {v.nome}</option>)}
-        </select>
-      </section>
-
-      <section className="space-y-3">
-        <div>
-          <h2 className="font-display text-lg font-bold">Projetos e lixeira</h2>
-          <p className="text-sm text-texto-2">Recebeu um link ou código de convite? Entre com ele para abrir o projeto de outra pessoa.</p>
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Link to="/entrar-projeto" className="botao-secundario w-full sm:w-auto">
-            <Users size={18} /> Entrar com um convite
-          </Link>
-          <Link to="/lixeira" className="botao-secundario w-full sm:w-auto">
-            <Trash2 size={18} /> Lixeira
-          </Link>
-        </div>
-      </section>
-
-      <section className="space-y-3">
-        <div>
-          <h2 className="font-display text-lg font-bold">Tutorial</h2>
-          <p className="text-sm text-texto-2">Reveja como funcionam as mensagens, os slides, o modo pregação e o telão.</p>
-        </div>
-        <button onClick={() => abrirTutorial()} className="botao-secundario w-full sm:w-auto">
-          <GraduationCap size={18} /> Ver tutorial
-        </button>
-      </section>
-
-      <AtualizarApp />
-
-      <Sobre />
+/* Cabeçalho dos cartões */
+function Titulo({ Icone, titulo, texto }: { Icone: typeof Palette; titulo: string; texto?: string }) {
+  return (
+    <div className="flex items-start gap-3">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-superficie-2 text-texto-2"><Icone size={18} /></span>
+      <div className="min-w-0">
+        <h2 className="font-display text-lg font-bold leading-tight">{titulo}</h2>
+        {texto && <p className="mt-0.5 text-sm text-texto-2">{texto}</p>}
+      </div>
     </div>
   )
 }
@@ -224,9 +255,8 @@ function Sobre() {
     { nome: 'LinkedIn', url: AUTOR.linkedin, Icone: Linkedin },
   ]
   return (
-    <section className="space-y-3 lg:col-span-2">
-      <h2 className="font-display text-lg font-bold">Sobre</h2>
-      <div className="cartao flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
+    <section>
+      <div className="cartao flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
         <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-acao font-display text-xl font-extrabold text-acao-texto">MN</span>
         <div className="min-w-0 flex-1">
           <p className="text-sm text-texto-2">O Pulpito foi idealizado e criado por</p>
@@ -273,10 +303,8 @@ function AtualizarApp() {
   }[estado]
 
   return (
-    <section className="space-y-3">
-      <h2 className="font-display text-lg font-bold">Atualizar o app</h2>
-      <div className={`cartao overflow-hidden ${estado === 'nova' ? 'border-acao ring-4 ring-acao/15' : ''}`}>
-        <div className="flex items-center gap-4 p-4">
+    <section className={`cartao overflow-hidden ${estado === 'nova' ? 'border-acao ring-4 ring-acao/15' : ''}`}>
+        <div className="flex items-center gap-4 p-5">
           <span className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl" style={{ background: visual.fundo, color: visual.cor }}>
             {estado === 'verificando' || atualizando ? <LoaderCircle size={26} className="animate-spin" />
               : estado === 'em-dia' ? <CircleCheck size={28} />
@@ -291,19 +319,19 @@ function AtualizarApp() {
         </div>
 
         <div className="grid grid-cols-2 border-y border-borda text-sm">
-          <div className="p-3 px-4">
+          <div className="p-3 px-5">
             <span className="block text-xs text-texto-2">Neste aparelho</span>
             <b className="block font-display text-lg leading-tight">Versão {NUMERO_VERSAO}</b>
             <span className="font-mono text-xs text-texto-2">{versaoAmigavel(VERSAO_APP)}</span>
           </div>
-          <div className="border-l border-borda p-3 px-4">
+          <div className="border-l border-borda p-3 px-5">
             <span className="block text-xs text-texto-2">Mais nova</span>
             <b className="block font-display text-lg leading-tight">{remota?.numero ? `Versão ${remota.numero}` : '—'}</b>
             <span className="font-mono text-xs text-texto-2">{remota ? versaoAmigavel(remota.versao) : ''}</span>
           </div>
         </div>
 
-        <div className="flex flex-col gap-2 p-4 sm:flex-row">
+        <div className="flex flex-col gap-2 px-5 py-4 sm:flex-row">
           {estado === 'nova' ? (
             <button onClick={atualizar} disabled={atualizando} className="botao-primario w-full sm:flex-1">
               <Download size={18} /> Atualizar agora
@@ -315,7 +343,7 @@ function AtualizarApp() {
           )}
         </div>
 
-        <div className="border-t border-borda bg-superficie-2/40 p-4">
+        <div className="border-t border-borda bg-superficie-2/40 px-5 py-4">
           <p className="rotulo flex items-center gap-1.5"><Sparkles size={13} className="text-tinta" /> Novidades</p>
           <ul className="mt-2 space-y-2">
             {NOVIDADES.slice(0, 4).map((n) => (
@@ -326,9 +354,8 @@ function AtualizarApp() {
             ))}
           </ul>
         </div>
-      </div>
 
-      <details className="group rounded-2xl border border-borda px-4 py-3 text-sm">
+      <details className="group border-t border-borda px-5 py-3 text-sm">
         <summary className="flex cursor-pointer list-none items-center gap-2 font-semibold">
           <Wrench size={16} className="text-texto-2" /> Algo parece estranho ou antigo?
           <ChevronDown size={16} className="ml-auto text-texto-2 transition-transform group-open:rotate-180" />
