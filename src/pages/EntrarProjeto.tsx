@@ -5,18 +5,21 @@ import { aceitarConvite, preverConvite, type PreviaConvite } from '../lib/compar
 
 export default function EntrarProjeto() {
   const { codigo: codigoUrl } = useParams()
+  // Outro código no endereço recria a tela do zero
+  return <Entrar key={codigoUrl ?? ''} codigoUrl={codigoUrl} />
+}
+
+function Entrar({ codigoUrl }: { codigoUrl?: string }) {
   const navigate = useNavigate()
   const [codigo, setCodigo] = useState(codigoUrl ?? '')
   const [previa, setPrevia] = useState<PreviaConvite | null>(null)
   const [erro, setErro] = useState('')
-  const [carregando, setCarregando] = useState(false)
+  const [carregando, setCarregando] = useState(!!codigoUrl)
   const [entrando, setEntrando] = useState(false)
 
   useEffect(() => {
-    setCodigo(codigoUrl ?? '')
-    if (!codigoUrl) { setPrevia(null); return }
+    if (!codigoUrl) return
     let ativo = true
-    setCarregando(true)
     preverConvite(codigoUrl).then((p) => {
       if (!ativo) return
       setPrevia(p)

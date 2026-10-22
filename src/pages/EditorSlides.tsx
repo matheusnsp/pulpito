@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { usePapelAtual } from '../components/ProjetoGate'
+import { usePapelAtual } from '../lib/papel'
 import { useSalvamento } from '../lib/salvamento'
 import { useHistorico } from '../lib/historico'
 import { lerArquivos } from '../lib/importar'

@@ -4,7 +4,8 @@ import { Check, ClipboardCopy, GraduationCap, LoaderCircle, MessagesSquare, Plus
 import { supabase } from '../lib/supabase'
 import { BLOCOS } from '../lib/blocos'
 import { abrirCriar } from '../lib/criar'
-import type { Topico } from '../lib/tipos'
+import type { Mensagem, Topico } from '../lib/tipos'
+import { visivel } from '../lib/lixeira'
 import AvisoDeslizante from '../components/AvisoDeslizante'
 
 /*
@@ -36,12 +37,12 @@ export default function Perguntas() {
     let ativo = true
     Promise.all([
       supabase.from('topicos').select('id, mensagem_id, titulo, observacao, notas, tipo, extra').in('tipo', ['pergunta', 'atividade']),
-      supabase.from('mensagens').select('id, titulo').order('atualizado_em', { ascending: false }),
+      supabase.from('mensagens').select('*').order('atualizado_em', { ascending: false }),
     ]).then(([b, m]) => {
       if (!ativo) return
       if (b.error || m.error) setErro('Não foi possível carregar. Se ainda não rodou o SQL dos estudos no Supabase, rode e tente de novo.')
       setBlocos((b.data as Bloco[]) ?? [])
-      setEstudos((m.data as Estudo[]) ?? [])
+      setEstudos(((m.data ?? []) as (Estudo & Pick<Mensagem, 'excluida_em' | 'detalhes'>)[]).filter(visivel))
     })
     return () => { ativo = false }
   }, [])

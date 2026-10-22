@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, BookOpen, Briefcase, GraduationCap, LoaderCircle, Mic, NotebookPen, Presentation, X } from 'lucide-react'
+import { ArrowRight, BookOpen, Briefcase, GraduationCap, LoaderCircle, Mic, NotebookPen, Presentation, Users, X, LayoutTemplate, Trash2 } from 'lucide-react'
 import { aoPedirCriar, salvarModo, type PedidoCriar } from '../lib/criar'
-import { criarMensagem, FALTA_SQL_ESTUDOS } from '../lib/mensagens'
-import { FORMATOS_PALAVRA, ICONE_FORMATO, MODELOS } from '../lib/blocos'
-import type { TipoProjeto } from '../lib/tipos'
+import { criarMensagem, FALTA_SQL_ESTUDOS, usarModelo } from '../lib/mensagens'
+import { supabase } from '../lib/supabase'
+import { useAuth } from '../lib/auth'
+import { FORMATOS_PALAVRA, ICONE_FORMATO, MODELOS, nomeFormato } from '../lib/blocos'
+import type { Mensagem, TipoProjeto } from '../lib/tipos'
 
 /* Folha "O que você vai preparar?": lado Palavra (pregação e formatos) ou lado Estudos (em branco ou modelo) */
 export default function CriarNovo() {
@@ -13,7 +15,32 @@ export default function CriarNovo() {
   const [criando, setCriando] = useState<string | null>(null)
   const [erro, setErro] = useState<'' | 'sql' | 'rede'>('')
 
-  useEffect(() => aoPedirCriar((p) => { setPedido(p); setErro('') }), [])
+  const [modelos, setModelos] = useState<Mensagem[]>([])
+  const { sessao } = useAuth()
+  useEffect(() => aoPedirCriar((p) => {
+    setPedido(p); setErro('')
+    // Modelos próprios: cópias marcadas como modelo, só as minhas
+    supabase.from('mensagens').select('*').then(({ data }) => setModelos(((data ?? []) as Mensagem[])
+      .filter((m) => m.detalhes?.ehModelo && !m.excluida_em && (!m.proprietario_compartilhamento || m.proprietario_compartilhamento === sessao?.user.id))))
+  }), [sessao])
+
+  async function criarDoModelo(m: Mensagem) {
+    setCriando(m.id)
+    setErro('')
+    try {
+      const nova = await usarModelo(m, pedido?.pastaId ?? null)
+      salvarModo(m.tipo === 'estudo' ? 'estudo' : 'pregacao')
+      setPedido(null)
+      navigate(`/mensagem/${nova.id}`)
+    } catch { setErro('rede') }
+    finally { setCriando(null) }
+  }
+
+  async function apagarModelo(m: Mensagem) {
+    if (!confirm(`Apagar o modelo "${m.titulo}"? As mensagens criadas a partir dele continuam.`)) return
+    await supabase.from('mensagens').delete().eq('id', m.id)
+    setModelos((l) => l.filter((x) => x.id !== m.id))
+  }
 
   useEffect(() => {
     if (!pedido) return
@@ -88,6 +115,31 @@ export default function CriarNovo() {
             </div>
           </div>
         </div>
+        {modelos.length > 0 && (
+          <div className="mt-5">
+            <div className="mb-2 flex items-center gap-2"><LayoutTemplate size={16} className="text-tinta" /><b className="font-display">Seus modelos</b></div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {modelos.map((m) => (
+                <div key={m.id} className="flex items-center gap-1 rounded-2xl border border-borda bg-superficie pr-1">
+                  <button onClick={() => criarDoModelo(m)} disabled={!!criando} className="flex min-w-0 flex-1 items-center gap-3 p-3 text-left">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-ouro-suave text-tinta">
+                      {criando === m.id ? <LoaderCircle size={20} className="animate-spin" /> : <LayoutTemplate size={19} />}
+                    </span>
+                    <span className="min-w-0">
+                      <b className="block truncate font-display leading-tight">{m.titulo || 'Sem título'}</b>
+                      <span className="block truncate text-xs text-texto-2">{m.tipo === 'estudo' ? 'Estudo' : nomeFormato(m.detalhes?.formato)}</span>
+                    </span>
+                  </button>
+                  <button onClick={() => apagarModelo(m)} aria-label="Apagar modelo" title="Apagar modelo" className="rounded-lg p-2 text-texto-2 hover:text-perigo"><Trash2 size={16} /></button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        <button onClick={() => { setPedido(null); navigate('/entrar-projeto') }}
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl py-2 text-sm font-bold text-texto-2 hover:text-texto">
+          <Users size={16} /> Recebeu um convite? Entrar com o código
+        </button>
         {erro === 'sql' && (
           <div role="alert" className="mt-4 rounded-xl bg-aviso/15 p-3 text-sm">
             <b>Falta preparar o banco para os estudos.</b> No Supabase, abra o SQL Editor, cole o conteúdo do

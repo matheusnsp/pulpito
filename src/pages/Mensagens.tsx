@@ -6,7 +6,7 @@ import {
   type DragEndEvent, type DragStartEvent,
 } from '@dnd-kit/core'
 import {
-  BookOpen, CalendarDays, Check, ChevronRight, Settings, Copy, Ellipsis, GraduationCap, Mic, MonitorPlay, NotebookPen, FolderInput, GripVertical, Pencil, Play, Plus, Search, Target, Trash2, Users, X,
+  BookOpen, CalendarDays, Check, ChevronRight, Settings, Copy, Ellipsis, GraduationCap, Mic, MonitorPlay, NotebookPen, FolderInput, GripVertical, Pencil, Play, Plus, Search, Target, Trash2, Users, X, Layers,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
@@ -16,6 +16,8 @@ import type { Mensagem, Pasta } from '../lib/tipos'
 import { duplicarMensagem } from '../lib/mensagens'
 import { abrirCriar, lerModo, salvarModo } from '../lib/criar'
 import { ICONE_FORMATO, nomeFormato } from '../lib/blocos'
+import { moverParaLixeira, visivel } from '../lib/lixeira'
+import { resumoSeries } from '../lib/series'
 import type { TipoProjeto } from '../lib/tipos'
 
 const CHAVE_FILTRO = 'pulpito-filtro-pasta'
@@ -158,6 +160,7 @@ function LinhaMensagem({ m, compartilhada, blocos, pasta, pastas, hoje, menuAber
             </span>
           )}
           <span className="truncate">
+            {m.detalhes?.serie && `${m.detalhes.serie}${m.detalhes.serieNumero ? ` ${m.detalhes.serieNumero}` : ''} · `}
             {formato && `${nomeFormato(formato)} · `}
             {estudo && `${total} ${total === 1 ? 'bloco' : 'blocos'} · ${m.tempo_minutos} min · `}
             {pasta && `${pasta.nome} · `}
@@ -234,6 +237,7 @@ export default function Mensagens() {
   // Exclusão com "Desfazer": só apaga do banco depois do tempo
   const pendente = useRef<{ m: Mensagem; timer: ReturnType<typeof setTimeout> } | null>(null)
   const [excluida, setExcluida] = useState<Mensagem | null>(null)
+  const [serieFiltro, setSerieFiltro] = useState<string | null>(null)
 
   const sensores = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
   const primeiroNome = nomeDeExibicao(emailParaUsuario(sessao?.user.email)).split(' ')[0]
@@ -293,7 +297,7 @@ export default function Mensagens() {
     if (!p) return
     clearTimeout(p.timer)
     pendente.current = null
-    void supabase.from('mensagens').delete().eq('id', p.m.id).then(() => {})
+    void moverParaLixeira(p.m.id).catch(() => {})
   }, [])
 
   const filtroValido = filtro === 'todas' || filtro === 'sem' || pastas.some((p) => p.id === filtro)
@@ -315,8 +319,9 @@ export default function Mensagens() {
   }
 
   async function apagarDeVez(m: Mensagem) {
-    const { error } = await supabase.from('mensagens').delete().eq('id', m.id)
-    if (error) {
+    try {
+      await moverParaLixeira(m.id)
+    } catch {
       setErro('Não foi possível excluir. A mensagem voltou para a lista.')
       setMensagens((lista) => (lista ? ordenarMensagens([...lista, m]) : lista))
     }
@@ -417,9 +422,10 @@ export default function Mensagens() {
     setFiltro('todas')
   }
 
-  const doisLados = mensagens ?? []
+  const doisLados = (mensagens ?? []).filter(visivel)
   const qtdPorModo = { pregacao: doisLados.filter((m) => tipoDe(m) === 'pregacao').length, estudo: doisLados.filter((m) => tipoDe(m) === 'estudo').length }
-  const todas = doisLados.filter((m) => tipoDe(m) === modo)
+  const series = resumoSeries(doisLados.filter((m) => tipoDe(m) === modo))
+  const todas = doisLados.filter((m) => tipoDe(m) === modo && (!serieFiltro || m.detalhes?.serie === serieFiltro))
   const nomeItens = modo === 'estudo' ? ['estudo', 'estudos'] : ['mensagem', 'mensagens']
   const termo = normalizar(busca.trim())
   const filtradas = todas.filter((m) => {
@@ -699,6 +705,24 @@ export default function Mensagens() {
           </div>
         )}
 
+        {/* Séries: progresso de cada uma e filtro rápido */}
+        {series.length > 0 && !termo && (
+          <div className="-mx-4 mb-3 flex gap-2 overflow-x-auto px-4 pb-1 sem-barra md:mx-0 md:flex-wrap md:px-0">
+            {series.map((sr) => {
+              const ativa = serieFiltro === sr.nome
+              return (
+                <button key={sr.nome} onClick={() => setSerieFiltro(ativa ? null : sr.nome)} aria-pressed={ativa}
+                  className={`flex min-w-[11rem] shrink-0 flex-col gap-1.5 rounded-2xl border p-3 text-left transition ${ativa ? 'border-acao bg-ouro-suave' : 'border-borda bg-superficie hover:border-texto-2/40'}`}>
+                  <span className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wider text-texto-2"><Layers size={13} /> Série</span>
+                  <b className="truncate font-display leading-tight">{sr.nome}</b>
+                  <span className="h-1.5 overflow-hidden rounded-full bg-superficie-2"><span className="block h-full rounded-full bg-acao" style={{ width: `${(sr.dadas / sr.total) * 100}%` }} /></span>
+                  <span className="text-xs text-texto-2">{sr.dadas} de {sr.total} {modo === 'estudo' ? 'dadas' : 'feitas'}</span>
+                </button>
+              )
+            })}
+          </div>
+        )}
+
         {filtradas.length > 0 && (
           <ul className="grid grid-cols-[minmax(0,1fr)] gap-3 md:grid-cols-2 2xl:grid-cols-3">
             {filtradas.map((m) => (
@@ -713,6 +737,10 @@ export default function Mensagens() {
             ))}
           </ul>
         )}
+
+        <Link to="/lixeira" className="mt-6 flex items-center justify-center gap-2 py-2 text-sm font-semibold text-texto-2 hover:text-texto">
+          <Trash2 size={15} /> Lixeira
+        </Link>
 
         {todas.length > 0 && filtradas.length === 0 && (
           <p className="py-10 text-center text-texto-2">
@@ -752,7 +780,7 @@ export default function Mensagens() {
           className="flex items-center gap-3 rounded-2xl bg-texto px-4 py-3 text-fundo shadow-xl">
           <Trash2 size={18} className="shrink-0 opacity-70" />
           <span className="min-w-0 flex-1 truncate text-sm">
-            <b className="font-display">{excluida.titulo || 'Sem título'}</b> foi excluída
+            <b className="font-display">{excluida.titulo || 'Sem título'}</b> foi para a lixeira
           </span>
           <button onClick={desfazerExclusao} className="shrink-0 rounded-lg px-2 py-1 text-sm font-bold text-acao hover:opacity-80">
             Desfazer

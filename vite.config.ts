@@ -3,18 +3,22 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import type { Plugin } from 'vite'
+import { readFileSync } from 'node:fs'
 
 /* Data e hora do build, mostradas em Ajustes para conferir se o celular está na última versão */
 const VERSAO_APP = new Date().toLocaleString('pt-BR', {
   timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
 })
 
+/* Número da versão (package.json): troque a cada lançamento */
+const NUMERO_VERSAO: string = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')).version
+
 /* Identidade única de cada build: o app compara com /versao.json para saber se há versão nova */
 const ID_BUILD = String(Date.now())
 
 /* Publica /versao.json (fora do cache do app) com a versão deste build */
 function arquivoDeVersao(): Plugin {
-  const corpo = () => JSON.stringify({ id: ID_BUILD, versao: VERSAO_APP })
+  const corpo = () => JSON.stringify({ id: ID_BUILD, versao: VERSAO_APP, numero: NUMERO_VERSAO })
   return {
     name: 'pulpito-versao',
     configureServer(server) {
@@ -31,7 +35,7 @@ function arquivoDeVersao(): Plugin {
 }
 
 export default defineConfig({
-  define: { __VERSAO_APP__: JSON.stringify(VERSAO_APP), __ID_BUILD__: JSON.stringify(ID_BUILD) },
+  define: { __VERSAO_APP__: JSON.stringify(VERSAO_APP), __ID_BUILD__: JSON.stringify(ID_BUILD), __NUMERO_VERSAO__: JSON.stringify(NUMERO_VERSAO) },
   plugins: [
     arquivoDeVersao(),
     react(),

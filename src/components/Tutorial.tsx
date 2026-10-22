@@ -188,6 +188,7 @@ const CAPITULOS: Capitulo[] = [
           { Icone: GripVertical, texto: <>Segure o número do tópico e arraste para mudar a ordem.</> },
           { Icone: NotebookPen, texto: <>Observação, aplicação, ilustração, frase-chave e notas são <b>só para você</b>.</> },
           { Icone: Clock, texto: <>Defina o tempo da pregação; o app divide entre os tópicos.</> },
+          { Icone: BookOpen, texto: <>Um tópico pode ter <b>vários versículos</b>: toque em <b>Adicionar versículo</b>. Cada um vira um slide.</> },
         ],
       },
       {
@@ -209,6 +210,7 @@ const CAPITULOS: Capitulo[] = [
           { Icone: Hand, texto: <><b>Arraste para o lado</b> para mudar de tópico. Toque em "Próximo" para pular para qualquer um.</> },
           { Icone: Search, texto: <><b>Pinça</b> (ou + e −) muda o tamanho da letra.</> },
           { Icone: ListChecks, texto: <>No computador, o <b>roteiro</b> fica ao lado: clique em qualquer tópico para pular até ele.</> },
+          { Icone: Timer, texto: <>Com o cronômetro ligado, aparece o <b>tempo do tópico atual</b> ao lado do previsto (fica vermelho se passar).</> },
           { Icone: Maximize, texto: <><b>Tela cheia</b>: no iPad e no Android, pelo botão; no iPhone, abra pelo app instalado e deite o celular.</> },
         ],
       },
@@ -357,9 +359,36 @@ const CAPITULOS: Capitulo[] = [
         ),
         dicas: [
           { Icone: Radio, texto: <>Em <b>Dar aula</b>, toque no botão <b>ao vivo</b>: aparece um código e um QR (dá para mostrar no telão).</> },
-          { Icone: Users, texto: <>Cada um abre a câmera ou entra em <b>/responder</b>, coloca o nome e responde. Sem instalar nada.</> },
+          { Icone: Users, texto: <>Cada um abre a câmera ou entra em <b>/responder</b> e responde. Sem instalar nada.</> },
+          { Icone: Lock, texto: <><b>Modo anônimo</b> (já vem ligado): ninguém digita o nome e as respostas aparecem sem autor.</> },
           { Icone: Eye, texto: <>Você escolhe se <b>os alunos veem as respostas dos outros</b>; dá para destacar ★ ou esconder uma resposta.</> },
           { Icone: Hourglass, texto: <>Enquanto não tem pergunta, a turma vê uma <b>mensagem de espera</b>. Personalize no editor do estudo.</> },
+        ],
+      },
+      {
+        titulo: 'Mural no telão',
+        texto: 'Numa pergunta aberta, o telão mostra a pergunta, o QR para entrar e as respostas chegando, como um mural.',
+        tela: (
+          <Tela>
+            <Slide fundo="radial-gradient(ellipse at top,#0b2a3a,#0A0A0A 70%)">
+              <div className="absolute inset-0 flex flex-col p-2">
+                <div className="flex items-start gap-2">
+                  <b className="flex-1 text-[10px] leading-tight text-white">O que mais falou com você hoje?</b>
+                  <span className="flex h-7 w-7 items-center justify-center rounded bg-white text-black"><QrCode size={18} /></span>
+                </div>
+                <div className="mt-1.5 grid flex-1 grid-cols-3 gap-1">
+                  {['Perdoar primeiro', 'Servir em casa', 'Orar mais', 'Paciência', 'Ouvir', 'Gratidão'].map((t, i) => (
+                    <span key={t} className={`truncate rounded px-1 py-0.5 text-[7.5px] ${i === 0 ? 'bg-[#EAB308] text-black' : 'bg-white/10 text-white'}`}>{t}</span>
+                  ))}
+                </div>
+              </div>
+            </Slide>
+          </Tela>
+        ),
+        dicas: [
+          { Icone: MonitorPlay, texto: <>Sem slide próprio, o mural <b>é</b> o slide da pergunta. Se a pergunta tem slides, o mural vem logo depois: avance como um slide.</> },
+          { Icone: Sparkles, texto: <>A resposta que você <b>destacar ★</b> aparece em evidência no telão; as escondidas não aparecem.</> },
+          { Icone: Settings, texto: <>No painel ao vivo, <b>Mostrar o mural no telão</b> liga e desliga. Vale para perguntas abertas e atividades.</> },
         ],
       },
       {
@@ -631,6 +660,89 @@ const CAPITULOS: Capitulo[] = [
     ],
   },
 
+  /* ───────────── Organizar e trabalhar junto ───────────── */
+  {
+    id: 'juntos', nome: 'Organizar e trabalhar junto', resumo: 'Séries, modelos, histórico, lixeira e edição ao vivo', Icone: Users, cor: AZUL,
+    passos: [
+      {
+        titulo: 'Séries e modelos',
+        texto: 'Agrupe mensagens numa série (Aula 1, 2, 3…) e acompanhe o progresso. Transforme uma mensagem que deu certo em modelo.',
+        tela: (
+          <Tela>
+            <div className="flex gap-1.5">
+              {[['Fruto do Espírito', 3, 9], ['Romanos', 6, 12]].map(([n, d, t]) => (
+                <div key={n as string} className="flex-1 rounded-lg border border-borda bg-superficie p-1.5">
+                  <p className="text-[8px] font-extrabold uppercase tracking-wider text-texto-2">Série</p>
+                  <b className="block truncate text-[10.5px]">{n}</b>
+                  <span className="mt-1 block h-1 overflow-hidden rounded-full bg-superficie-2"><span className="block h-full rounded-full bg-acao" style={{ width: `${(Number(d) / Number(t)) * 100}%` }} /></span>
+                  <span className="text-[8.5px] text-texto-2">{d} de {t} feitas</span>
+                </div>
+              ))}
+            </div>
+            <p className="mt-2 flex items-center gap-1 text-[9px] font-bold text-tinta"><LayoutTemplate size={10} /> Seus modelos</p>
+            <div className="mt-1 space-y-1">
+              {['Célula da minha igreja', 'Culto de jovens'].map((m) => <span key={m} className="block rounded-md border border-borda bg-superficie px-1.5 py-1 text-[9.5px] font-bold">{m}</span>)}
+            </div>
+          </Tela>
+        ),
+        dicas: [
+          { Icone: Layers, texto: <>No editor, preencha <b>Série</b> e o número. Na tela inicial aparecem os cartões com o progresso.</> },
+          { Icone: Check, texto: <>No último item do modo pregação, <b>Concluir</b> marca como feita. Também dá pelo menu <b>⋯</b> do editor.</> },
+          { Icone: LayoutTemplate, texto: <>No menu <b>⋯</b>, <b>Salvar como modelo</b>. Ele aparece em <b>Criar novo › Seus modelos</b>.</> },
+        ],
+      },
+      {
+        titulo: 'Nada se perde',
+        texto: 'Cada vez que alguém começa a editar, o app guarda uma cópia. E o que você exclui vai para a lixeira por 30 dias.',
+        tela: (
+          <Tela>
+            <div className="space-y-1.5 border-l-2 border-borda pl-2.5">
+              {['Hoje, 20:14 · você', 'Ontem, 09:02 · colaborador', 'Seg, 21:40 · você'].map((v, i) => (
+                <div key={v} className="relative rounded-lg border border-borda bg-superficie px-2 py-1.5">
+                  <span className={`absolute -left-[0.95rem] top-2.5 h-2 w-2 rounded-full ${i ? 'bg-borda' : 'bg-acao'}`} />
+                  <b className="block text-[10px]">{v}</b>
+                  <span className="text-[9px] text-texto-2">4 tópicos · 9 slides</span>
+                </div>
+              ))}
+            </div>
+            <span className="mt-2 inline-flex items-center gap-1 rounded-md bg-acao px-1.5 py-1 text-[9px] font-bold text-acao-texto"><RotateCw size={10} /> Restaurar esta versão</span>
+          </Tela>
+        ),
+        dicas: [
+          { Icone: Clock, texto: <>No editor, <b>⋯ › Histórico de versões</b>. Restaurar guarda antes o estado de agora.</> },
+          { Icone: X, texto: <>Excluiu sem querer? Abra a <b>Lixeira</b> (no fim da lista ou em Ajustes) e toque em <b>Restaurar</b>.</> },
+          { Icone: FileDown, texto: <>No mesmo menu <b>⋯</b>: <b>Baixar esboço em PDF</b>, com ou sem suas notas.</> },
+        ],
+      },
+      {
+        titulo: 'Editar junto',
+        texto: 'Convide alguém para o projeto. Quando os dois estão com ele aberto, um vê o outro no topo e as mudanças chegam na hora.',
+        tela: (
+          <Tela>
+            <div className="flex items-center gap-1.5 rounded-lg border border-borda bg-superficie px-2 py-1.5">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#38BDF8] text-[8px] font-extrabold text-[#062033]">AN</span>
+              <span className="text-[10px] font-semibold text-texto-2">Ana está aqui</span>
+              <span className="ml-auto text-[9px] text-texto-2">✓ Salvo</span>
+            </div>
+            <div className="mt-2 space-y-1.5">
+              {['O amor que não desiste', 'Amar na prática'].map((t, i) => (
+                <div key={t} className={`flex items-center gap-2 rounded-lg border px-2 py-1.5 ${i ? 'border-[#38BDF8]' : 'border-borda'} bg-superficie`}>
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-ouro-suave text-[10px] font-extrabold text-tinta">{i + 1}</span>
+                  <span className="truncate text-[11px] font-bold">{t}</span>
+                </div>
+              ))}
+            </div>
+          </Tela>
+        ),
+        dicas: [
+          { Icone: Share2, texto: <>No editor, <b>Convidar</b> cria um link ou código: para editar ou só para ver.</> },
+          { Icone: Users, texto: <>Recebeu um convite? <b>Ajustes › Entrar com um convite</b>, ou pelo link.</> },
+          { Icone: Eye, texto: <>Se os dois mexerem no <b>mesmo campo</b> ao mesmo tempo, vale o último. Combine quem edita o quê.</> },
+        ],
+      },
+    ],
+  },
+
   /* ───────────── 7. Ajustes ───────────── */
   {
     id: 'ajustes', nome: 'Ajustes', resumo: 'Cores, versão da Bíblia e atualizar o app', Icone: Settings, cor: ROSA,
@@ -664,7 +776,7 @@ const CAPITULOS: Capitulo[] = [
             <div className="flex h-full flex-col gap-2">
               <div className="flex items-center gap-2 rounded-xl border border-acao/60 bg-superficie p-2 shadow-lg">
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-acao text-acao-texto"><Sparkles size={14} /></span>
-                <span className="min-w-0 flex-1"><b className="block text-[11px] leading-tight">Nova versão do Pulpito</b><span className="block text-[9px] text-texto-2">Leva segundos. Nada se perde.</span></span>
+                <span className="min-w-0 flex-1"><b className="block text-[11px] leading-tight">Pulpito 2.0.0 chegou</b><span className="block text-[9px] text-texto-2">Leva segundos. Nada se perde.</span></span>
                 <span className="rounded-md bg-acao px-1.5 py-1 text-[9px] font-bold text-acao-texto">Atualizar</span>
               </div>
               <div className="flex-1 rounded-xl border border-borda bg-superficie p-2">
@@ -673,8 +785,8 @@ const CAPITULOS: Capitulo[] = [
                   <b className="text-[11px] leading-tight">Você está na versão mais nova</b>
                 </div>
                 <div className="mt-2 grid grid-cols-2 gap-1 text-[9px]">
-                  <span className="rounded-md bg-superficie-2 p-1"><span className="block text-texto-2">Neste aparelho</span><b className="font-mono">18 de out, 22:10</b></span>
-                  <span className="rounded-md bg-superficie-2 p-1"><span className="block text-texto-2">Mais nova</span><b className="font-mono">18 de out, 22:10</b></span>
+                  <span className="rounded-md bg-superficie-2 p-1"><span className="block text-texto-2">Neste aparelho</span><b>Versão 2.0.0</b></span>
+                  <span className="rounded-md bg-superficie-2 p-1"><span className="block text-texto-2">Mais nova</span><b>Versão 2.0.0</b></span>
                 </div>
                 <div className="mt-2 space-y-1">{linha('85%')}{linha('60%')}</div>
               </div>

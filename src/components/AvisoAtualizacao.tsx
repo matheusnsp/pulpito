@@ -13,6 +13,7 @@ import { buscarServiceWorkerNovo, carregarUltimaVersao, verificarVersao } from '
 export default function AvisoAtualizacao() {
   const { needRefresh: [precisa, setPrecisa], updateServiceWorker } = useRegisterSW()
   const [temNova, setTemNova] = useState(false)
+  const [numeroNovo, setNumeroNovo] = useState<string | undefined>()
   const [dispensado, setDispensado] = useState(false)
   const [atualizando, setAtualizando] = useState(false)
   const { pathname } = useLocation()
@@ -21,7 +22,7 @@ export default function AvisoAtualizacao() {
     const checar = async () => {
       if (document.visibilityState !== 'visible') return
       const r = await verificarVersao()
-      if (r?.nova) { setTemNova(true); buscarServiceWorkerNovo() }
+      if (r?.nova) { setTemNova(true); setNumeroNovo(r.remota.numero); buscarServiceWorkerNovo() }
     }
     checar()
     document.addEventListener('visibilitychange', checar)
@@ -48,7 +49,7 @@ export default function AvisoAtualizacao() {
           {atualizando ? <LoaderCircle size={20} className="animate-spin" /> : <Sparkles size={20} />}
         </span>
         <span className="min-w-0 flex-1">
-          <b className="block font-display leading-tight">{atualizando ? 'Atualizando…' : 'Nova versão do Pulpito'}</b>
+          <b className="block font-display leading-tight">{atualizando ? 'Atualizando…' : numeroNovo ? `Pulpito ${numeroNovo} chegou` : 'Nova versão do Pulpito'}</b>
           <span className="block text-xs leading-snug text-texto-2">{atualizando ? 'O app vai reabrir sozinho.' : 'Leva segundos. Nada se perde.'}</span>
         </span>
         {!atualizando && <>

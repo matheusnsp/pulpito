@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
-import { Check, ChevronDown, CircleCheck, Download, GraduationCap, KeyRound, LoaderCircle, LogOut, RefreshCw, Sparkles, WifiOff, Wrench, Globe } from 'lucide-react'
+import { Check, ChevronDown, CircleCheck, Download, GraduationCap, KeyRound, LoaderCircle, LogOut, RefreshCw, Sparkles, WifiOff, Wrench, Globe, Users, Trash2 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { sairDaConta } from '../lib/conta'
 import { TEMAS, lerTema, salvarTema, type Tema } from '../lib/tema'
 import { VERSOES, type VersaoId } from '../lib/biblia'
 import { emailParaUsuario, nomeDeExibicao } from '../lib/usuario'
-import { NOVIDADES, VERSAO_APP, buscarServiceWorkerNovo, carregarUltimaVersao, verificarVersao, versaoAmigavel } from '../lib/atualizar'
+import { NOVIDADES, NUMERO_VERSAO, VERSAO_APP, buscarServiceWorkerNovo, carregarUltimaVersao, verificarVersao, versaoAmigavel } from '../lib/atualizar'
 import { abrirTutorial } from '../lib/tutorial'
 import { ANO_INICIO, AUTOR } from '../lib/autor'
 import { aoMudarVersao, lerVersao, salvarVersao } from '../lib/preferencias'
@@ -173,6 +174,21 @@ export default function Ajustes() {
 
       <section className="space-y-3">
         <div>
+          <h2 className="font-display text-lg font-bold">Projetos e lixeira</h2>
+          <p className="text-sm text-texto-2">Recebeu um link ou código de convite? Entre com ele para abrir o projeto de outra pessoa.</p>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Link to="/entrar-projeto" className="botao-secundario w-full sm:w-auto">
+            <Users size={18} /> Entrar com um convite
+          </Link>
+          <Link to="/lixeira" className="botao-secundario w-full sm:w-auto">
+            <Trash2 size={18} /> Lixeira
+          </Link>
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <div>
           <h2 className="font-display text-lg font-bold">Tutorial</h2>
           <p className="text-sm text-texto-2">Reveja como funcionam as mensagens, os slides, o modo pregação e o telão.</p>
         </div>
@@ -215,7 +231,7 @@ function Sobre() {
         <div className="min-w-0 flex-1">
           <p className="text-sm text-texto-2">O Pulpito foi idealizado e criado por</p>
           <b className="block font-display text-xl">{AUTOR.nome}</b>
-          <p className="text-xs text-texto-2">© {ANO_INICIO}{new Date().getFullYear() > ANO_INICIO ? `–${new Date().getFullYear()}` : ''} {AUTOR.nome}. Todos os direitos reservados.</p>
+          <p className="text-xs text-texto-2">Pulpito {NUMERO_VERSAO} · © {ANO_INICIO}{new Date().getFullYear() > ANO_INICIO ? `–${new Date().getFullYear()}` : ''} {AUTOR.nome}. Todos os direitos reservados.</p>
         </div>
         <div className="flex gap-2">
           {links.map(({ nome, url, Icone }) => (
@@ -234,12 +250,12 @@ function Sobre() {
 type Estado = 'verificando' | 'em-dia' | 'nova' | 'sem-rede'
 function AtualizarApp() {
   const [estado, setEstado] = useState<Estado>('verificando')
-  const [remota, setRemota] = useState<string | null>(null)
+  const [remota, setRemota] = useState<{ versao: string; numero?: string } | null>(null)
   const [atualizando, setAtualizando] = useState(false)
 
   const aplicar = useCallback((r: Awaited<ReturnType<typeof verificarVersao>>) => {
     if (!r) { setEstado('sem-rede'); return }
-    setRemota(r.remota.versao)
+    setRemota(r.remota)
     setEstado(r.nova ? 'nova' : 'em-dia')
     if (r.nova) buscarServiceWorkerNovo()
   }, [])
@@ -277,11 +293,13 @@ function AtualizarApp() {
         <div className="grid grid-cols-2 border-y border-borda text-sm">
           <div className="p-3 px-4">
             <span className="block text-xs text-texto-2">Neste aparelho</span>
-            <b className="font-mono">{versaoAmigavel(VERSAO_APP)}</b>
+            <b className="block font-display text-lg leading-tight">Versão {NUMERO_VERSAO}</b>
+            <span className="font-mono text-xs text-texto-2">{versaoAmigavel(VERSAO_APP)}</span>
           </div>
           <div className="border-l border-borda p-3 px-4">
             <span className="block text-xs text-texto-2">Mais nova</span>
-            <b className="font-mono">{remota ? versaoAmigavel(remota) : '—'}</b>
+            <b className="block font-display text-lg leading-tight">{remota?.numero ? `Versão ${remota.numero}` : '—'}</b>
+            <span className="font-mono text-xs text-texto-2">{remota ? versaoAmigavel(remota.versao) : ''}</span>
           </div>
         </div>
 
@@ -300,7 +318,7 @@ function AtualizarApp() {
         <div className="border-t border-borda bg-superficie-2/40 p-4">
           <p className="rotulo flex items-center gap-1.5"><Sparkles size={13} className="text-tinta" /> Novidades</p>
           <ul className="mt-2 space-y-2">
-            {NOVIDADES.map((n) => (
+            {NOVIDADES.slice(0, 4).map((n) => (
               <li key={n.titulo} className="flex gap-2.5 text-sm">
                 <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-acao" />
                 <span><b>{n.titulo}.</b> <span className="text-texto-2">{n.texto}</span></span>

@@ -6,7 +6,7 @@ import {
 } from '@dnd-kit/core'
 import { Link, useParams } from 'react-router-dom'
 import {
-  BookOpen, CalendarDays, Check, ChevronDown, GripVertical, ChevronLeft, ChevronUp, CircleAlert, ClipboardCopy, Clock, FileDown, GraduationCap,
+  BookOpen, CalendarDays, Check, ChevronDown, GripVertical, ChevronLeft, ChevronUp, ChevronRight, CircleAlert, Layers, ClipboardCopy, Clock, FileDown, GraduationCap,
   ImagePlus, LoaderCircle, MessagesSquare, Play, Plus, Presentation, Redo2, Share2, Target, Timer, Trash2, Undo2,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
@@ -20,8 +20,14 @@ import { CORES_OPCOES, LETRAS } from '../lib/aoVivo'
 import { lerModo, salvarModo } from '../lib/criar'
 import { enviarImagem } from '../lib/imagens'
 import { useAuth } from '../lib/auth'
-import { usePapelAtual } from '../components/ProjetoGate'
+import { usePapelAtual } from '../lib/papel'
 import type { DetalhesEstudo } from '../lib/tipos'
+import { useColaboracao, type Mudanca } from '../lib/colaboracao'
+import { versaoDaSessao } from '../lib/versoes'
+import { emailParaUsuario, nomeDeExibicao } from '../lib/usuario'
+import { daSerie, proximoNumero } from '../lib/series'
+import { visivel } from '../lib/lixeira'
+import MenuMais from '../components/MenuMais'
 
 type Foto = { mensagem: Mensagem; topicos: Topico[] }
 type EventoCurto = { id: string; titulo: string; inicio: string; local: string | null }
@@ -169,7 +175,13 @@ function CampoVersiculos({ rotulo, valor, onChange }: { rotulo: string; valor: s
 export default function EditorMensagem() {
   const { id } = useParams()
   const papelAtual = usePapelAtual()
-  const { status, agendar, cancelar } = useSalvamento()
+  // Edição ao vivo: depois de gravar, avisa quem também está com o projeto aberto
+  const avisarRef = useRef<(m: Mudanca) => void>(() => {})
+  const { status, agendar, cancelar } = useSalvamento(700, (chave) => {
+    if (chave.startsWith('m:')) avisarRef.current({ tabela: 'mensagens' })
+    else if (chave.startsWith('t:')) avisarRef.current({ tabela: 'topico', id: chave.split(':')[1] })
+  })
+  const editadoEm = useRef(new Map<string, number>()) // campo → quando EU mexi por último
   const historico = useHistorico<Foto>()
   const [mensagem, setMensagem] = useState<Mensagem | null | undefined>(undefined)
   const [topicos, setTopicos] = useState<Topico[]>([])
@@ -181,6 +193,51 @@ export default function EditorMensagem() {
   const { sessao } = useAuth()
   const [gerandoFolha, setGerandoFolha] = useState(false)
   const [enviandoImg, setEnviandoImg] = useState<string | null>(null)
+  const [irmas, setIrmas] = useState<Mensagem[]>([]) // para séries: outras mensagens da conta
+
+  // Mudança de outra pessoa: busca de novo no banco e junta, sem apagar o que eu estou digitando agora
+  const recente = (chave: string) => Date.now() - (editadoEm.current.get(chave) ?? 0) < 4000
+  function juntar<T extends object>(local: T, remoto: T, prefixo: string): T {
+    const r = { ...local }
+    for (const k of Object.keys(remoto) as (keyof T)[]) if (!recente(`${prefixo}${String(k)}`)) r[k] = remoto[k]
+    return r
+  }
+  async function aoMudarRemoto(m: Mudanca) {
+    if (m.tabela === 'mensagens') {
+      const { data } = await supabase.from('mensagens').select('*').eq('id', id!).maybeSingle()
+      if (data) setMensagem((atual) => (atual ? juntar(atual, data as Mensagem, 'm:') : atual))
+    } else if (m.tabela === 'topico') {
+      const { data } = await supabase.from('topicos').select('*').eq('id', m.id).maybeSingle()
+      setTopicos((lista) => {
+        if (!data) return lista.filter((t) => t.id !== m.id)
+        const novo = data as Topico
+        const existe = lista.some((t) => t.id === novo.id)
+        const r = existe ? lista.map((t) => (t.id === novo.id ? juntar(t, novo, `t:${t.id}:`) : t)) : [...lista, novo]
+        return [...r].sort((a, b) => a.ordem - b.ordem)
+      })
+    } else {
+      const { data } = await supabase.from('topicos').select('*').eq('mensagem_id', id!).order('ordem')
+      if (data) setTopicos((lista) => (data as Topico[]).map((n) => {
+        const t = lista.find((x) => x.id === n.id)
+        return t ? juntar(t, n, `t:${t.id}:`) : n
+      }))
+    }
+  }
+  const nomeEu = nomeDeExibicao(emailParaUsuario(sessao?.user.email))
+  const { pessoas, avisar } = useColaboracao(id, sessao ? { usuario: sessao.user.id, nome: nomeEu } : null, aoMudarRemoto)
+  useEffect(() => { avisarRef.current = avisar })
+
+  // Histórico: guarda como o projeto estava antes desta sessão de edição
+  useEffect(() => { if (id) void versaoDaSessao(id) }, [id])
+
+  // Outras mensagens da conta, para sugerir séries e mostrar anterior/próxima
+  useEffect(() => {
+    let ativo = true
+    supabase.from('mensagens').select('*').then(({ data }) => {
+      if (ativo && data) setIrmas((data as Mensagem[]).filter(visivel))
+    })
+    return () => { ativo = false }
+  }, [id])
 
   useEffect(() => {
     let ativo = true
@@ -231,6 +288,7 @@ export default function EditorMensagem() {
 
   function alterarMensagem(campos: Partial<Mensagem>) {
     if (!mensagem) return
+    for (const k of Object.keys(campos)) editadoEm.current.set(`m:${k}`, Date.now())
     historico.registrar(foto(), `m:${Object.keys(campos).join(',')}`)
     setMensagem({ ...mensagem, ...campos })
     agendar(`m:${Object.keys(campos).join(',')}`, () =>
@@ -238,6 +296,7 @@ export default function EditorMensagem() {
   }
 
   function alterarTopico(tid: string, campos: Partial<Topico>) {
+    for (const k of Object.keys(campos)) editadoEm.current.set(`t:${tid}:${k}`, Date.now())
     historico.registrar(foto(), `t:${tid}:${Object.keys(campos).join(',')}`)
     setTopicos((lista) => lista.map((t) => (t.id === tid ? { ...t, ...campos } : t)))
     agendar(`t:${tid}:${Object.keys(campos).join(',')}`, () =>
@@ -255,6 +314,7 @@ export default function EditorMensagem() {
     historico.registrar(antes)
     setTopicos((lista) => [...lista, data as Topico])
     setAberto(data.id)
+    avisar({ tabela: 'lista' })
   }
 
   async function excluirTopico(t: Topico) {
@@ -263,6 +323,7 @@ export default function EditorMensagem() {
     setTopicos((lista) => lista.filter((x) => x.id !== t.id))
     const { error } = await supabase.from('topicos').delete().eq('id', t.id)
     if (error) setErro('Não foi possível excluir o tópico.')
+    else avisar({ tabela: 'lista' })
   }
 
   function mover(i: number, dir: -1 | 1) {
@@ -323,6 +384,7 @@ export default function EditorMensagem() {
       const { error } = await supabase.from('topicos').delete().in('id', remover)
       if (error) setErro('Não foi possível desfazer. Verifique a internet.')
     }
+    if (recriar.length || remover.length) avisar({ tabela: 'lista' })
   }
 
   function desfazerAgora() {
@@ -394,8 +456,8 @@ export default function EditorMensagem() {
   )
 
   const indicador = {
-    salvo: <><Check size={16} /> Salvo</>,
-    salvando: <><LoaderCircle size={16} className="animate-spin" /> Salvando</>,
+    salvo: <><Check size={16} /> <span className="max-sm:sr-only">Salvo</span></>,
+    salvando: <><LoaderCircle size={16} className="animate-spin" /> <span className="max-sm:sr-only">Salvando</span></>,
     erro: <><CircleAlert size={16} /> Não salvou</>,
   }[status]
 
@@ -416,9 +478,19 @@ export default function EditorMensagem() {
         <Link to="/" className="botao-fantasma -ml-2 px-2">
           <ChevronLeft size={20} /> <span className="hidden sm:inline">Início</span>
         </Link>
-        {papelAtual === 'dono' && <Link to={`/mensagem/${mensagem.id}/compartilhar`} className="botao-secundario px-2 py-1.5 text-xs sm:text-sm">
-          <Share2 size={15} /> Convidar
+        {papelAtual === 'dono' && <Link to={`/mensagem/${mensagem.id}/compartilhar`} className="botao-secundario px-2 py-1.5 text-xs sm:text-sm" aria-label="Convidar" title="Convidar pessoas">
+          <Share2 size={15} /> <span className="max-sm:hidden">Convidar</span>
         </Link>}
+        {pessoas.length > 0 && (
+          <span className="ml-2 flex items-center" title={`${pessoas.map((p) => p.nome).join(', ')} ${pessoas.length === 1 ? 'está' : 'estão'} com o projeto aberto`}>
+            {pessoas.slice(0, 3).map((p, i) => (
+              <span key={p.usuario} className={`flex h-7 w-7 items-center justify-center rounded-full border-2 border-fundo bg-[#38BDF8] text-[10px] font-extrabold text-[#062033] ${i ? '-ml-2' : ''}`}>
+                {p.nome.split(' ').map((x) => x[0]).slice(0, 2).join('')}
+              </span>
+            ))}
+            <span className="ml-1.5 hidden text-xs font-semibold text-texto-2 lg:inline">{pessoas.length === 1 ? `${pessoas[0].nome} está aqui` : `+${pessoas.length} aqui`}</span>
+          </span>
+        )}
         <span className={`ml-auto mr-1 flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${status === 'erro' ? 'bg-perigo/10 text-perigo' : 'text-texto-2'}`}>
           {indicador}
         </span>
@@ -430,6 +502,8 @@ export default function EditorMensagem() {
           aria-label="Refazer" title="Refazer (Cmd + Shift + Z)" className={iconeBotao}>
           <Redo2 size={18} />
         </button>
+        <MenuMais mensagem={mensagem} topicos={topicos} dono={papelAtual === 'dono'}
+          onDada={(dadaEm) => alterarDetalhes({ dadaEm })} />
         <Link to={`/pregar/${mensagem.id}`} className="botao-primario ml-1 px-3 py-2 text-sm sm:hidden">
           <Play size={16} fill="currentColor" /> {acaoNome}
         </Link>
@@ -458,6 +532,18 @@ export default function EditorMensagem() {
       <TituloCrescente value={mensagem.titulo} onChange={(v) => alterarMensagem({ titulo: v })}
         placeholder={estudo ? 'Título do estudo' : 'Título da mensagem'}
         className="mt-2 w-full bg-transparent font-display text-2xl font-extrabold leading-tight tracking-tight outline-none placeholder:text-texto-2/50 sm:text-3xl md:text-4xl" />
+      {detalhes.serie?.trim() && (() => {
+        const lista = daSerie([...irmas.filter((m) => m.id !== mensagem.id), mensagem], detalhes.serie)
+        const k = lista.findIndex((m) => m.id === mensagem.id)
+        const ant = lista[k - 1], prox = lista[k + 1]
+        return (
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-superficie-2 px-2.5 py-1 font-bold"><Layers size={14} className="text-tinta" /> {detalhes.serie}{detalhes.serieNumero ? ` · ${detalhes.serieNumero} de ${lista.length}` : ''}</span>
+            {ant && <Link to={`/mensagem/${ant.id}`} className="inline-flex max-w-[45%] items-center gap-1 truncate text-texto-2 hover:text-texto"><ChevronLeft size={15} /> <span className="truncate">{ant.titulo || 'Sem título'}</span></Link>}
+            {prox && <Link to={`/mensagem/${prox.id}`} className="inline-flex max-w-[45%] items-center gap-1 truncate text-texto-2 hover:text-texto"><span className="truncate">{prox.titulo || 'Sem título'}</span> <ChevronRight size={15} /></Link>}
+          </div>
+        )
+      })()}
 
       </div>
 
@@ -556,6 +642,26 @@ export default function EditorMensagem() {
               {n} min
             </button>
           ))}
+        </div>
+        <div className="col-span-2 grid grid-cols-[minmax(0,1fr)_5.5rem] gap-3">
+          <Campo rotulo="Série (opcional)">
+            <div className="relative">
+              <Layers size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-texto-2" />
+              <input list="series-conta" value={detalhes.serie ?? ''} placeholder="Ex.: Fruto do Espírito"
+                onChange={(e) => {
+                  const serie = e.target.value
+                  const novo = serie.trim() && !detalhes.serieNumero ? proximoNumero(irmas, serie, mensagem.id) : detalhes.serieNumero
+                  alterarDetalhes({ serie: serie || undefined, serieNumero: serie.trim() ? novo : undefined })
+                }} className="campo pl-10" />
+              <datalist id="series-conta">
+                {[...new Set(irmas.map((m) => m.detalhes?.serie?.trim()).filter(Boolean))].map((nome) => <option key={nome} value={nome} />)}
+              </datalist>
+            </div>
+          </Campo>
+          <Campo rotulo="Nº">
+            <input type="number" min={1} max={999} value={detalhes.serieNumero ?? ''} disabled={!detalhes.serie?.trim()}
+              onChange={(e) => alterarDetalhes({ serieNumero: Number(e.target.value) || undefined })} className="campo" />
+          </Campo>
         </div>
       </div>
 

@@ -1,15 +1,18 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { papelProjeto, type PapelProjeto } from '../lib/compartilhamento'
+import { ContextoPapel } from '../lib/papel'
 import LeituraProjeto from '../pages/LeituraProjeto'
-
-const ContextoPapel = createContext<PapelProjeto>(null)
-export const usePapelAtual = () => useContext(ContextoPapel)
 
 /* Um leitor nunca monta o editor: impede controles mutantes e autosave.
    RLS no Supabase é a barreira real, inclusive contra chamadas diretas. */
 export default function ProjetoGate({ children }: { children: ReactNode }) {
   const { id = '' } = useParams()
+  // Trocar de projeto recria o portão, que volta a "carregando" sozinho
+  return <Portao key={id} id={id}>{children}</Portao>
+}
+
+function Portao({ id, children }: { id: string; children: ReactNode }) {
   const [papel, setPapel] = useState<PapelProjeto | 'carregando'>('carregando')
   const [erro, setErro] = useState('')
 
@@ -19,7 +22,6 @@ export default function ProjetoGate({ children }: { children: ReactNode }) {
       void papelProjeto(id).then((p) => { if (ativo) { setPapel(p); setErro('') } })
         .catch(() => { if (ativo) { setPapel(null); setErro('Não foi possível verificar suas permissões. Confira a migração do Supabase.') } })
     }
-    setPapel('carregando')
     verificar()
     const quandoVisivel = () => { if (document.visibilityState === 'visible') verificar() }
     window.addEventListener('focus', verificar)

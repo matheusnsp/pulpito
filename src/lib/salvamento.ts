@@ -5,7 +5,10 @@ type Pendente = { timer: ReturnType<typeof setTimeout>; salvar: Salvar }
 export type StatusSalvamento = 'salvo' | 'salvando' | 'erro'
 
 /* Salva sozinho depois que a pessoa para de mexer; ao sair da tela, salva o que ficou pendente */
-export function useSalvamento(espera = 700) {
+export function useSalvamento(espera = 700, aoSalvar?: (chave: string) => void) {
+  // Avisado depois de cada gravação que deu certo (a edição ao vivo usa para avisar os outros)
+  const aoSalvarRef = useRef(aoSalvar)
+  useEffect(() => { aoSalvarRef.current = aoSalvar })
   const pendentes = useRef(new Map<string, Pendente>())
   const [status, setStatus] = useState<StatusSalvamento>('salvo')
 
@@ -17,7 +20,10 @@ export function useSalvamento(espera = 700) {
       pendentes.current.delete(chave)
       const { error } = await salvar()
       if (error) setStatus('erro')
-      else if (pendentes.current.size === 0) setStatus('salvo')
+      else {
+        aoSalvarRef.current?.(chave)
+        if (pendentes.current.size === 0) setStatus('salvo')
+      }
     }, espera)
     pendentes.current.set(chave, { timer, salvar })
   }, [espera])

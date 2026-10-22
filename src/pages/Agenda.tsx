@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, MapPin, Play, Plus, Trash2, X } from 'lucide-react'
+import { visivel } from '../lib/lixeira'
+import type { Mensagem } from '../lib/tipos'
 import { supabase } from '../lib/supabase'
 import { OPCOES_LEMBRETE, type Evento } from '../lib/tipos'
 import CartaoCalendario from '../components/CartaoCalendario'
@@ -216,12 +218,12 @@ export default function Agenda() {
     let ativo = true
     Promise.all([
       supabase.from('eventos').select('*').order('inicio'),
-      supabase.from('mensagens').select('id, titulo').order('atualizado_em', { ascending: false }),
+      supabase.from('mensagens').select('*').order('atualizado_em', { ascending: false }),
     ]).then(([ev, ms]) => {
       if (!ativo) return
       if (ev.error) setErro('Não foi possível carregar a agenda. Verifique a internet.')
       setEventos((ev.data as Evento[]) ?? [])
-      const lista = (ms.data as MensagemCurta[]) ?? []
+      const lista = ((ms.data ?? []) as (MensagemCurta & Pick<Mensagem, 'excluida_em' | 'detalhes'>)[]).filter(visivel)
       setMensagens(lista)
       // Vindo do editor: abre um compromisso novo já ligado à mensagem
       if (mensagemInicial && lista.some((x) => x.id === mensagemInicial))

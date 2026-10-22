@@ -1,5 +1,5 @@
 /* Tutorial: abre sozinho uma vez (v2 = tutorial completo com capítulos) e pode ser reaberto em Ajustes */
-const CHAVE = 'pulpito-tutorial-visto-v3'
+const CHAVE = 'pulpito-tutorial-visto-v4'
 const EVENTO = 'pulpito-abrir-tutorial'
 
 export function tutorialJaVisto() {

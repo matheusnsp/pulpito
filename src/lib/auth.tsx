@@ -22,4 +22,5 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return <AuthContext.Provider value={estado}>{children}</AuthContext.Provider>
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- o hook mora junto do provedor de propósito
 export const useAuth = () => useContext(AuthContext)

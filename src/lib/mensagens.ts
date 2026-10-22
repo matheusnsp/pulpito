@@ -40,8 +40,14 @@ export async function criarMensagem(pastaId: string | null = null, opcoes: { tip
   return data.id as string
 }
 
+const semChaves = <T extends object>(o: T, chaves: (keyof T)[]): T => {
+  const r = { ...o }
+  for (const k of chaves) delete r[k]
+  return r
+}
+
 /* Copia a mensagem com tópicos e slides. Devolve a nova mensagem. */
-export async function duplicarMensagem(m: Mensagem): Promise<Mensagem> {
+export async function duplicarMensagem(m: Mensagem, opcoes: { titulo?: string; detalhes?: Mensagem['detalhes']; pastaId?: string | null } = {}): Promise<Mensagem> {
   const [t, s] = await Promise.all([
     supabase.from('topicos').select('*').eq('mensagem_id', m.id).order('ordem'),
     supabase.from('slides').select('*').eq('mensagem_id', m.id).order('ordem'),
@@ -49,11 +55,14 @@ export async function duplicarMensagem(m: Mensagem): Promise<Mensagem> {
   if (t.error) throw t.error
 
   const { data: nova, error } = await supabase.from('mensagens').insert({
-    titulo: `${m.titulo || 'Sem título'} (cópia)`,
+    titulo: opcoes.titulo ?? `${m.titulo || 'Sem título'} (cópia)`,
     texto_base: m.texto_base,
     tempo_minutos: m.tempo_minutos,
-    pasta_id: m.pasta_id,
-    ...(m.tipo === 'estudo' ? { tipo: m.tipo, detalhes: m.detalhes ?? {} } : {}),
+    pasta_id: opcoes.pastaId !== undefined ? opcoes.pastaId : m.pasta_id,
+    // Formato, objetivo, série… vão junto (sem a marca de "já dada")
+    ...(m.tipo === 'estudo' || opcoes.detalhes || (m.detalhes && Object.keys(m.detalhes).length)
+      ? { tipo: m.tipo ?? 'pregacao', detalhes: semChaves(opcoes.detalhes ?? m.detalhes ?? {}, ['dadaEm']) }
+      : {}),
   }).select().single()
   if (error || !nova) throw error ?? new Error('sem dados')
 
@@ -132,4 +141,16 @@ function estudoEmTexto(m: Mensagem, blocos: Topico[], ref: (t: string | null) =>
     linhas.push('')
   })
   return linhas.join('\n').trim()
+}
+
+/* Modelo próprio: uma cópia escondida das listas, que aparece em "Criar novo" */
+export async function salvarComoModelo(m: Mensagem, nome: string) {
+  const detalhes = semChaves(m.detalhes ?? {}, ['serie', 'serieNumero', 'dadaEm'])
+  return duplicarMensagem(m, { titulo: nome, detalhes: { ...detalhes, ehModelo: true }, pastaId: null })
+}
+
+/* Começa uma mensagem nova a partir de um modelo próprio */
+export async function usarModelo(modelo: Mensagem, pastaId: string | null) {
+  const detalhes = semChaves(modelo.detalhes ?? {}, ['ehModelo'])
+  return duplicarMensagem(modelo, { titulo: modelo.titulo, detalhes, pastaId })
 }

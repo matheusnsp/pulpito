@@ -18,6 +18,7 @@ export default function CompartilharProjeto() {
   const [gerado, setGerado] = useState<{ codigo: string; link: string } | null>(null)
   const [copiado, setCopiado] = useState<'link' | 'codigo' | null>(null)
   const [ocupado, setOcupado] = useState(false)
+  const [agora] = useState(() => Date.now())
   const [erro, setErro] = useState('')
 
   const atualizar = useCallback(async () => {
@@ -134,7 +135,7 @@ export default function CompartilharProjeto() {
         <p className="mt-1 text-xs text-texto-2">Revogar o link impede novas entradas. Para remover quem já aceitou, use “Pessoas com acesso”.</p>
         <ul className="mt-3 divide-y divide-borda">
           {convites.map((c) => {
-            const ativo = !c.revogado_em && new Date(c.expira_em).getTime() > Date.now() && c.usos < c.max_usos
+            const ativo = !c.revogado_em && new Date(c.expira_em).getTime() > agora && c.usos < c.max_usos
             return <li key={c.id} className="flex items-center gap-2 py-3 text-sm">
               <Shield size={17} className="shrink-0 text-texto-2" />
               <span className="min-w-0 flex-1">{c.permissao === 'editor' ? 'Editar' : 'Visualizar'} · {c.usos}/{c.max_usos} usos<br /><span className="text-xs text-texto-2">{ativo ? `Expira em ${new Date(c.expira_em).toLocaleDateString('pt-BR')}` : 'Expirado, utilizado ou revogado'}</span></span>

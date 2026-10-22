@@ -9,6 +9,7 @@ export type Mensagem = {
   atualizado_em: string
   tipo?: TipoProjeto // ausente = pregação (banco sem a coluna nova)
   detalhes?: DetalhesEstudo
+  excluida_em?: string | null // na lixeira desde (banco com o SQL da lixeira)
 }
 
 export type TipoProjeto = 'pregacao' | 'estudo'
@@ -16,6 +17,9 @@ export type DetalhesEstudo = {
   objetivo?: string; publico?: string; material?: string; referencias?: string
   esperaTitulo?: string; esperaTexto?: string // o que a turma vê no celular enquanto não há pergunta
   formato?: string // no lado Palavra: pregacao, celula, ebd, devocional, discipulado
+  ehModelo?: boolean // modelo próprio: não aparece nas listas, só em "Criar novo"
+  serie?: string; serieNumero?: number // série de mensagens ("Aula 1, 2, 3…")
+  dadaEm?: string // quando foi pregada/dada (marca o progresso da série)
 }
 
 export type Topico = {

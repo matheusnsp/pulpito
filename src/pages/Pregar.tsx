@@ -7,7 +7,7 @@ import { FaixaAoVivo, PainelAoVivo, RespostasAoVivo, type AoVivo } from '../comp
 import { aceitaResposta, ehMultipla, linkResponder, useAulaAoVivo } from '../lib/aoVivo'
 import { Link, useParams } from 'react-router-dom'
 import {
-  BookOpen, Cast, ChartNoAxesColumn, ChevronDown, Radio, Clock, ExternalLink, Target, Timer, ChevronLeft, Maximize, Minus, MonitorPlay, Pause, Play, Plus, RotateCcw, Settings, X,
+  Check, BookOpen, Cast, ChartNoAxesColumn, ChevronDown, Radio, Clock, ExternalLink, Target, Timer, ChevronLeft, Maximize, Minus, MonitorPlay, Pause, Play, Plus, RotateCcw, Settings, X,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Mensagem, Slide, Topico } from '../lib/tipos'
@@ -492,6 +492,9 @@ export default function Pregar() {
   const [topicos, setTopicos] = useState<Topico[]>([])
   const [slides, setSlides] = useState<Slide[]>([])
   const [indice, setIndice] = useState(0)
+  // Tempo no item atual: guarda quanto o cronômetro marcava ao entrar no item
+  const [marco, setMarco] = useState({ indice: 0, base: 0 })
+  const [concluida, setConcluida] = useState(false)
   const [subEstado, setSubEstado] = useState({ pagina: 0, sub: 0 })
   const [biblia, setBiblia] = useState<string | null>(null)
   const [painelTexto, setPainelTexto] = useState(false)
@@ -815,6 +818,16 @@ export default function Pregar() {
   }[fase]
   const hora = new Date(agora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
   const topico = indice > 0 ? topicos[indice - 1] : null
+  if (marco.indice !== indice) setMarco({ indice, base: decorrido })
+  const noItem = marco.indice === indice ? Math.max(0, decorrido - marco.base) : 0
+  const metaItem = topico ? (topico.extra?.minutos ? topico.extra.minutos * 60_000 : total / Math.max(1, topicos.length)) : 0
+  const mmss = (ms: number) => { const sgs = Math.round(ms / 1000); return `${String(Math.floor(sgs / 60)).padStart(2, '0')}:${String(sgs % 60).padStart(2, '0')}` }
+  const jaDada = concluida || !!mensagem.detalhes?.dadaEm
+  async function concluir() {
+    if (!mensagem) return
+    setConcluida(true)
+    await supabase.from('mensagens').update({ detalhes: { ...(mensagem.detalhes ?? {}), dadaEm: new Date().toISOString() } }).eq('id', mensagem.id)
+  }
   const estudo = mensagem.tipo === 'estudo'
   const ehDeBloco = (t: Topico) => estudo || ehBloco(t.tipo)
   const temBlocos = estudo || topicos.some((t) => ehBloco(t.tipo))
@@ -925,12 +938,28 @@ export default function Pregar() {
 
         {usaAoVivo && <FaixaAoVivo ao={ao} onAbrir={() => setPainelAoVivo(true)} />}
 
+        {/* Celular e tablet: no último item, concluir marca a mensagem como feita (progresso da série) */}
+        {topicos.length > 0 && indice === topicos.length && (
+          <div className="mx-auto mt-2 flex max-w-3xl justify-end px-3 xl:hidden">
+            <button onClick={(e) => { e.stopPropagation(); void concluir() }} disabled={jaDada}
+              className="flex items-center gap-1.5 rounded-full border border-borda px-3 py-1 text-xs font-bold text-texto-2 disabled:opacity-100">
+              <Check size={14} className={jaDada ? 'text-sucesso' : ''} /> {jaDada ? (estudo ? 'Dada' : 'Feita') : `Concluir e marcar como ${estudo ? 'dada' : 'feita'}`}
+            </button>
+          </div>
+        )}
+
         {/* Próximo tópico, com lista para pular para qualquer um */}
         {topicos.length > 0 && (
           <div className="relative mx-auto mt-2 flex max-w-3xl items-center justify-between gap-3 px-3">
             <span className="rotulo shrink-0">
               {indice === 0 ? 'Capa' : `${nomeParte} ${indice} de ${topicos.length}`}
               {passos > 1 && ` · ${noMural ? 'mural no telão' : 'slide'} ${sub + 1}/${passos}`}
+              {topico && decorrido > 0 && (
+                <span className={`ml-2 rounded-md px-1.5 py-0.5 font-mono normal-case tracking-normal ${noItem > metaItem ? 'bg-perigo/15 text-perigo' : 'bg-superficie-2 text-texto'}`}
+                  title="Tempo neste item / tempo previsto">
+                  {mmss(noItem)} / {mmss(metaItem)}
+                </span>
+              )}
             </span>
             <button onClick={() => setListaTopicos((v) => !v)} aria-expanded={listaTopicos}
               className="flex min-w-0 max-w-[65%] items-center gap-1.5 rounded-lg px-1 py-1 text-left text-xs hover:bg-superficie-2">
@@ -1056,6 +1085,12 @@ export default function Pregar() {
               })}
             </ol>
             <p className="mt-4 text-xs text-texto-2">Setas do teclado mudam de {nomeParte.toLowerCase()} · espaço liga o cronômetro</p>
+            {indice === topicos.length && (
+              <button onClick={(e) => { e.stopPropagation(); void concluir() }} disabled={jaDada}
+                className="botao-secundario mt-4 w-full text-sm disabled:opacity-100">
+                {jaDada ? <><Check size={16} className="text-sucesso" /> {estudo ? 'Dada' : 'Feita'}</> : <><Check size={16} /> Concluir e marcar como {estudo ? 'dada' : 'feita'}</>}
+              </button>
+            )}
           </aside>
         )}
         </div>

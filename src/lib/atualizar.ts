@@ -8,8 +8,9 @@
 
 export const VERSAO_APP = __VERSAO_APP__
 export const ID_BUILD = __ID_BUILD__
+export const NUMERO_VERSAO = __NUMERO_VERSAO__ // ex.: 2.0.0 (vem do package.json)
 
-export type InfoVersao = { id: string; versao: string }
+export type InfoVersao = { id: string; versao: string; numero?: string }
 
 export async function verificarVersao(): Promise<{ nova: boolean; remota: InfoVersao } | null> {
   try {
@@ -61,6 +62,18 @@ export function versaoAmigavel(v: string) {
 
 /* Novidades recentes, mostradas em Ajustes. A mais nova primeiro. */
 export const NOVIDADES: { titulo: string; texto: string }[] = [
+  {
+    titulo: 'Lixeira e histórico',
+    texto: 'O que você exclui fica 30 dias na lixeira. E cada projeto guarda versões: dá para voltar a como estava ontem.'
+  },
+  {
+    titulo: 'Edição ao vivo, modelos e séries',
+    texto: 'Veja quem está no projeto e receba as mudanças na hora. Salve seus próprios modelos e organize mensagens em séries com progresso.'
+  },
+  {
+    titulo: 'Tempo por item e PDF do esboço',
+    texto: 'No modo pregação, o tempo de cada tópico aparece ao lado do previsto. No editor, ⋯ › Baixar esboço em PDF.'
+  },
   {
     titulo: 'Compartilhamento de projetos',
     texto: 'Nova área para convidar colaboradores por link ou código, definir permissões de edição ou visualização e gerenciar acessos. Em fase de ativação.'

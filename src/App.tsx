@@ -19,6 +19,8 @@ const Ajustes = lazy(() => import('./pages/Ajustes'))
 const Perguntas = lazy(() => import('./pages/Perguntas'))
 const Responder = lazy(() => import('./pages/Responder'))
 const RespostasEstudo = lazy(() => import('./pages/RespostasEstudo'))
+const Lixeira = lazy(() => import('./pages/Lixeira'))
+const Historico = lazy(() => import('./pages/Historico'))
 
 function Carregando() {
   return (
@@ -59,6 +61,8 @@ export default function App() {
             <Route path="/agenda" element={<Agenda />} />
             <Route path="/perguntas" element={<Perguntas />} />
             <Route path="/ajustes" element={<Ajustes />} />
+            <Route path="/lixeira" element={<Lixeira />} />
+            <Route path="/mensagem/:id/historico" element={<ProjetoGate><Historico /></ProjetoGate>} />
             <Route path="/conectar/:codigo" element={<Conectar />} />
           </Route>
         </Route>

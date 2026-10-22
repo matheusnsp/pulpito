@@ -6,10 +6,28 @@ export type Colaborador = { usuario_id: string; usuario: string; permissao: Perm
 export type Convite = { id: string; permissao: PermissaoConvite; expira_em: string; usos: number; max_usos: number; revogado_em: string | null }
 export type PreviaConvite = { titulo: string; permissao: PermissaoConvite; expira_em: string }
 
+/**
+ * Mantém o controle de acesso do Supabase.
+ * Se a RPC de colaboração ainda não estiver disponível ou falhar,
+ * o proprietário ainda pode abrir SEUS projetos legados. Apenas o
+ * próprio proprietário (user_id == auth.uid()) recebe esse fallback.
+ * O SELECT também permanece sujeito à RLS original do banco.
+ */
 export async function papelProjeto(id: string): Promise<PapelProjeto> {
   const { data, error } = await supabase.rpc('pulpito_papel_projeto', { p_mensagem_id: id })
+  if (!error && data) return data as PapelProjeto
+
+  // Não concede permissão a convidados nem a projetos de terceiros.
+  // Suporta instalações onde o SQL de colaboração ainda não foi aplicado.
+  const { data: autenticacao, error: erroAuth } = await supabase.auth.getUser()
+  if (!erroAuth && autenticacao.user) {
+    const { data: projeto, error: erroProjeto } = await supabase.from('mensagens')
+      .select('user_id').eq('id', id).maybeSingle()
+    if (!erroProjeto && projeto?.user_id === autenticacao.user.id) return 'dono'
+  }
+
   if (error) throw error
-  return (data ?? null) as PapelProjeto
+  return null
 }
 
 export async function criarConvite(id: string, permissao: PermissaoConvite, usos: number) {
