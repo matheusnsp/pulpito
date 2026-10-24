@@ -72,7 +72,7 @@ exportação em planilha. Conta nova ganha 14 dias de Premium. Quando o Premium 
 continua lendo tudo, só não cria nem edita o que é Premium. Em projeto compartilhado vale o plano do dono.
 
 As regras valem no banco, por RLS e pela função `eh_premium`; a interface só mostra e orienta. Preços, textos e o
-contato do botão Assinar ficam em `src/lib/planoInfo.ts` (`CONTATO_ASSINATURA` é o WhatsApp do dono, só dígitos).
+contato do botão Assinar ficam em `src/lib/planoInfo.ts` (`CONTATO_ASSINATURA` é o e-mail que recebe os pedidos).
 
 Ativar o Premium de alguém, no SQL Editor do Supabase:
 

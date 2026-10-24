@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, ChevronLeft, MessageCircle, Sparkles } from 'lucide-react'
+import { Check, ChevronLeft, Mail, Sparkles } from 'lucide-react'
 import { useAuth } from '../lib/auth'
 import { usePlano } from '../lib/plano'
 import { nomeDoUsuario } from '../lib/usuario'
@@ -62,14 +62,14 @@ export default function Assinatura() {
           </ul>
           {!plano.premium || emTeste(plano) ? (
             link ? (
-              <a href={link} target="_blank" rel="noopener" className="botao-primario mt-5 w-full"><MessageCircle size={18} /> Assinar pelo WhatsApp</a>
+              <a href={link} className="botao-primario mt-5 w-full"><Mail size={18} /> Assinar por e-mail</a>
             ) : (
               <a href={AUTOR.site} target="_blank" rel="noopener" className="botao-primario mt-5 w-full">Falar com o autor para assinar</a>
             )
           ) : (
             <p className="mt-5 flex items-center gap-2 text-sm font-semibold text-tinta"><Check size={16} /> Plano ativo</p>
           )}
-          <p className="mt-3 text-xs text-texto-2">Pagamento por Pix. A ativação é feita em até um dia útil, e você recebe a confirmação por e-mail.</p>
+          <p className="mt-3 text-xs text-texto-2">Você recebe a chave Pix por e-mail. A ativação é feita em até um dia útil, com confirmação por e-mail.</p>
         </section>
       </div>
 

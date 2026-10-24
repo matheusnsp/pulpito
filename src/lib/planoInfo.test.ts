@@ -31,7 +31,11 @@ describe('preço e link', () => {
   it('formata em reais', () => {
     expect(formatarPreco(9.9).replace(/\s/g, ' ')).toBe('R$ 9,90')
   })
-  it('sem contato definido não há link', () => {
-    expect(linkAssinar('anual', 'Maria', 'm@x.com')).toBeNull()
+  it('abre o e-mail do dono com assunto e mensagem prontos', () => {
+    const link = linkAssinar('anual', 'Maria', 'm@x.com')!
+    expect(link.startsWith('mailto:matheusn.dev@gmail.com?subject=')).toBe(true)
+    const corpo = decodeURIComponent(link.split('body=')[1])
+    expect(corpo).toContain('anual')
+    expect(corpo).toContain('Maria (m@x.com)')
   })
 })

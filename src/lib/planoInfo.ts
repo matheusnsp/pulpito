@@ -19,8 +19,8 @@ export const PLANO_PADRAO: EstadoPlano = { plano: 'gratuito', status: 'ativa', v
 export const PRECOS = { mensal: 9.9, anual: 89 }
 export const DIAS_TESTE = 14
 
-/* WhatsApp do dono, só dígitos com DDD (ex.: 5521999999999). Vazio: a página aponta para o site do autor. */
-export const CONTATO_ASSINATURA = ''
+/* E-mail que recebe os pedidos de assinatura. Vazio: a página aponta para o site do autor. */
+export const CONTATO_ASSINATURA = 'matheusn.dev@gmail.com'
 
 export type RecursoPremium = 'mensagens' | 'slides' | 'respostas' | 'colaboracao' | 'historico' | 'agenda' | 'planilha'
 
@@ -56,9 +56,10 @@ export const mensagensRestantes = (p: EstadoPlano) =>
 
 export const podeCriarMensagem = (p: EstadoPlano) => mensagensRestantes(p) > 0
 
-/* Link do botão Assinar: WhatsApp com mensagem pronta, ou nulo quando o contato não foi definido */
+/* Link do botão Assinar: e-mail com assunto e mensagem prontos, ou nulo quando o contato não foi definido */
 export function linkAssinar(periodo: 'mensal' | 'anual', nome: string, email: string | null) {
   if (!CONTATO_ASSINATURA) return null
-  const texto = `Olá! Quero assinar o Pulpito Premium (${periodo === 'anual' ? 'anual' : 'mensal'}, ${formatarPreco(PRECOS[periodo])}). Minha conta: ${nome}${email ? ` (${email})` : ''}.`
-  return `https://wa.me/${CONTATO_ASSINATURA}?text=${encodeURIComponent(texto)}`
+  const assunto = `Assinatura Pulpito Premium (${periodo === 'anual' ? 'anual' : 'mensal'})`
+  const corpo = `Olá! Quero assinar o Pulpito Premium ${periodo === 'anual' ? 'anual' : 'mensal'}, ${formatarPreco(PRECOS[periodo])}.\nMinha conta no Pulpito: ${nome}${email ? ` (${email})` : ''}.\n\nPode me mandar a chave Pix?`
+  return `mailto:${CONTATO_ASSINATURA}?subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(corpo)}`
 }

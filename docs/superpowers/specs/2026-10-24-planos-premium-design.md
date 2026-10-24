@@ -9,8 +9,8 @@ Data: 2026-10-24. Branch: `premium/planos`. Depende da parte 1 (publicada).
 - Conta nova ganha 14 dias de Premium (status `teste`). Ao vencer, cai para Gratuito sem perder nada:
   continua lendo tudo, só não cria nem edita o que é Premium.
 - Em projeto compartilhado, o plano do dono do projeto manda: editor gratuito trabalha nos slides de um dono Premium.
-- Cobrança manual nesta etapa: botão "Assinar" abre o WhatsApp (constante `CONTATO_ASSINATURA`, vazia até
-  o dono definir; vazia, a página aponta para o site do autor). O dono ativa com `select ativar_premium('email', 12)`.
+- Cobrança manual nesta etapa: botão "Assinar" abre um e-mail para `CONTATO_ASSINATURA` com assunto e
+  mensagem prontos (vazia, a página aponta para o site do autor). O dono ativa com `select ativar_premium('email', 12)`.
 - Contas existentes na data da migração: Premium por 12 meses, origem `cortesia`.
 
 ## Banco (`20261024190000_assinaturas.sql`)
