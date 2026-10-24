@@ -926,11 +926,11 @@ export default function EditorSlides() {
           <h1 className="font-display text-2xl font-bold sm:text-3xl">Slides</h1>
           <p className="truncate text-sm text-texto-2 sm:text-base">{mensagem.titulo}</p>
         </div>
-        <div className="grid grid-cols-3 gap-2 sm:flex">
-          <button onClick={() => setPainelImportar((v) => !v)} className="botao-secundario px-2 sm:px-4">
+        <div className={`grid gap-2 sm:flex ${slides.length ? 'grid-cols-3' : 'grid-cols-1'}`}>
+          {slides.length > 0 && <button onClick={() => setPainelImportar((v) => !v)} className="botao-secundario px-2 sm:px-4">
             <Upload size={18} /> Importar
-          </button>
-          <div className="relative">
+          </button>}
+          {slides.length > 0 && <div className="relative">
             <button onClick={() => setMenuExportar((v) => !v)} disabled={!slides.length || !!exportando}
               aria-expanded={menuExportar} className="botao-secundario w-full px-2 sm:px-4">
               {exportando
@@ -958,7 +958,7 @@ export default function EditorSlides() {
                 </div>
               </>
             )}
-          </div>
+          </div>}
           <Link to={`/pregar/${mensagem.id}`} className="botao-primario px-2 sm:px-4">
             <Play size={18} /> Pregar
           </Link>
@@ -1005,19 +1005,35 @@ export default function EditorSlides() {
       )}
 
       {slides.length === 0 ? (
-        <section className="mt-6 space-y-5 rounded-3xl border border-borda bg-superficie p-6">
-          <div>
-            <h2 className="font-display text-2xl font-bold">Monte os slides desta mensagem</h2>
-            <p className="mt-1 max-w-xl text-texto-2">
-              Gere uma capa e um slide por tópico, com título e versículo, e depois personalize.
-              Ou importe uma apresentação pronta. Enquanto não houver slides, o telão usa o visual automático.
-            </p>
+        <section className="mt-6 overflow-hidden rounded-3xl border border-borda bg-superficie">
+          {/* Como a capa vai ficar: o mesmo visual que o botão gera */}
+          <div className="mx-auto max-w-xl p-4 pb-0 sm:p-6 sm:pb-0">
+            <div className="rounded-2xl p-1 ring-1 ring-borda">
+              <SlideVisual className="rounded-xl" slide={{
+                titulo: mensagem.titulo || 'Título da mensagem',
+                subtitulo: referenciaBonita(mensagem.texto_base ?? null) ?? (mensagem.texto_base || null),
+                fundo: FUNDOS_PRONTOS[0].valor, estilo: { layout: 'capa' },
+              }} />
+            </div>
           </div>
-          {blocoGerar}
-          <button onClick={() => inserirDepois({ topico_id: null, titulo: mensagem.titulo })}
-            className="botao-fantasma -ml-2 px-2 text-sm">
-            <Plus size={16} /> Começar com um slide em branco
-          </button>
+          <div className="mx-auto max-w-xl p-4 text-center sm:p-6">
+            <h2 className="font-display text-2xl font-bold">Esta mensagem ainda não tem slides</h2>
+            <p className="mt-1 text-texto-2">
+              {topicos.length
+                ? `Em um toque: uma capa, um slide por ${mensagem.tipo === 'estudo' ? 'bloco' : 'tópico'} e os versículos por extenso. Depois você ajusta o que quiser.`
+                : 'Escreva os tópicos da mensagem primeiro; os slides nascem deles. Ou comece com um slide em branco.'}
+            </p>
+            <button onClick={gerar} disabled={gerando || topicos.length === 0} className="botao-primario mt-5 w-full sm:w-auto">
+              {gerando ? <LoaderCircle size={18} className="animate-spin" /> : <ListPlus size={18} />}
+              {gerando ? 'Criando…' : 'Criar slides desta mensagem'}
+            </button>
+            <p className="mt-4 text-sm text-texto-2">
+              <button onClick={() => inserirDepois({ topico_id: null, titulo: mensagem.titulo })} className="font-semibold text-tinta underline-offset-4 hover:underline">Começar com um slide em branco</button>
+              {' · '}
+              <button onClick={() => setPainelImportar(true)} className="font-semibold text-tinta underline-offset-4 hover:underline">Importar PowerPoint ou PDF</button>
+            </p>
+            <p className="mt-3 text-xs text-texto-2">Sem slides, o telão mostra o visual automático dos tópicos.</p>
+          </div>
         </section>
       ) : (
         <>
