@@ -1,12 +1,12 @@
 import AvisoDeslizante from '../components/AvisoDeslizante'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   DndContext, DragOverlay, PointerSensor, useDraggable, useDroppable, useSensor, useSensors,
   type DragEndEvent, type DragStartEvent,
 } from '@dnd-kit/core'
 import {
-  BookOpen, CalendarDays, Check, ChevronRight, Settings, Copy, Ellipsis, GraduationCap, Mic, MonitorPlay, NotebookPen, FolderInput, GripVertical, Pencil, Play, Plus, Search, Target, Trash2, Users, X, Layers, LoaderCircle,
+  BookOpen, CalendarDays, Check, ChevronRight, Settings, Copy, Ellipsis, GraduationCap, Mic, MonitorPlay, NotebookPen, FolderInput, GripVertical, Pencil, Play, Plus, Search, Target, Trash2, Users, X, Layers, LoaderCircle, Sparkles,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
@@ -18,6 +18,7 @@ import { abrirCriar, lerModo, salvarModo } from '../lib/criar'
 import { useCriarRapido } from '../lib/criarRapido'
 import { mostrarAbaEstudos, mostrarBusca, mostrarContinuar, mostrarPastas } from '../lib/inicio'
 import { abrirTutorial } from '../lib/tutorial'
+import { criarMensagemExemplo } from '../lib/exemplo'
 import { ICONE_FORMATO, nomeFormato } from '../lib/blocos'
 import { moverParaLixeira, visivel } from '../lib/lixeira'
 import { resumoSeries } from '../lib/series'
@@ -309,6 +310,14 @@ export default function Mensagens() {
 
   // Palavra: cria a pregação na hora. Estudos: abre a folha para escolher o modelo.
   const { criar: criarRapido, criando } = useCriarRapido()
+  const navigate = useNavigate()
+  const [criandoExemplo, setCriandoExemplo] = useState(false)
+  async function verExemplo() {
+    setCriandoExemplo(true)
+    try { navigate(`/mensagem/${await criarMensagemExemplo()}`) }
+    catch { setErro('Não foi possível criar o exemplo. Verifique a internet.') }
+    finally { setCriandoExemplo(false) }
+  }
   const outrosFormatos = () => abrirCriar({ pastaId: pastaAtual?.id ?? null, tipo: modo })
   const criar = () => { if (modo === 'estudo') outrosFormatos(); else void criarRapido(pastaAtual?.id ?? null) }
 
@@ -714,6 +723,11 @@ export default function Mensagens() {
               <button onClick={criar} disabled={criando} className="botao-primario w-full sm:w-auto">
                 {criando ? <LoaderCircle size={18} className="animate-spin" /> : <Plus size={18} />} {modo === 'estudo' ? 'Novo estudo' : 'Nova mensagem'}
               </button>
+              {modo !== 'estudo' && (
+                <button onClick={verExemplo} disabled={criandoExemplo} className="botao-secundario w-full sm:w-auto">
+                  {criandoExemplo ? <LoaderCircle size={18} className="animate-spin" /> : <Sparkles size={18} />} Ver um exemplo pronto
+                </button>
+              )}
               <p className="text-center text-sm text-texto-2">
                 {modo === 'estudo' ? 'Prefere pregação?' : 'Célula, EBD, devocional ou estudo?'}{' '}
                 <button onClick={outrosFormatos} className="font-semibold text-tinta underline-offset-4 hover:underline">Outros formatos</button>
