@@ -31,6 +31,21 @@ npm run dev
 
 `npm run build` gera a versão de produção em `dist/` (deploy na Vercel, ver `vercel.json`).
 
+`npm test` roda os testes das bibliotecas puras (Vitest). O CI do GitHub roda tipos, lint, testes e build em todo push.
+
+## Login, e-mail e senha
+
+As contas são criadas com e-mail real, e a pessoa recupera a senha sozinha em `/recuperar-senha`.
+Contas antigas, criadas só com usuário (`nome.sobrenome`), continuam entrando normalmente e veem em
+Ajustes um convite para adicionar um e-mail. No painel do Supabase, em **Authentication**:
+
+- **URL Configuration**: Site URL é o endereço do app; em Redirect URLs, adicione o endereço do app e `…/nova-senha` e `…/ajustes`.
+- **Providers › Email**: deixe *Secure email change* **desligado**. Contas antigas têm um e-mail interno que não recebe mensagens, então só o e-mail novo pode confirmar a troca.
+- **Providers › Google** (opcional): ligue o provedor com as credenciais OAuth do Google Cloud e coloque `VITE_LOGIN_GOOGLE=1` no `.env`. Sem isso o botão não aparece.
+- **Email Templates**: traduza os modelos de confirmação e redefinição de senha; os textos padrão são em inglês.
+
+Em Ajustes, **Baixar meus dados** gera um JSON com tudo o que a pessoa criou.
+
 ## Visual
 
 Paleta quente com destaque âmbar, definida em `src/index.css`:

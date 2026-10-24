@@ -4,7 +4,7 @@ import { CheckCircle2, Circle, Ellipsis, FileText, History, LayoutTemplate, Load
 import type { Mensagem, Topico } from '../lib/tipos'
 import { salvarComoModelo } from '../lib/mensagens'
 import { useAuth } from '../lib/auth'
-import { emailParaUsuario, nomeDeExibicao } from '../lib/usuario'
+import { nomeDoUsuario } from '../lib/usuario'
 
 /* Menu ⋯ do editor: histórico, PDF do esboço, salvar como modelo e marcar como dada */
 export default function MenuMais({ mensagem, topicos, dono, onDada }: {
@@ -36,7 +36,7 @@ export default function MenuMais({ mensagem, topicos, dono, onDada }: {
     setOcupado(comNotas ? 'pdf-notas' : 'pdf')
     try {
       const { gerarEsbocoPdf } = await import('../lib/esbocoPdf')
-      await gerarEsbocoPdf(mensagem, topicos, { comNotas, autor: nomeDeExibicao(emailParaUsuario(sessao?.user.email)) })
+      await gerarEsbocoPdf(mensagem, topicos, { comNotas, autor: nomeDoUsuario(sessao?.user) })
       setAberto(false)
     } catch { setAviso('Não foi possível gerar o PDF.') }
     finally { setOcupado('') }

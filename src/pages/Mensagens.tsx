@@ -10,7 +10,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { emailParaUsuario, nomeDeExibicao } from '../lib/usuario'
+import { nomeDoUsuario } from '../lib/usuario'
 import { LIVROS, parseReferencia } from '../lib/biblia'
 import type { Mensagem, Pasta } from '../lib/tipos'
 import { duplicarMensagem } from '../lib/mensagens'
@@ -240,7 +240,7 @@ export default function Mensagens() {
   const [serieFiltro, setSerieFiltro] = useState<string | null>(null)
 
   const sensores = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
-  const primeiroNome = nomeDeExibicao(emailParaUsuario(sessao?.user.email)).split(' ')[0]
+  const primeiroNome = nomeDoUsuario(sessao?.user).split(' ')[0]
 
   useEffect(() => { localStorage.setItem(CHAVE_FILTRO, filtro) }, [filtro])
 

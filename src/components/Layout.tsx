@@ -2,7 +2,7 @@ import { Suspense, useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { BookOpen, CalendarDays, MessagesSquare, NotebookPen, Plus, Settings } from 'lucide-react'
 import { useAuth } from '../lib/auth'
-import { emailParaUsuario, nomeDeExibicao } from '../lib/usuario'
+import { identificadorDoUsuario, nomeDoUsuario } from '../lib/usuario'
 import Marca from './Marca'
 import Tutorial from './Tutorial'
 import CriarNovo from './CriarNovo'
@@ -34,8 +34,8 @@ export function Avatar({ nome, className = '' }: { nome: string; className?: str
 export default function Layout() {
   const { sessao } = useAuth()
   const { pathname } = useLocation()
-  const usuario = emailParaUsuario(sessao?.user.email)
-  const nome = nomeDeExibicao(usuario)
+  const nome = nomeDoUsuario(sessao?.user)
+  const usuario = identificadorDoUsuario(sessao?.user)
   const semTopo = SEM_TOPO.some((r) => r.test(pathname))
   const nova = () => abrirCriar({ tipo: lerModo() })
   const [modo, setModo] = useState(lerModo)

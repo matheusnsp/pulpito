@@ -25,7 +25,7 @@ import type { DetalhesEstudo } from '../lib/tipos'
 import { useColaboracao, type Mudanca } from '../lib/colaboracao'
 import { referenciasNoTexto } from '../lib/versiculosNoTexto'
 import { versaoDaSessao } from '../lib/versoes'
-import { emailParaUsuario, nomeDeExibicao } from '../lib/usuario'
+import { nomeDoUsuario } from '../lib/usuario'
 import { daSerie, proximoNumero } from '../lib/series'
 import { visivel } from '../lib/lixeira'
 import MenuMais from '../components/MenuMais'
@@ -294,7 +294,7 @@ export default function EditorMensagem() {
       }))
     }
   }
-  const nomeEu = nomeDeExibicao(emailParaUsuario(sessao?.user.email))
+  const nomeEu = nomeDoUsuario(sessao?.user)
   const { pessoas, avisar } = useColaboracao(id, sessao ? { usuario: sessao.user.id, nome: nomeEu } : null, aoMudarRemoto)
   useEffect(() => { avisarRef.current = avisar })
 

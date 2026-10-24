@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
-import { Check, ChevronDown, CircleCheck, Download, GraduationCap, KeyRound, LoaderCircle, LogOut, RefreshCw, Sparkles, WifiOff, Wrench, Globe, Users, Trash2, BookOpen, MessagesSquare, Palette } from 'lucide-react'
+import { Check, ChevronDown, CircleCheck, Download, GraduationCap, KeyRound, LoaderCircle, LogOut, RefreshCw, Sparkles, WifiOff, Wrench, Globe, Users, Trash2, BookOpen, MessagesSquare, Palette, Mail, DatabaseBackup } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { sairDaConta } from '../lib/conta'
 import { TEMAS, lerTema, salvarTema, type Tema } from '../lib/tema'
 import { VERSOES, type VersaoId } from '../lib/biblia'
-import { emailParaUsuario, nomeDeExibicao } from '../lib/usuario'
+import { ehContaInterna, emailValido, identificadorDoUsuario, nomeDoUsuario } from '../lib/usuario'
+import { baixarMeusDados } from '../lib/exportarDados'
 import { NOVIDADES, NUMERO_VERSAO, VERSAO_APP, buscarServiceWorkerNovo, carregarUltimaVersao, verificarVersao, versaoAmigavel } from '../lib/atualizar'
 import { abrirTutorial } from '../lib/tutorial'
 import { ANO_INICIO, AUTOR } from '../lib/autor'
@@ -82,8 +83,9 @@ function TrocarSenha({ email }: { email: string }) {
 export default function Ajustes() {
   const { sessao } = useAuth()
   const email = sessao?.user.email ?? ''
-  const usuario = emailParaUsuario(email)
-  const nome = nomeDeExibicao(usuario)
+  const usuario = identificadorDoUsuario(sessao?.user)
+  const nome = nomeDoUsuario(sessao?.user)
+  const contaInterna = ehContaInterna(email)
   const iniciais = nome.split(' ').map((p) => p[0]).slice(0, 2).join('')
   const [tema, setTema] = useState<Tema>(lerTema)
   const [versao, setVersao] = useState<VersaoId>(lerVersao)
@@ -151,10 +153,13 @@ export default function Ajustes() {
               <TrocarSenha email={email} />
             </div>
           )}
+          {contaInterna && <AdicionarEmail nome={nome} />}
         </section>
 
+        <div className="order-2"><MeusDados /></div>
+
         {/* Preferências: tema e Bíblia */}
-        <section className="cartao order-3 p-4 sm:p-5">
+        <section className="cartao order-4 p-4 sm:p-5">
           <Titulo Icone={Palette} titulo="Aparência" texto="O modo pregação e o telão são sempre escuros, nas cores do tema." />
           <div role="radiogroup" aria-label="Tema" className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
             {TEMAS.map((t) => {
@@ -218,7 +223,7 @@ export default function Ajustes() {
 
         <div className="contents xl:col-span-5 xl:block xl:space-y-5">
         {/* Atalhos */}
-        <section className="order-2 grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-2">
+        <section className="order-3 grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-2">
           {atalhos.map(({ nome: n, texto, Icone, acao, para }) => {
             const conteudo = (
               <>
@@ -238,6 +243,76 @@ export default function Ajustes() {
         </div>
       </div>
     </div>
+  )
+}
+
+/* Conta antiga, só com usuário: sem e-mail não dá para recuperar a senha */
+function AdicionarEmail({ nome }: { nome: string }) {
+  const [email, setEmail] = useState('')
+  const [erro, setErro] = useState('')
+  const [enviado, setEnviado] = useState(false)
+  const [enviando, setEnviando] = useState(false)
+
+  async function adicionar(e: FormEvent) {
+    e.preventDefault()
+    setErro('')
+    const limpo = email.trim().toLowerCase()
+    if (!emailValido(limpo)) { setErro('Digite um e-mail válido.'); return }
+    setEnviando(true)
+    // Guarda o nome junto: depois da troca, ele deixa de vir do usuário antigo
+    const { error } = await supabase.auth.updateUser({ email: limpo, data: { nome } }, { emailRedirectTo: window.location.origin + '/ajustes' })
+    setEnviando(false)
+    if (error) {
+      setErro(error.message.toLowerCase().includes('already')
+        ? 'Esse e-mail já está em outra conta.'
+        : 'Não foi possível enviar a confirmação. Tente de novo.')
+      return
+    }
+    setEnviado(true)
+  }
+
+  return (
+    <div className="border-t border-borda bg-ouro-suave/60 p-4 sm:p-5">
+      <div className="flex items-start gap-3">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-acao text-acao-texto"><Mail size={18} /></span>
+        <div className="min-w-0 flex-1">
+          <b className="block font-display">Adicione um e-mail à sua conta</b>
+          <p className="mt-0.5 text-sm text-texto-2">Sua conta foi criada só com usuário. Com um e-mail, você recupera a senha sozinho se esquecer. Você continua entrando com o usuário.</p>
+          {enviado ? (
+            <p role="status" className="mt-3 flex items-center gap-1.5 text-sm font-semibold text-tinta"><Check size={16} /> Enviamos um link para {email.trim()}. Clique nele para confirmar.</p>
+          ) : (
+            <form onSubmit={adicionar} className="mt-3 flex flex-col gap-2 sm:flex-row">
+              <input type="email" required placeholder="voce@exemplo.com" value={email} onChange={(e) => setEmail(e.target.value)}
+                className="campo flex-1" autoComplete="email" autoCapitalize="none" inputMode="email" />
+              <button disabled={enviando} className="botao-primario py-2 text-sm">{enviando ? 'Enviando…' : 'Adicionar'}</button>
+            </form>
+          )}
+          {erro && <p role="alert" className="mt-2 text-sm text-perigo">{erro}</p>}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* Baixar tudo o que a pessoa criou, em JSON */
+function MeusDados() {
+  const [estado, setEstado] = useState<'parado' | 'baixando' | 'pronto' | 'erro'>('parado')
+  async function baixar() {
+    setEstado('baixando')
+    try { await baixarMeusDados(); setEstado('pronto') } catch { setEstado('erro') }
+  }
+  return (
+    <section className="cartao p-4 sm:p-5">
+      <Titulo Icone={DatabaseBackup} titulo="Seus dados" texto="Um arquivo com todas as suas mensagens, tópicos, slides, pastas, agenda, aulas e respostas. Nada fica preso no app." />
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <button onClick={baixar} disabled={estado === 'baixando'} className="botao-secundario">
+          {estado === 'baixando' ? <LoaderCircle size={18} className="animate-spin" /> : <Download size={18} />}
+          {estado === 'baixando' ? 'Preparando…' : 'Baixar meus dados'}
+        </button>
+        {estado === 'pronto' && <span role="status" className="flex items-center gap-1.5 text-sm font-semibold text-tinta"><Check size={16} /> Arquivo baixado</span>}
+        {estado === 'erro' && <span role="alert" className="text-sm text-perigo">Não foi possível montar o arquivo. Verifique a internet e tente de novo.</span>}
+      </div>
+    </section>
   )
 }
 
