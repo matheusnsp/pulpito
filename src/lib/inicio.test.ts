@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mostrarAbaEstudos, mostrarBusca, mostrarContinuar, mostrarPastas } from './inicio'
+import { mostrarBusca, mostrarContinuar, mostrarPastas } from './inicio'
 
 describe('tela inicial enxuta', () => {
   it('busca só com biblioteca grande ou busca em andamento', () => {
@@ -16,10 +16,5 @@ describe('tela inicial enxuta', () => {
   it('continuar de onde parou só quando a lista já é longa', () => {
     expect(mostrarContinuar(3)).toBe(false)
     expect(mostrarContinuar(4)).toBe(true)
-  })
-  it('aba Estudos só para quem tem estudo ou já está nela', () => {
-    expect(mostrarAbaEstudos(0, false)).toBe(false)
-    expect(mostrarAbaEstudos(1, false)).toBe(true)
-    expect(mostrarAbaEstudos(0, true)).toBe(true)
   })
 })

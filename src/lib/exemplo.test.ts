@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 vi.mock('./supabase', () => ({ supabase: {} }))
-const { EXEMPLO } = await import('./exemplo')
+const { EXEMPLO, EXEMPLO_ESTUDO } = await import('./exemplo')
+import { ehBloco } from './blocos'
 import { parseReferencia } from './biblia'
 
 describe('mensagem de exemplo', () => {
@@ -15,5 +16,11 @@ describe('mensagem de exemplo', () => {
   })
   it('deixa claro no título que é um exemplo', () => {
     expect(EXEMPLO.titulo.startsWith('Exemplo:')).toBe(true)
+  })
+  it('o estudo de exemplo usa só blocos do catálogo e mistura explicação, pergunta e atividade', () => {
+    const tipos = EXEMPLO_ESTUDO.blocos.map((b) => b.tipo)
+    for (const t of tipos) expect(ehBloco(t)).toBe(true)
+    for (const esperado of ['explicacao', 'pergunta', 'atividade', 'lista']) expect(tipos).toContain(esperado)
+    expect(EXEMPLO_ESTUDO.titulo.startsWith('Exemplo:')).toBe(true)
   })
 })

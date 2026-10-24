@@ -1,5 +1,5 @@
 import { Link, Navigate } from 'react-router-dom'
-import { BookOpen, Check, MessagesSquare, MonitorPlay, NotebookPen, Sparkles, Timer, Users } from 'lucide-react'
+import { BookOpen, Check, GraduationCap, MessagesSquare, MonitorPlay, NotebookPen, Sparkles, Timer } from 'lucide-react'
 import { useAuth } from '../lib/auth'
 import { AUTOR } from '../lib/autor'
 import { DIAS_TESTE, GRATUITO_INCLUI, PRECOS, RECURSOS_PREMIUM, formatarPreco } from '../lib/planoInfo'
@@ -12,21 +12,22 @@ export default function Conheca() {
   if (!carregando && sessao) return <Navigate to="/" replace />
 
   const passos = [
-    { n: 1, t: 'Escreva o texto base', d: 'Digite a referência, como Rm 8:28. O versículo aparece por extenso, na hora, nas versões ARA, ARC e NAA.' },
-    { n: 2, t: 'Adicione os tópicos', d: 'Um ponto da pregação por tópico: versículo, observação e, se quiser, ilustração, aplicação e frase-chave.' },
-    { n: 3, t: 'Toque em Pregar', d: 'Cronômetro que avisa quando o tempo aperta, próximo tópico à vista e telão sincronizado pelo celular.' },
+    { n: 1, t: 'Escreva o que vai dizer', d: 'Na pregação, o texto base e os tópicos, com o versículo aparecendo por extenso. Na aula, os blocos: explicação, pergunta, atividade, lista.' },
+    { n: 2, t: 'Deixe o app montar o resto', d: 'Slides em um toque, esboço para compartilhar, folha impressa para a turma e perguntas prontas para o celular dos alunos.' },
+    { n: 3, t: 'Toque em Pregar ou Dar aula', d: 'Cronômetro que avisa quando o tempo aperta, próximo passo à vista e telão sincronizado pelo celular.' },
   ]
   const recursos = [
-    { Icone: NotebookPen, t: 'Esboço em tópicos', d: 'Organize a mensagem em pontos, com versículos ligados ao texto.' },
-    { Icone: Timer, t: 'Modo pregação', d: 'Letra grande, cronômetro, mapa dos tópicos e tela sempre acesa.' },
-    { Icone: MonitorPlay, t: 'Slides e telão', d: 'Slides gerados em um toque e projetados na TV, controlados pelo celular.' },
-    { Icone: BookOpen, t: 'Bíblia offline', d: 'ARA, ARC e NAA no aparelho. Funciona sem internet, na igreja do interior.' },
-    { Icone: MessagesSquare, t: 'Respostas ao vivo', d: 'Em células e EBD, a turma responde pelo celular; mural, quiz e placar.' },
-    { Icone: Users, t: 'Colaboração', d: 'Convide alguém para editar ou acompanhar o projeto, com mudanças na hora.' },
+    { Icone: NotebookPen, t: 'Pregação em tópicos', d: 'Texto base, pontos da mensagem e versículos ligados ao texto. Célula, EBD, devocional e discipulado também.' },
+    { Icone: GraduationCap, t: 'Aulas sobre qualquer assunto', d: 'Curso, palestra ou treinamento montados em blocos: explicação, definição, lista, pergunta, atividade, imagem e link.' },
+    { Icone: Timer, t: 'Modo pregação e modo aula', d: 'Letra grande, cronômetro, tempo por item, próximo passo à vista e tela sempre acesa.' },
+    { Icone: MonitorPlay, t: 'Slides e telão', d: 'Slides gerados em um toque, importação de PowerPoint e projeção na TV controlada pelo celular.' },
+    { Icone: MessagesSquare, t: 'Respostas ao vivo', d: 'A turma entra com um código e responde pelo celular: mural, quiz com placar e tudo guardado em planilha.' },
+    { Icone: BookOpen, t: 'Bíblia offline', d: 'ARA, ARC e NAA no aparelho, com busca. Funciona sem internet.' },
   ]
   const perguntas = [
     { p: 'Funciona sem internet?', r: 'A Bíblia fica no aparelho e o app abre offline. As mensagens sincronizam quando a conexão volta.' },
     { p: 'Preciso instalar alguma coisa?', r: 'Não. Abre no navegador e, se quiser, você adiciona à tela inicial do celular como um app.' },
+    { p: 'Serve para aula fora da igreja?', r: 'Sim. O lado Estudos monta aulas de curso, palestras e treinamentos sobre qualquer assunto, com perguntas e atividades para a turma responder pelo celular.' },
     { p: 'E se eu parar de pagar?', r: 'Nada é apagado. Você continua lendo tudo e pode baixar seus dados a qualquer hora.' },
   ]
 
@@ -45,12 +46,12 @@ export default function Conheca() {
           <div className="escuro relative overflow-hidden rounded-[2rem] border border-borda p-6 text-texto shadow-cartao sm:p-12" style={{ background: 'var(--hero)' }}>
             <div aria-hidden className="pointer-events-none absolute -right-20 -top-28 h-80 w-80 rounded-full bg-acao/20 blur-3xl" />
             <div className="relative max-w-2xl">
-              <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-tinta"><Sparkles size={13} /> Para quem prega e ensina</p>
+              <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-tinta"><Sparkles size={13} /> Para quem prega e para quem ensina</p>
               <h1 className="mt-4 font-display text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl">
-                Prepare, pregue e projete <span className="text-acao">sem perder o fio.</span>
+                Prepare, apresente e projete <span className="text-acao">sem perder o fio.</span>
               </h1>
               <p className="mt-5 text-lg text-texto-2 sm:text-xl">
-                O Pulpito organiza sua mensagem em tópicos, mostra os versículos por extenso, cronometra a pregação e manda os slides para o telão. Tudo pelo celular.
+                Uma pregação de domingo ou uma aula de curso: o Pulpito organiza o que você vai dizer, monta os slides, cronometra e manda para o telão. A turma responde pelo celular. Tudo no seu.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link to="/criar-conta" className="botao-primario">Criar conta grátis</Link>
@@ -79,7 +80,7 @@ export default function Conheca() {
           <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {recursos.map(({ Icone, t, d }) => (
               <li key={t} className="cartao flex gap-4 p-5">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-ouro-suave text-tinta"><Icone size={22} /></span>
+                <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${Icone === GraduationCap ? 'bg-[#14B8A6]/15 text-[#14B8A6]' : 'bg-ouro-suave text-tinta'}`}><Icone size={22} /></span>
                 <span><b className="block font-display">{t}</b><span className="text-sm text-texto-2">{d}</span></span>
               </li>
             ))}
@@ -88,7 +89,7 @@ export default function Conheca() {
 
         <section id="planos" className="mx-auto max-w-5xl px-5 py-10">
           <h2 className="font-display text-2xl font-extrabold sm:text-3xl">Planos</h2>
-          <p className="mt-1 text-texto-2">Comece de graça. Pague só se o Pulpito virar parte do seu domingo.</p>
+          <p className="mt-1 text-texto-2">Comece de graça. Pague só se o Pulpito virar parte da sua semana.</p>
           <div className="mt-6 grid gap-4 md:grid-cols-2">
             <div className="cartao p-6">
               <h3 className="font-display text-lg font-bold">Gratuito</h3>
@@ -123,7 +124,7 @@ export default function Conheca() {
         </section>
 
         <section className="mx-auto max-w-5xl px-5 pb-16 pt-6 text-center">
-          <h2 className="font-display text-2xl font-extrabold sm:text-3xl">Sua próxima mensagem começa aqui</h2>
+          <h2 className="font-display text-2xl font-extrabold sm:text-3xl">Sua próxima mensagem, ou aula, começa aqui</h2>
           <Link to="/criar-conta" className="botao-primario mt-6">Criar conta grátis</Link>
         </section>
       </main>

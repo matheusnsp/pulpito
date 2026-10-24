@@ -9,4 +9,3 @@ export const mostrarBusca = (total: number, buscando: boolean) => buscando || to
 export const mostrarPastas = (total: number, qtdPastas: number, filtroAtivo: boolean) =>
   qtdPastas > 0 || filtroAtivo || total >= MINIMO_PARA_BUSCA
 export const mostrarContinuar = (total: number) => total >= MINIMO_PARA_CONTINUAR
-export const mostrarAbaEstudos = (qtdEstudos: number, noLadoEstudos: boolean) => qtdEstudos > 0 || noLadoEstudos
