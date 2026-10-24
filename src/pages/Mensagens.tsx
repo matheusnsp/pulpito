@@ -6,7 +6,7 @@ import {
   type DragEndEvent, type DragStartEvent,
 } from '@dnd-kit/core'
 import {
-  BookOpen, CalendarDays, Check, ChevronRight, Settings, Copy, Ellipsis, GraduationCap, Mic, MonitorPlay, NotebookPen, FolderInput, GripVertical, Pencil, Play, Plus, Search, Target, Trash2, Users, X, Layers,
+  BookOpen, CalendarDays, Check, ChevronRight, Settings, Copy, Ellipsis, GraduationCap, Mic, MonitorPlay, NotebookPen, FolderInput, GripVertical, Pencil, Play, Plus, Search, Target, Trash2, Users, X, Layers, LoaderCircle,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
@@ -15,6 +15,9 @@ import { LIVROS, parseReferencia } from '../lib/biblia'
 import type { Mensagem, Pasta } from '../lib/tipos'
 import { duplicarMensagem } from '../lib/mensagens'
 import { abrirCriar, lerModo, salvarModo } from '../lib/criar'
+import { useCriarRapido } from '../lib/criarRapido'
+import { mostrarAbaEstudos, mostrarBusca, mostrarContinuar, mostrarPastas } from '../lib/inicio'
+import { abrirTutorial } from '../lib/tutorial'
 import { ICONE_FORMATO, nomeFormato } from '../lib/blocos'
 import { moverParaLixeira, visivel } from '../lib/lixeira'
 import { resumoSeries } from '../lib/series'
@@ -304,8 +307,10 @@ export default function Mensagens() {
   const filtroAtivo = mensagens === null || filtroValido ? filtro : 'todas'
   const pastaAtual = pastas.find((p) => p.id === filtroAtivo) ?? null
 
-  // Abre a folha "O que você vai preparar?", já sugerindo o lado em que a pessoa está
-  const criar = () => abrirCriar({ pastaId: pastaAtual?.id ?? null, tipo: modo })
+  // Palavra: cria a pregação na hora. Estudos: abre a folha para escolher o modelo.
+  const { criar: criarRapido, criando } = useCriarRapido()
+  const outrosFormatos = () => abrirCriar({ pastaId: pastaAtual?.id ?? null, tipo: modo })
+  const criar = () => { if (modo === 'estudo') outrosFormatos(); else void criarRapido(pastaAtual?.id ?? null) }
 
   async function duplicar(m: Mensagem) {
     setMenu(null)
@@ -533,13 +538,16 @@ export default function Mensagens() {
               {saudacao(hoje.getHours())}, {primeiroNome}
             </h1>
           </div>
-          <button onClick={criar} className="botao-primario hidden md:inline-flex">
-            <Plus size={18} strokeWidth={2.5} /> {modo === 'estudo' ? 'Novo estudo' : 'Nova mensagem'}
-          </button>
+          <div className="hidden items-center gap-2 md:flex">
+            <button onClick={outrosFormatos} className="botao-fantasma px-3 text-sm">Outros formatos</button>
+            <button onClick={criar} disabled={criando} className="botao-primario">
+              {criando ? <LoaderCircle size={18} className="animate-spin" /> : <Plus size={18} strokeWidth={2.5} />} {modo === 'estudo' ? 'Novo estudo' : 'Nova mensagem'}
+            </button>
+          </div>
         </header>
 
-        {/* Chave: Palavra | Estudos */}
-        <div role="tablist" aria-label="Tipo" className="mt-5 flex gap-1.5 rounded-2xl border border-borda bg-superficie p-1.5 md:max-w-md">
+        {/* Chave: Palavra | Estudos, só para quem tem estudo */}
+        {mostrarAbaEstudos(qtdPorModo.estudo, modo === 'estudo') && <div role="tablist" aria-label="Tipo" className="mt-5 flex gap-1.5 rounded-2xl border border-borda bg-superficie p-1.5 md:max-w-md">
           {([['pregacao', 'Palavra', BookOpen], ['estudo', 'Estudos', GraduationCap]] as const).map(([v, nome, Icone]) => {
             const ativo = modo === v
             return (
@@ -550,7 +558,7 @@ export default function Mensagens() {
               </button>
             )
           })}
-        </div>
+        </div>}
 
         {/* Próxima pregação */}
         {proximo && (
@@ -593,8 +601,8 @@ export default function Mensagens() {
           </section>
         )}
 
-        {/* Continue de onde parou */}
-        {ultima && (
+        {/* Continue de onde parou: só quando a lista já é longa */}
+        {ultima && mostrarContinuar(todas.length) && (
           <Link to={`/mensagem/${ultima.id}`}
             className="cartao group mt-4 flex items-center gap-4 p-4 transition hover:border-texto-2/40">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-ouro-suave text-tinta">
@@ -609,11 +617,8 @@ export default function Mensagens() {
           </Link>
         )}
 
-        {/* Painel: no celular e tablet fica aqui; no computador vai para a coluna da direita */}
-        {doisLados.length > 0 && !termo && <div className="mt-4 xl:hidden">{painel(false)}</div>}
-
-        {/* Busca */}
-        <div className="relative mt-6">
+        {/* Busca: aparece quando a biblioteca cresce */}
+        {mostrarBusca(todas.length, !!termo) && <div className="relative mt-6">
           <Search size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-texto-2" />
           <input ref={campoBusca} value={busca} onChange={(e) => setBusca(e.target.value)}
             placeholder={modo === 'estudo' ? 'Buscar estudos' : 'Buscar por título ou texto base'} type="search" enterKeyHint="search"
@@ -626,10 +631,10 @@ export default function Mensagens() {
           ) : (
             <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-md border border-borda px-1.5 text-xs text-texto-2 md:block">/</kbd>
           )}
-        </div>
+        </div>}
 
-        {/* Pastas (fixas no topo ao rolar, para receber o arraste) */}
-        <div className="sticky top-0 z-10 -mx-4 bg-fundo/90 px-4 py-3 backdrop-blur md:-mx-8 md:px-8">
+        {/* Pastas (fixas no topo ao rolar, para receber o arraste); só quando existem ou a lista cresceu */}
+        {mostrarPastas(todas.length, pastas.length, filtroAtivo !== 'todas') ? <div className="sticky top-0 z-10 -mx-4 bg-fundo/90 px-4 py-3 backdrop-blur md:-mx-8 md:px-8">
           <div className="sem-barra flex gap-2 overflow-x-auto">
             <ChipPasta valor="todas" rotulo="Todas" qtd={todas.length} ativo={filtroAtivo === 'todas'}
               soltavel={false} onClick={() => setFiltro('todas')} />
@@ -661,7 +666,7 @@ export default function Mensagens() {
               </form>
             )}
           </div>
-        </div>
+        </div> : <div className="mt-4" />}
 
         {pastaAtual && (
           <div className="mb-3 flex flex-wrap items-center gap-1">
@@ -689,19 +694,32 @@ export default function Mensagens() {
         )}
 
         {mensagens !== null && todas.length === 0 && !excluida && (
-          <div className="cartao relative overflow-hidden px-6 py-12 text-center">
+          <div className="cartao relative overflow-hidden px-5 py-8 sm:px-8 sm:py-10">
             <div aria-hidden className="pointer-events-none absolute left-1/2 top-0 h-40 w-72 -translate-x-1/2 rounded-full bg-acao/20 blur-3xl" />
-            <h2 className="relative font-display text-2xl font-extrabold">
-              {modo === 'estudo' ? 'Comece seu primeiro estudo' : 'Comece sua primeira mensagem'}
+            <h2 className="relative text-center font-display text-2xl font-extrabold">
+              {modo === 'estudo' ? 'Seu primeiro estudo em três passos' : 'Sua primeira mensagem em três passos'}
             </h2>
-            <p className="relative mx-auto mt-2 max-w-sm text-texto-2">
-              {modo === 'estudo'
-                ? 'Aula, célula, curso ou palestra sobre qualquer assunto, montado em blocos: explicação, perguntas, atividades e mais.'
-                : 'Organize em tópicos, ligue os versículos e pregue com o telão acompanhando.'}
-            </p>
-            <button onClick={criar} className="botao-primario relative mt-6">
-              <Plus size={18} /> {modo === 'estudo' ? 'Novo estudo' : 'Nova mensagem'}
-            </button>
+            <ol className="relative mx-auto mt-6 max-w-sm space-y-3">
+              {(modo === 'estudo'
+                ? [['Escolha um modelo', 'Aula, célula, palestra ou em branco.'], ['Monte os blocos', 'Explicação, pergunta, atividade, lista…'], ['Toque em Dar aula', 'A turma responde pelo celular.']]
+                : [['Escreva o texto base', 'Ex.: Rm 8:28. O versículo aparece na hora.'], ['Adicione os tópicos', 'Um ponto da pregação por tópico.'], ['Toque em Pregar', 'Cronômetro, próximo tópico e telão.']]
+              ).map(([t, d], i) => (
+                <li key={t} className="flex items-start gap-3">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-acao font-display text-sm font-extrabold text-acao-texto">{i + 1}</span>
+                  <span className="min-w-0 pt-0.5"><b className="block font-display">{t}</b><span className="text-sm text-texto-2">{d}</span></span>
+                </li>
+              ))}
+            </ol>
+            <div className="relative mt-7 flex flex-col items-center gap-3">
+              <button onClick={criar} disabled={criando} className="botao-primario w-full sm:w-auto">
+                {criando ? <LoaderCircle size={18} className="animate-spin" /> : <Plus size={18} />} {modo === 'estudo' ? 'Novo estudo' : 'Nova mensagem'}
+              </button>
+              <p className="text-center text-sm text-texto-2">
+                {modo === 'estudo' ? 'Prefere pregação?' : 'Célula, EBD, devocional ou estudo?'}{' '}
+                <button onClick={outrosFormatos} className="font-semibold text-tinta underline-offset-4 hover:underline">Outros formatos</button>
+                {' · '}<button onClick={() => abrirTutorial()} className="font-semibold text-tinta underline-offset-4 hover:underline">Ver como funciona</button>
+              </p>
+            </div>
           </div>
         )}
 
@@ -767,11 +785,11 @@ export default function Mensagens() {
       </div>
       </div>
 
-      {/* Celular: botão flutuante de nova mensagem */}
-      <button onClick={criar} aria-label={modo === 'estudo' ? 'Novo estudo' : 'Nova mensagem'}
+      {/* Celular: botão flutuante de nova mensagem, só quando já existe lista (no vazio, o guia tem o botão) */}
+      {todas.length > 0 && <button onClick={criar} disabled={criando} aria-label={modo === 'estudo' ? 'Novo estudo' : 'Nova mensagem'}
         className="fixed bottom-[calc(6.25rem+env(safe-area-inset-bottom))] right-4 z-10 flex h-14 w-14 items-center justify-center rounded-2xl bg-acao text-acao-texto shadow-[0_10px_30px_-8px_var(--acao)] active:scale-95 disabled:opacity-60 md:hidden">
         <Plus size={26} strokeWidth={2.5} />
-      </button>
+      </button>}
 
       {/* Aviso de exclusão com Desfazer */}
       {excluida && (

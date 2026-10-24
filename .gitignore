@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Chaves locais (a pública vai no bundle, mas não no repositório)
+.env
+.env.*
+!.env.example
