@@ -10,6 +10,7 @@ import Login from './pages/Login'
 import CriarConta from './pages/CriarConta'
 import RecuperarSenha from './pages/RecuperarSenha'
 import NovaSenha from './pages/NovaSenha'
+const Conheca = lazy(() => import('./pages/Conheca'))
 import Mensagens from './pages/Mensagens'
 const EditorMensagem = lazy(() => import('./pages/EditorMensagem'))
 const EditorSlides = lazy(() => import('./pages/EditorSlides'))
@@ -38,7 +39,8 @@ function Protegido() {
   const { sessao, carregando } = useAuth()
   const location = useLocation()
   if (carregando) return <Carregando />
-  if (!sessao) return <Navigate to="/login" replace state={{ de: location.pathname }} />
+  // Quem chega sem conta pela porta da frente vê a apresentação; links diretos vão para o login
+  if (!sessao) return <Navigate to={location.pathname === '/' ? '/conheca' : '/login'} replace state={{ de: location.pathname }} />
   return <Outlet />
 }
 
@@ -46,6 +48,7 @@ export default function App() {
   return (
     <Suspense fallback={<Carregando />}>
       <Routes>
+        <Route path="/conheca" element={<Conheca />} />
         <Route path="/login" element={<Login />} />
         <Route path="/criar-conta" element={<CriarConta />} />
         <Route path="/recuperar-senha" element={<RecuperarSenha />} />
