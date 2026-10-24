@@ -15,16 +15,19 @@ export default function SoPremium({ recurso, doProjeto = false, children }: { re
   const [doDono, setDoDono] = useState<boolean | null>(null)
 
   useEffect(() => {
-    if (!doProjeto || !id) return
+    // Quem é Premium entra direto; só quem não é precisa saber o plano do dono do projeto
+    if (!doProjeto || !id || plano.premium) return
     let ativo = true
     supabase.rpc('projeto_premium', { p_mensagem_id: id }).then(({ data, error }) => {
       if (ativo) setDoDono(error ? true : !!data)
     })
     return () => { ativo = false }
-  }, [doProjeto, id])
+  }, [doProjeto, id, plano.premium])
 
-  const liberado = doProjeto ? (doDono ?? plano.premium) : plano.premium
-  if (!carregado || (doProjeto && doDono === null)) return <p className="p-8 text-texto-2">Conferindo seu plano…</p>
+  if (!carregado) return <p className="p-8 text-texto-2">Conferindo seu plano…</p>
+  if (plano.premium) return <>{children}</>
+  const liberado = doProjeto ? doDono : false
+  if (doProjeto && doDono === null) return <p className="p-8 text-texto-2">Conferindo seu plano…</p>
   if (liberado) return <>{children}</>
   return <TelaPremium recurso={recurso} />
 }

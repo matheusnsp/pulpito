@@ -6,7 +6,7 @@ import {
   Radio, Search, Settings, Share2, Sparkles, Target, Timer, Trophy, Type as TypeIcon, Upload, Users, WifiOff, X,
 } from 'lucide-react'
 import { abrirCriar } from '../lib/criar'
-import { aoPedirTutorial, marcarTutorialVisto, tutorialJaVisto } from '../lib/tutorial'
+import { aoPedirTutorial, marcarTutorialVisto } from '../lib/tutorial'
 import Marca from './Marca'
 
 /*
@@ -811,7 +811,8 @@ type Posicao = { cap: number; passo: number; tudo: boolean }
 const INDICE: Posicao = { cap: -1, passo: 0, tudo: false }
 
 export default function Tutorial() {
-  const [aberto, setAberto] = useState(() => !tutorialJaVisto())
+  // Não abre sozinho no primeiro acesso: o Início guia em 3 passos; o tutorial fica em Ajustes
+  const [aberto, setAberto] = useState(false)
   const [pos, setPos] = useState<Posicao>(INDICE)
   const toque = useRef<{ x: number; y: number } | null>(null)
 

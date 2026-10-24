@@ -21,11 +21,11 @@ export default function CriarNovo() {
   const [modelos, setModelos] = useState<Mensagem[]>([])
   const { sessao } = useAuth()
   useEffect(() => aoPedirCriar((p) => {
-    setPedido(p); setErro('')
+    setPedido(p); setErro(podeCriarMensagem(plano) ? '' : 'limite')
     // Modelos próprios: cópias marcadas como modelo, só as minhas
     supabase.from('mensagens').select('*').then(({ data }) => setModelos(((data ?? []) as Mensagem[])
       .filter((m) => m.detalhes?.ehModelo && !m.excluida_em && (!m.proprietario_compartilhamento || m.proprietario_compartilhamento === sessao?.user.id))))
-  }), [sessao])
+  }), [sessao, plano])
 
   async function criarDoModelo(m: Mensagem) {
     if (!podeCriarMensagem(plano)) { setErro('limite'); return }
