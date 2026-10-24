@@ -5,10 +5,9 @@ Esta atualização adiciona colaboração por **projeto** (registro em `mensagen
 ## Instalação
 
 1. Faça um backup do código e do banco de dados.
-2. Na raiz do repositório, rode `python3 instalar_compartilhamento.py`.
-3. **Obrigatório:** execute `supabase/migrations/20261020224000_compartilhamento.sql` no **SQL Editor** do seu projeto Supabase (ou use `supabase db push` se a CLI já estiver vinculada ao projeto e suas migrações estiverem em ordem). O script Python muda os arquivos locais, mas não modifica o banco remoto sem uma conexão configurada.
-4. Rode `npm run build`, faça commit e publique o app.
-5. Teste com duas contas distintas: convite de leitura, convite de edição, expiração, revogação e acesso direto por URL.
+2. **Obrigatório:** execute `supabase/migrations/20261020224000_compartilhamento.sql` no **SQL Editor** do seu projeto Supabase (ou use `supabase db push` se a CLI já estiver vinculada ao projeto e suas migrações estiverem em ordem).
+3. Rode `npm run build`, faça commit e publique o app.
+4. Teste com duas contas distintas: convite de leitura, convite de edição, expiração, revogação e acesso direto por URL.
 
 **Atenção ao esquema legado:** o código-fonte original não traz a migração que criou `mensagens`, `topicos` e `slides`. A migração procura a coluna UUID do proprietário em `usuario_id`, `user_id`, `dono_id`, `dono`, `owner_id`, `criado_por`, `autor_id` ou `proprietario_id`. Se não encontrar, ela para, em vez de atribuir projetos à pessoa errada. Identifique a coluna real e faça o mapeamento no SQL antes de aplicar.
 
