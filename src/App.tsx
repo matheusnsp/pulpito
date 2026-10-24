@@ -7,6 +7,8 @@ import EntrarProjeto from './pages/EntrarProjeto'
 import CompartilharProjeto from './pages/CompartilharProjeto'
 import Login from './pages/Login'
 import CriarConta from './pages/CriarConta'
+import RecuperarSenha from './pages/RecuperarSenha'
+import NovaSenha from './pages/NovaSenha'
 import Mensagens from './pages/Mensagens'
 const EditorMensagem = lazy(() => import('./pages/EditorMensagem'))
 const EditorSlides = lazy(() => import('./pages/EditorSlides'))
@@ -44,6 +46,8 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/criar-conta" element={<CriarConta />} />
+        <Route path="/recuperar-senha" element={<RecuperarSenha />} />
+        <Route path="/nova-senha" element={<NovaSenha />} />
         <Route path="/projetar" element={<Projetar />} />
         <Route path="/responder" element={<Responder />} />
         <Route path="/responder/:codigo" element={<Responder />} />

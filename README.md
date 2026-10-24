@@ -31,6 +31,52 @@ npm run dev
 
 `npm run build` gera a versão de produção em `dist/` (deploy na Vercel, ver `vercel.json`).
 
+`npm test` roda os testes das bibliotecas puras (Vitest). O CI do GitHub roda tipos, lint, testes e build em todo push.
+
+## Subir do zero (Supabase)
+
+O banco inteiro está em `supabase/migrations`: a migração base tem tabelas, RLS, funções, triggers e o bucket
+de fotos; as seguintes são incrementais. Num projeto Supabase novo:
+
+```bash
+npm i -g supabase            # ou npx supabase
+supabase login
+supabase link --project-ref SEU_REF
+supabase db push             # aplica as migrações
+supabase functions deploy agenda-ics --no-verify-jwt
+supabase functions deploy limpar-fotos --no-verify-jwt
+```
+
+Para rodar tudo na sua máquina, `supabase start` sobe Postgres, Auth e Storage locais com as mesmas migrações
+(ver `supabase/config.toml`); aponte o `.env` para as URLs que o comando imprime.
+
+As Edge Functions ficam em `supabase/functions`:
+
+- **agenda-ics**: feed `.ics` da agenda por token, para assinar no calendário do celular.
+- **limpar-fotos**: apaga do bucket `fundos` as fotos que não estão em nenhum slide há mais de um dia.
+  Espera o cabeçalho `x-cron-secret` igual ao segredo `CRON_SECRET` da função; agende a chamada
+  (pg_cron ou cron externo) se quiser que rode sozinha.
+
+## Colaboração
+
+O compartilhamento é por projeto. Convite por link ou código, com permissão de editar ou só ver, 1 a 20 usos
+e validade de 7 dias; o código fica guardado só como hash. As permissões valem no banco, por RLS: o dono faz tudo,
+o editor edita conteúdo e slides mas não exclui, não move de pasta nem muda o dono; o leitor só lê; quem foi
+bloqueado perde o acesso, inclusive ao que criou. Edições simultâneas no mesmo campo seguem "a última salva vence".
+
+## Login, e-mail e senha
+
+As contas são criadas com e-mail real, e a pessoa recupera a senha sozinha em `/recuperar-senha`.
+Contas antigas, criadas só com usuário (`nome.sobrenome`), continuam entrando normalmente e veem em
+Ajustes um convite para adicionar um e-mail. No painel do Supabase, em **Authentication**:
+
+- **URL Configuration**: Site URL é o endereço do app; em Redirect URLs, adicione o endereço do app e `…/nova-senha` e `…/ajustes`.
+- **Providers › Email**: deixe *Secure email change* **desligado**. Contas antigas têm um e-mail interno que não recebe mensagens, então só o e-mail novo pode confirmar a troca.
+- **Providers › Google** (opcional): ligue o provedor com as credenciais OAuth do Google Cloud e coloque `VITE_LOGIN_GOOGLE=1` no `.env`. Sem isso o botão não aparece.
+- **Email Templates**: traduza os modelos de confirmação e redefinição de senha; os textos padrão são em inglês.
+
+Em Ajustes, **Baixar meus dados** gera um JSON com tudo o que a pessoa criou.
+
 ## Visual
 
 Paleta quente com destaque âmbar, definida em `src/index.css`:
