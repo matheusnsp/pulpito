@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
-import { Check, ChevronDown, CircleCheck, Download, GraduationCap, KeyRound, LoaderCircle, LogOut, RefreshCw, Sparkles, WifiOff, Wrench, Globe, Users, Trash2, BookOpen, MessagesSquare, Palette, Mail, DatabaseBackup } from 'lucide-react'
+import { Check, ChevronDown, CircleCheck, Download, GraduationCap, KeyRound, LoaderCircle, LogOut, RefreshCw, Sparkles, WifiOff, Wrench, Globe, Users, Trash2, BookOpen, MessagesSquare, Palette, Mail, DatabaseBackup, TriangleAlert } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { sairDaConta } from '../lib/conta'
+import { contaTemSenha, excluirMinhaConta, sairDaConta } from '../lib/conta'
 import { TEMAS, lerTema, salvarTema, type Tema } from '../lib/tema'
 import { VERSOES, type VersaoId } from '../lib/biblia'
 import { ehContaInterna, emailValido, identificadorDoUsuario, nomeDoUsuario } from '../lib/usuario'
@@ -108,6 +108,7 @@ export default function Ajustes() {
   }
 
   const [senhaAberta, setSenhaAberta] = useState(false)
+  const [excluirAberto, setExcluirAberto] = useState(false)
   const [tamTexto, setTamTexto] = useState<TamanhoTexto>(lerTamanhoTexto)
   const atalhos = [
     { nome: 'Ver tutorial', texto: 'Tudo o que o app faz', Icone: GraduationCap, acao: () => abrirTutorial() },
@@ -154,6 +155,15 @@ export default function Ajustes() {
             </div>
           )}
           {contaInterna && <AdicionarEmail nome={nome} />}
+          {excluirAberto
+            ? <ExcluirConta email={email} temSenha={contaTemSenha(sessao?.user)} aoCancelar={() => setExcluirAberto(false)} />
+            : (
+              <div className="border-t border-borda px-4 py-2.5 text-right sm:px-5">
+                <button onClick={() => setExcluirAberto(true)} className="text-xs font-semibold text-texto-2 underline-offset-4 hover:text-perigo hover:underline">
+                  Excluir conta
+                </button>
+              </div>
+            )}
         </section>
 
         <div className="order-2"><MeusDados /></div>
@@ -291,6 +301,71 @@ function AdicionarEmail({ nome }: { nome: string }) {
         </div>
       </div>
     </div>
+  )
+}
+
+/* Excluir a conta: confirma a senha e a palavra EXCLUIR; sugere baixar os dados antes */
+function ExcluirConta({ email, temSenha, aoCancelar }: { email: string; temSenha: boolean; aoCancelar: () => void }) {
+  const [senha, setSenha] = useState('')
+  const [palavra, setPalavra] = useState('')
+  const [erro, setErro] = useState('')
+  const [excluindo, setExcluindo] = useState(false)
+  const pronto = palavra.trim().toUpperCase() === 'EXCLUIR' && (!temSenha || senha.length > 0)
+
+  async function excluir(e: FormEvent) {
+    e.preventDefault()
+    setErro('')
+    if (!pronto) return
+    setExcluindo(true)
+    if (temSenha) {
+      const conferir = await supabase.auth.signInWithPassword({ email, password: senha })
+      if (conferir.error) { setExcluindo(false); setErro('A senha está incorreta.'); return }
+    }
+    try {
+      await excluirMinhaConta()
+    } catch {
+      setExcluindo(false)
+      setErro('Não foi possível excluir a conta. Verifique a internet e tente de novo.')
+    }
+  }
+
+  return (
+    <form onSubmit={excluir} className="border-t border-borda bg-perigo/5 p-4 sm:p-5">
+      <div className="flex items-start gap-3">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-perigo text-white"><TriangleAlert size={18} /></span>
+        <div className="min-w-0 flex-1 space-y-3">
+          <div>
+            <b className="block font-display">Excluir sua conta</b>
+            <p className="mt-0.5 text-sm text-texto-2">
+              Apaga para sempre suas mensagens, tópicos, slides, fotos, pastas, agenda, aulas e respostas. Não tem como desfazer.
+              Antes, vale <b className="text-texto">baixar seus dados</b> no cartão abaixo.
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {temSenha && (
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-semibold text-texto-2">Sua senha</span>
+                <input type="password" required autoComplete="current-password" value={senha}
+                  onChange={(e) => setSenha(e.target.value)} className="campo" />
+              </label>
+            )}
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-semibold text-texto-2">Digite EXCLUIR para confirmar</span>
+              <input type="text" required value={palavra} onChange={(e) => setPalavra(e.target.value)}
+                className="campo" autoCapitalize="characters" autoCorrect="off" spellCheck={false} placeholder="EXCLUIR" />
+            </label>
+          </div>
+          {erro && <p role="alert" className="text-sm text-perigo">{erro}</p>}
+          <div className="flex flex-wrap gap-2">
+            <button type="submit" disabled={!pronto || excluindo} className="botao-primario bg-perigo text-white hover:bg-perigo disabled:opacity-50">
+              {excluindo ? <LoaderCircle size={18} className="animate-spin" /> : <Trash2 size={18} />}
+              {excluindo ? 'Excluindo…' : 'Excluir minha conta'}
+            </button>
+            <button type="button" onClick={aoCancelar} disabled={excluindo} className="botao-secundario">Cancelar</button>
+          </div>
+        </div>
+      </div>
+    </form>
   )
 }
 
