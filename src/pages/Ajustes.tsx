@@ -8,6 +8,8 @@ import { TEMAS, lerTema, salvarTema, type Tema } from '../lib/tema'
 import { VERSOES, type VersaoId } from '../lib/biblia'
 import { ehContaInterna, emailValido, identificadorDoUsuario, nomeDoUsuario } from '../lib/usuario'
 import { baixarMeusDados } from '../lib/exportarDados'
+import { usePlano } from '../lib/plano'
+import { diasRestantes, emTeste } from '../lib/planoInfo'
 import { NOVIDADES, NUMERO_VERSAO, VERSAO_APP, buscarServiceWorkerNovo, carregarUltimaVersao, verificarVersao, versaoAmigavel } from '../lib/atualizar'
 import { abrirTutorial } from '../lib/tutorial'
 import { ANO_INICIO, AUTOR } from '../lib/autor'
@@ -86,6 +88,7 @@ export default function Ajustes() {
   const usuario = identificadorDoUsuario(sessao?.user)
   const nome = nomeDoUsuario(sessao?.user)
   const contaInterna = ehContaInterna(email)
+  const { plano } = usePlano()
   const iniciais = nome.split(' ').map((p) => p[0]).slice(0, 2).join('')
   const [tema, setTema] = useState<Tema>(lerTema)
   const [versao, setVersao] = useState<VersaoId>(lerVersao)
@@ -137,6 +140,9 @@ export default function Ajustes() {
             <div className="relative min-w-0 flex-1">
               <p className="truncate font-display text-xl font-extrabold">{nome}</p>
               <p className="truncate text-sm text-texto-2">{usuario}</p>
+              <Link to="/assinatura" className={`mt-1.5 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold ${plano.premium ? 'bg-acao text-acao-texto' : 'bg-superficie-2 text-texto-2 hover:text-texto'}`}>
+                <Sparkles size={12} /> {plano.premium ? (emTeste(plano) ? `Premium · teste, ${diasRestantes(plano.valida_ate)} dias` : 'Premium') : `Gratuito · ${plano.mensagens_ativas}/${plano.limite} mensagens`}
+              </Link>
             </div>
             <div className="relative flex w-full gap-2 sm:w-auto">
               <button onClick={() => setSenhaAberta((v) => !v)} aria-expanded={senhaAberta}

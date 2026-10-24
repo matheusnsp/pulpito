@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { ArrowRight, BookOpen, Briefcase, GraduationCap, LoaderCircle, Mic, NotebookPen, Presentation, Users, X, LayoutTemplate, Trash2 } from 'lucide-react'
 import { aoPedirCriar, salvarModo, type PedidoCriar } from '../lib/criar'
 import { criarMensagem, FALTA_SQL_ESTUDOS, usarModelo } from '../lib/mensagens'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
+import { usePlano } from '../lib/plano'
+import { podeCriarMensagem } from '../lib/planoInfo'
 import { FORMATOS_PALAVRA, ICONE_FORMATO, MODELOS, nomeFormato } from '../lib/blocos'
 import type { Mensagem, TipoProjeto } from '../lib/tipos'
 
@@ -13,7 +15,8 @@ export default function CriarNovo() {
   const navigate = useNavigate()
   const [pedido, setPedido] = useState<PedidoCriar | null>(null)
   const [criando, setCriando] = useState<string | null>(null)
-  const [erro, setErro] = useState<'' | 'sql' | 'rede'>('')
+  const [erro, setErro] = useState<'' | 'sql' | 'rede' | 'limite'>('')
+  const { plano, recarregar } = usePlano()
 
   const [modelos, setModelos] = useState<Mensagem[]>([])
   const { sessao } = useAuth()
@@ -25,10 +28,12 @@ export default function CriarNovo() {
   }), [sessao])
 
   async function criarDoModelo(m: Mensagem) {
+    if (!podeCriarMensagem(plano)) { setErro('limite'); return }
     setCriando(m.id)
     setErro('')
     try {
       const nova = await usarModelo(m, pedido?.pastaId ?? null)
+      void recarregar()
       salvarModo(m.tipo === 'estudo' ? 'estudo' : 'pregacao')
       setPedido(null)
       navigate(`/mensagem/${nova.id}`)
@@ -50,10 +55,12 @@ export default function CriarNovo() {
   }, [pedido])
 
   async function criar(tipo: TipoProjeto, modelo?: string) {
+    if (!podeCriarMensagem(plano)) { setErro('limite'); return }
     setCriando(modelo ?? tipo)
     setErro('')
     try {
       const id = await criarMensagem(pedido?.pastaId ?? null, { tipo, modelo })
+      void recarregar()
       salvarModo(tipo)
       setPedido(null)
       navigate(`/mensagem/${id}`)
@@ -147,6 +154,13 @@ export default function CriarNovo() {
           </div>
         )}
         {erro === 'rede' && <p role="alert" className="mt-4 text-sm text-perigo">Não foi possível criar. Verifique a internet.</p>}
+        {erro === 'limite' && (
+          <div role="alert" className="mt-4 rounded-2xl border border-acao bg-ouro-suave p-4 text-sm">
+            <b className="block font-display">Você chegou às {plano.limite} mensagens do Gratuito</b>
+            <p className="mt-1 text-texto-2">Para criar mais, mova uma para a lixeira ou passe para o Premium, que libera mensagens ilimitadas, slides, telão e respostas ao vivo.</p>
+            <Link to="/assinatura" onClick={() => setPedido(null)} className="botao-primario mt-3 py-2 text-sm">Conhecer o Premium</Link>
+          </div>
+        )}
       </div>
     </div>
   )

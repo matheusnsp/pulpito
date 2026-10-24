@@ -64,6 +64,23 @@ e validade de 7 dias; o código fica guardado só como hash. As permissões vale
 o editor edita conteúdo e slides mas não exclui, não move de pasta nem muda o dono; o leitor só lê; quem foi
 bloqueado perde o acesso, inclusive ao que criou. Edições simultâneas no mesmo campo seguem "a última salva vence".
 
+## Planos
+
+Gratuito: até 5 mensagens ativas, Bíblia, modo pregação, esboço e exportar os dados. Premium (R$ 9,90/mês ou
+R$ 89/ano): mensagens ilimitadas, slides e telão, respostas ao vivo, colaboração, histórico de versões, agenda e
+exportação em planilha. Conta nova ganha 14 dias de Premium. Quando o Premium acaba, nada é apagado: a pessoa
+continua lendo tudo, só não cria nem edita o que é Premium. Em projeto compartilhado vale o plano do dono.
+
+As regras valem no banco, por RLS e pela função `eh_premium`; a interface só mostra e orienta. Preços, textos e o
+contato do botão Assinar ficam em `src/lib/planoInfo.ts` (`CONTATO_ASSINATURA` é o e-mail que recebe os pedidos).
+
+Ativar o Premium de alguém, no SQL Editor do Supabase:
+
+```sql
+select ativar_premium('pessoa@exemplo.com', 12);   -- 12 meses; soma se já tiver
+select ativar_premium('pessoa@exemplo.com', null); -- sem vencimento
+```
+
 ## Login, e-mail e senha
 
 As contas são criadas com e-mail real, e a pessoa recupera a senha sozinha em `/recuperar-senha`.

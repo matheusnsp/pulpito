@@ -6,6 +6,7 @@ import '@fontsource/atkinson-hyperlegible-next/700.css'
 import '@fontsource-variable/literata'
 import '@fontsource-variable/plus-jakarta-sans'
 import { AuthProvider } from './lib/auth'
+import { PlanoProvider } from './lib/plano'
 import { iniciarTema } from './lib/tema'
 import { travarZoomNoToque } from './lib/tamanhoTexto'
 import App from './App'
@@ -27,9 +28,11 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        <App />
-        <AvisoAtualizacao />
-        <AvisoOffline />
+        <PlanoProvider>
+          <App />
+          <AvisoAtualizacao />
+          <AvisoOffline />
+        </PlanoProvider>
       </AuthProvider>
     </BrowserRouter>
   </StrictMode>

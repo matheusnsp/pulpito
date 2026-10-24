@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from './lib/auth'
 import Layout from './components/Layout'
 import ProjetoGate from './components/ProjetoGate'
+import SoPremium from './components/SoPremium'
 import EntrarProjeto from './pages/EntrarProjeto'
 import CompartilharProjeto from './pages/CompartilharProjeto'
 import Login from './pages/Login'
@@ -23,6 +24,7 @@ const Responder = lazy(() => import('./pages/Responder'))
 const RespostasEstudo = lazy(() => import('./pages/RespostasEstudo'))
 const Lixeira = lazy(() => import('./pages/Lixeira'))
 const Historico = lazy(() => import('./pages/Historico'))
+const Assinatura = lazy(() => import('./pages/Assinatura'))
 
 function Carregando() {
   return (
@@ -56,17 +58,18 @@ export default function App() {
           <Route element={<Layout />}>
             <Route path="/" element={<Mensagens />} />
             <Route path="/mensagem/:id" element={<ProjetoGate><EditorMensagem /></ProjetoGate>} />
-            <Route path="/mensagem/:id/slides" element={<ProjetoGate><EditorSlides /></ProjetoGate>} />
-            <Route path="/mensagem/:id/respostas" element={<ProjetoGate><RespostasEstudo /></ProjetoGate>} />
+            <Route path="/mensagem/:id/slides" element={<ProjetoGate><SoPremium recurso="slides" doProjeto><EditorSlides /></SoPremium></ProjetoGate>} />
+            <Route path="/mensagem/:id/respostas" element={<ProjetoGate><SoPremium recurso="respostas" doProjeto><RespostasEstudo /></SoPremium></ProjetoGate>} />
             <Route path="/entrar-projeto" element={<EntrarProjeto />} />
             <Route path="/convite/:codigo" element={<EntrarProjeto />} />
-            <Route path="/mensagem/:id/compartilhar" element={<CompartilharProjeto />} />
+            <Route path="/mensagem/:id/compartilhar" element={<SoPremium recurso="colaboracao" doProjeto><CompartilharProjeto /></SoPremium>} />
             <Route path="/biblia" element={<Biblia />} />
-            <Route path="/agenda" element={<Agenda />} />
+            <Route path="/agenda" element={<SoPremium recurso="agenda"><Agenda /></SoPremium>} />
+            <Route path="/assinatura" element={<Assinatura />} />
             <Route path="/perguntas" element={<Perguntas />} />
             <Route path="/ajustes" element={<Ajustes />} />
             <Route path="/lixeira" element={<Lixeira />} />
-            <Route path="/mensagem/:id/historico" element={<ProjetoGate><Historico /></ProjetoGate>} />
+            <Route path="/mensagem/:id/historico" element={<ProjetoGate><SoPremium recurso="historico" doProjeto><Historico /></SoPremium></ProjetoGate>} />
             <Route path="/conectar/:codigo" element={<Conectar />} />
           </Route>
         </Route>
