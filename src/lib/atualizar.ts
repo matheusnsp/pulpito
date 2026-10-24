@@ -66,6 +66,22 @@ export function versaoAmigavel(v: string) {
 /* Novidades recentes, mostradas em Ajustes. A mais nova primeiro. */
 export const NOVIDADES: { titulo: string; texto: string }[] = [
   {
+    titulo: 'Mais simples de começar',
+    texto: 'Nova mensagem abre direto no editor. Texto base e tópicos primeiro; tempo, pasta e série ficam em Detalhes. Slides em um botão.'
+  },
+  {
+    titulo: 'Entrar com e-mail e recuperar a senha',
+    texto: 'Conta nova pede e-mail de verdade. Esqueceu a senha? Peça o link em Entrar. Quem tem conta antiga adiciona o e-mail em Ajustes.'
+  },
+  {
+    titulo: 'Planos Gratuito e Premium',
+    texto: 'Gratuito com até 5 mensagens, Bíblia e modo pregação. Premium libera slides, telão, respostas ao vivo, colaboração e agenda. Conta nova ganha 14 dias.'
+  },
+  {
+    titulo: 'Seus dados são seus',
+    texto: 'Em Ajustes, baixe tudo o que você criou em um arquivo. E, se quiser, exclua a conta por lá mesmo.'
+  },
+  {
     titulo: 'Lixeira e histórico',
     texto: 'O que você exclui fica 30 dias na lixeira. E cada projeto guarda versões: dá para voltar a como estava ontem.'
   },
