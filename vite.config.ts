@@ -66,13 +66,21 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
         importScripts: ['push-sw.js'],
+        // Fora do pré-carregamento: o que só serve na hora de exportar ou importar
+        // (PDF, PowerPoint, imagens) baixa no primeiro uso e fica guardado (ver runtimeCaching)
         globIgnores: [
-          '**/pdf-*.js', '**/pdf.worker*', '**/jszip*.js',
+          '**/pdf-*.js', '**/pdf.worker*', '**/jszip*.js', '**/jspdf*.js', '**/pptxgen*.js', '**/html2canvas*.js',
           '**/*-cyrillic*', '**/*-greek*', '**/*-vietnamese*', 'versao.json',
         ],
         navigateFallback: '/index.html',
         cleanupOutdatedCaches: true,
         runtimeCaching: [
+          {
+            // Pedaços do app fora do pré-carregamento (exportação, importação): guarda depois do primeiro uso
+            urlPattern: /\/assets\/.*\.js$/,
+            handler: 'CacheFirst',
+            options: { cacheName: 'pedacos-sob-demanda', expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 90 }, cacheableResponse: { statuses: [200] } },
+          },
           {
             // Sempre pergunta ao servidor qual é a versão mais nova
             urlPattern: /\/versao\.json/,
