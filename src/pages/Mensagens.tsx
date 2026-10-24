@@ -16,9 +16,9 @@ import type { Mensagem, Pasta } from '../lib/tipos'
 import { duplicarMensagem } from '../lib/mensagens'
 import { abrirCriar, lerModo, salvarModo } from '../lib/criar'
 import { useCriarRapido } from '../lib/criarRapido'
-import { mostrarAbaEstudos, mostrarBusca, mostrarContinuar, mostrarPastas } from '../lib/inicio'
+import { mostrarBusca, mostrarContinuar, mostrarPastas } from '../lib/inicio'
 import { abrirTutorial } from '../lib/tutorial'
-import { criarMensagemExemplo } from '../lib/exemplo'
+import { criarExemplo } from '../lib/exemplo'
 import { ICONE_FORMATO, nomeFormato } from '../lib/blocos'
 import { moverParaLixeira, visivel } from '../lib/lixeira'
 import { resumoSeries } from '../lib/series'
@@ -314,7 +314,7 @@ export default function Mensagens() {
   const [criandoExemplo, setCriandoExemplo] = useState(false)
   async function verExemplo() {
     setCriandoExemplo(true)
-    try { navigate(`/mensagem/${await criarMensagemExemplo()}`) }
+    try { navigate(`/mensagem/${await criarExemplo(modo)}`) }
     catch { setErro('Não foi possível criar o exemplo. Verifique a internet.') }
     finally { setCriandoExemplo(false) }
   }
@@ -555,8 +555,8 @@ export default function Mensagens() {
           </div>
         </header>
 
-        {/* Chave: Palavra | Estudos, só para quem tem estudo */}
-        {mostrarAbaEstudos(qtdPorModo.estudo, modo === 'estudo') && <div role="tablist" aria-label="Tipo" className="mt-5 flex gap-1.5 rounded-2xl border border-borda bg-superficie p-1.5 md:max-w-md">
+        {/* Chave: Palavra | Estudos — os dois lados do app, sempre à vista */}
+        <div role="tablist" aria-label="Tipo" className="mt-5 flex gap-1.5 rounded-2xl border border-borda bg-superficie p-1.5 md:max-w-md">
           {([['pregacao', 'Palavra', BookOpen], ['estudo', 'Estudos', GraduationCap]] as const).map(([v, nome, Icone]) => {
             const ativo = modo === v
             return (
@@ -567,7 +567,7 @@ export default function Mensagens() {
               </button>
             )
           })}
-        </div>}
+        </div>
 
         {/* Próxima pregação */}
         {proximo && (
@@ -723,13 +723,11 @@ export default function Mensagens() {
               <button onClick={criar} disabled={criando} className="botao-primario w-full sm:w-auto">
                 {criando ? <LoaderCircle size={18} className="animate-spin" /> : <Plus size={18} />} {modo === 'estudo' ? 'Novo estudo' : 'Nova mensagem'}
               </button>
-              {modo !== 'estudo' && (
-                <button onClick={verExemplo} disabled={criandoExemplo} className="botao-secundario w-full sm:w-auto">
-                  {criandoExemplo ? <LoaderCircle size={18} className="animate-spin" /> : <Sparkles size={18} />} Ver um exemplo pronto
-                </button>
-              )}
+              <button onClick={verExemplo} disabled={criandoExemplo} className="botao-secundario w-full sm:w-auto">
+                {criandoExemplo ? <LoaderCircle size={18} className="animate-spin" /> : <Sparkles size={18} />} Ver um exemplo pronto
+              </button>
               <p className="text-center text-sm text-texto-2">
-                {modo === 'estudo' ? 'Prefere pregação?' : 'Célula, EBD, devocional ou estudo?'}{' '}
+                {modo === 'estudo' ? 'Aula de curso, palestra, treinamento ou em branco?' : 'Célula, EBD, devocional?'}{' '}
                 <button onClick={outrosFormatos} className="font-semibold text-tinta underline-offset-4 hover:underline">Outros formatos</button>
                 {' · '}<button onClick={() => abrirTutorial()} className="font-semibold text-tinta underline-offset-4 hover:underline">Ver como funciona</button>
               </p>
