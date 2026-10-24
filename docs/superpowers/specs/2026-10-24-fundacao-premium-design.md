@@ -15,18 +15,26 @@ Planos, cobrança e página de vendas ficam para as partes 2 e 3.
 - Divisão proposta: Gratuito tem até 5 mensagens, Bíblia completa, modo pregação e esboço.
   Premium libera mensagens ilimitadas, slides e telão, respostas ao vivo, colaboração,
   histórico de versões, agenda e exportação em planilha.
-- O schema real vem de `pg_dump --schema-only` do projeto de produção, lido pela variável de
-  ambiente `SUPABASE_DB_URL` (segredo do ambiente, nunca no repositório).
+- O schema real foi extraído do projeto de produção pela API de gerenciamento do Supabase
+  (token guardado como segredo de rede do ambiente, nunca no repositório nem no chat).
 
 ## Escopo da parte 1
 
 ### 1. Schema no repositório
-- `supabase/migrations/00000000000000_base.sql`: dump do schema atual (tabelas, constraints,
-  índices, RLS, políticas, funções, triggers, publicação realtime, buckets e políticas de storage).
-- `supabase/estudos.sql` e `supabase/aula-ao-vivo.sql` já estão aplicados em produção e passam
-  a fazer parte do dump; os arquivos soltos são removidos.
-- `supabase/config.toml` para rodar `supabase start` localmente.
-- README: seção "Subir do zero" com os passos para um projeto Supabase limpo.
+- `supabase/migrations/00000000000000_base.sql`: estado real de produção (tabelas, constraints,
+  índices, RLS, políticas, funções, triggers, bucket e políticas de storage). Realtime usa só
+  broadcast e presence, então não há tabelas na publicação.
+- Os arquivos SQL soltos e as três migrações antigas já estavam aplicados (ou parcialmente aplicados)
+  em produção e foram absorvidos pela base; saem do repositório.
+- `supabase/migrations/20261024150000_colaboracao_politicas.sql`: correção. A migração original de
+  compartilhamento tinha `as restrictive` fora de lugar, o Postgres abortou nela e as políticas de
+  colaboração em mensagens, tópicos e slides nunca chegaram ao banco. Validada num Postgres local
+  com dono, editor, leitor, estranho e editor bloqueado.
+- Edge Functions `agenda-ics` e `limpar-fotos` recuperadas de produção para `supabase/functions`.
+  `limpar-fotos` passa a considerar fotos em `estilo.foto` e `estilo.elementos`, que a versão em
+  produção ignorava (apagaria foto em uso).
+- `supabase/config.toml` para `supabase start` e `db push`.
+- README: seções "Subir do zero" e "Colaboração".
 
 ### 2. Login de verdade
 - Criar conta pede e-mail real; o nome de usuário vira nome de exibição (`user_metadata.nome`).

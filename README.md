@@ -33,6 +33,37 @@ npm run dev
 
 `npm test` roda os testes das bibliotecas puras (Vitest). O CI do GitHub roda tipos, lint, testes e build em todo push.
 
+## Subir do zero (Supabase)
+
+O banco inteiro está em `supabase/migrations`: a migração base tem tabelas, RLS, funções, triggers e o bucket
+de fotos; as seguintes são incrementais. Num projeto Supabase novo:
+
+```bash
+npm i -g supabase            # ou npx supabase
+supabase login
+supabase link --project-ref SEU_REF
+supabase db push             # aplica as migrações
+supabase functions deploy agenda-ics --no-verify-jwt
+supabase functions deploy limpar-fotos --no-verify-jwt
+```
+
+Para rodar tudo na sua máquina, `supabase start` sobe Postgres, Auth e Storage locais com as mesmas migrações
+(ver `supabase/config.toml`); aponte o `.env` para as URLs que o comando imprime.
+
+As Edge Functions ficam em `supabase/functions`:
+
+- **agenda-ics**: feed `.ics` da agenda por token, para assinar no calendário do celular.
+- **limpar-fotos**: apaga do bucket `fundos` as fotos que não estão em nenhum slide há mais de um dia.
+  Espera o cabeçalho `x-cron-secret` igual ao segredo `CRON_SECRET` da função; agende a chamada
+  (pg_cron ou cron externo) se quiser que rode sozinha.
+
+## Colaboração
+
+O compartilhamento é por projeto. Convite por link ou código, com permissão de editar ou só ver, 1 a 20 usos
+e validade de 7 dias; o código fica guardado só como hash. As permissões valem no banco, por RLS: o dono faz tudo,
+o editor edita conteúdo e slides mas não exclui, não move de pasta nem muda o dono; o leitor só lê; quem foi
+bloqueado perde o acesso, inclusive ao que criou. Edições simultâneas no mesmo campo seguem "a última salva vence".
+
 ## Login, e-mail e senha
 
 As contas são criadas com e-mail real, e a pessoa recupera a senha sozinha em `/recuperar-senha`.
