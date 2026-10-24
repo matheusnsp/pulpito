@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CheckCircle2, Circle, Ellipsis, FileText, History, LayoutTemplate, LoaderCircle, Trash2 } from 'lucide-react'
+import { CheckCircle2, Circle, Ellipsis, FileText, History, LayoutTemplate, LoaderCircle, Trash2 , Users } from 'lucide-react'
 import type { Mensagem, Topico } from '../lib/tipos'
 import { salvarComoModelo } from '../lib/mensagens'
 import { useAuth } from '../lib/auth'
@@ -65,6 +65,7 @@ export default function MenuMais({ mensagem, topicos, dono, onDada }: {
             {dada ? <CheckCircle2 size={18} className="text-sucesso" /> : <Circle size={18} className="text-texto-2" />}
             <span className="flex-1">{dada ? `${estudo ? 'Dada' : 'Feita'} em ${new Date(mensagem.detalhes!.dadaEm!).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}` : `Marcar como ${estudo ? 'dada' : 'feita'}`}</span>
           </button>
+          {dono && <Link to={`/mensagem/${mensagem.id}/compartilhar`} className={`${item} sm:hidden`}><Users size={18} className="text-texto-2" /> Convidar pessoas</Link>}
           <Link to={`/mensagem/${mensagem.id}/historico`} className={item}><History size={18} className="text-texto-2" /> Histórico de versões</Link>
           <button onClick={() => pdf(false)} disabled={!!ocupado} className={item}>
             {ocupado === 'pdf' ? <LoaderCircle size={18} className="animate-spin" /> : <FileText size={18} className="text-texto-2" />} Baixar esboço em PDF

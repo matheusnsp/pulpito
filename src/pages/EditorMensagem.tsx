@@ -254,6 +254,10 @@ export default function EditorMensagem() {
   })
   const editadoEm = useRef(new Map<string, number>()) // campo → quando EU mexi por último
   const historico = useHistorico<Foto>()
+  // Campos opcionais do tópico que a pessoa pediu para ver (os com texto aparecem sozinhos)
+  const [revelados, setRevelados] = useState<Record<string, string[]>>({})
+  // Blocos de estudo (pergunta, atividade…) escondidos na pregação simples até alguém pedir
+  const [mostrarBlocos, setMostrarBlocos] = useState(false)
   const [mensagem, setMensagem] = useState<Mensagem | null | undefined>(undefined)
   const [topicos, setTopicos] = useState<Topico[]>([])
   const [pastas, setPastas] = useState<Pasta[]>([])
@@ -542,6 +546,32 @@ export default function EditorMensagem() {
   const acaoNome = estudo ? 'Dar aula' : formato === 'pregacao' ? 'Pregar' : 'Começar'
   const minutosBlocos = topicos.reduce((s, t) => s + (t.extra?.minutos ?? 0), 0)
 
+  // Slides, Esboço e demais ações: na coluna da direita no computador, depois dos tópicos no celular
+  const acoes = (
+      <div className={`mt-4 grid gap-2 sm:flex sm:flex-wrap lg:mt-2 lg:grid lg:grid-cols-2 ${comBlocos ? 'grid-cols-3' : 'grid-cols-2'}`}>
+        <Link to={`/pregar/${mensagem.id}`} className="botao-primario hidden sm:inline-flex lg:col-span-2">
+          <Play size={18} fill="currentColor" /> {acaoNome}
+        </Link>
+        <Link to={`/mensagem/${mensagem.id}/slides`} className={`botao-secundario ${comBlocos ? 'max-sm:px-2 max-sm:text-sm' : ''}`}>
+          <Presentation size={18} /> Slides
+        </Link>
+        <button onClick={compartilharEsboco} disabled={topicos.length === 0 && !mensagem.texto_base} className={`botao-secundario ${comBlocos ? 'max-sm:px-2 max-sm:text-sm' : ''}`}>
+          {copiado ? <><Check size={18} className="text-sucesso" /> Copiado</>
+            : <><span className="sm:hidden"><Share2 size={18} /></span><span className="hidden sm:inline"><ClipboardCopy size={18} /></span> {comBlocos ? 'Roteiro' : 'Esboço'}</>}
+        </button>
+        {comBlocos && (
+          <Link to={`/mensagem/${mensagem.id}/respostas`} className="botao-secundario max-sm:order-last max-sm:col-span-3 max-sm:text-sm lg:order-last lg:px-3">
+            <MessagesSquare size={18} /> {estudo ? "Respostas das aulas" : "Respostas"}
+          </Link>
+        )}
+        {comBlocos && (
+          <button onClick={baixarFolha} disabled={gerandoFolha || topicos.length === 0} className="botao-secundario max-sm:px-2 max-sm:text-sm">
+            {gerandoFolha ? <LoaderCircle size={18} className="animate-spin" /> : <FileDown size={18} />} <span className="sm:hidden">Folha</span><span className="hidden sm:inline">{estudo ? 'Folha do aluno' : 'Folha impressa'}</span>
+          </button>
+        )}
+      </div>
+  )
+
   return (
     <div className="mx-auto max-w-3xl px-3 sm:px-4 pb-28 md:px-8 lg:max-w-6xl">
       {/* Barra do topo (fixa ao rolar) */}
@@ -549,7 +579,7 @@ export default function EditorMensagem() {
         <Link to="/" className="botao-fantasma -ml-2 px-2">
           <ChevronLeft size={20} /> <span className="hidden sm:inline">Início</span>
         </Link>
-        {papelAtual === 'dono' && <Link to={`/mensagem/${mensagem.id}/compartilhar`} className="botao-secundario px-2 py-1.5 text-xs sm:text-sm" aria-label="Convidar" title="Convidar pessoas">
+        {papelAtual === 'dono' && <Link to={`/mensagem/${mensagem.id}/compartilhar`} className="botao-secundario hidden px-2 py-1.5 text-xs sm:inline-flex sm:text-sm" aria-label="Convidar" title="Convidar pessoas">
           <Share2 size={15} /> <span className="max-sm:hidden">Convidar</span>
         </Link>}
         {pessoas.length > 0 && (
@@ -566,11 +596,11 @@ export default function EditorMensagem() {
           {indicador}
         </span>
         <button onClick={desfazerAgora} disabled={!historico.podeDesfazer}
-          aria-label="Desfazer" title="Desfazer (Cmd + Z)" className={iconeBotao}>
+          aria-label="Desfazer" title="Desfazer (Cmd + Z)" className={`${iconeBotao} max-sm:hidden`}>
           <Undo2 size={18} />
         </button>
         <button onClick={refazerAgora} disabled={!historico.podeRefazer}
-          aria-label="Refazer" title="Refazer (Cmd + Shift + Z)" className={iconeBotao}>
+          aria-label="Refazer" title="Refazer (Cmd + Shift + Z)" className={`${iconeBotao} max-sm:hidden`}>
           <Redo2 size={18} />
         </button>
         <MenuMais mensagem={mensagem} topicos={topicos} dono={papelAtual === 'dono'}
@@ -587,7 +617,7 @@ export default function EditorMensagem() {
         <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-[#14B8A6]/15 px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-wider text-[#14B8A6]">
           <GraduationCap size={13} /> Estudo
         </span>
-      ) : (
+      ) : formato !== 'pregacao' && (
         <label className="relative mt-2 inline-flex items-center gap-1.5 rounded-full bg-ouro-suave py-1 pl-2.5 pr-2 text-[11px] font-extrabold uppercase tracking-wider text-tinta"
           title="Trocar o formato">
           <IconeFormato size={13} /> Palavra ·
@@ -619,31 +649,28 @@ export default function EditorMensagem() {
       </div>
 
       <div className="lg:sticky lg:top-24 lg:self-start lg:[grid-area:lado] lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto lg:pb-4 sem-barra">
-      <div className={`mt-4 grid gap-2 sm:flex sm:flex-wrap lg:mt-2 lg:grid lg:grid-cols-2 ${comBlocos ? 'grid-cols-3' : 'grid-cols-2'}`}>
-        <Link to={`/pregar/${mensagem.id}`} className="botao-primario hidden sm:inline-flex lg:col-span-2">
-          <Play size={18} fill="currentColor" /> {acaoNome}
-        </Link>
-        <Link to={`/mensagem/${mensagem.id}/slides`} className={`botao-secundario ${comBlocos ? 'max-sm:px-2 max-sm:text-sm' : ''}`}>
-          <Presentation size={18} /> Slides
-        </Link>
-        <button onClick={compartilharEsboco} disabled={topicos.length === 0 && !mensagem.texto_base} className={`botao-secundario ${comBlocos ? 'max-sm:px-2 max-sm:text-sm' : ''}`}>
-          {copiado ? <><Check size={18} className="text-sucesso" /> Copiado</>
-            : <><span className="sm:hidden"><Share2 size={18} /></span><span className="hidden sm:inline"><ClipboardCopy size={18} /></span> {comBlocos ? 'Roteiro' : 'Esboço'}</>}
-        </button>
-        {comBlocos && (
-          <Link to={`/mensagem/${mensagem.id}/respostas`} className="botao-secundario max-sm:order-last max-sm:col-span-3 max-sm:text-sm lg:order-last lg:px-3">
-            <MessagesSquare size={18} /> {estudo ? "Respostas das aulas" : "Respostas"}
-          </Link>
-        )}
-        {comBlocos && (
-          <button onClick={baixarFolha} disabled={gerandoFolha || topicos.length === 0} className="botao-secundario max-sm:px-2 max-sm:text-sm">
-            {gerandoFolha ? <LoaderCircle size={18} className="animate-spin" /> : <FileDown size={18} />} <span className="sm:hidden">Folha</span><span className="hidden sm:inline">{estudo ? 'Folha do aluno' : 'Folha impressa'}</span>
-          </button>
-        )}
+      <div className="hidden lg:block">{acoes}</div>
+
+      {/* Texto base: o primeiro passo, sempre à vista */}
+      <div className="cartao mt-4 p-4 lg:mt-6">
+        <Campo rotulo={estudo ? 'Texto bíblico (opcional)' : 'Texto base'}>
+          <div className="relative">
+            <BookOpen size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-texto-2" />
+            <input value={mensagem.texto_base ?? ''} placeholder="Rm 8:28"
+              onChange={(e) => alterarMensagem({ texto_base: e.target.value })} className="campo pl-10" />
+          </div>
+          <PreviaVersiculo texto={mensagem.texto_base ?? ''} />
+        </Campo>
       </div>
 
-      {/* Dados da mensagem */}
-      <div className="cartao mt-6 grid grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] gap-4 p-4">
+      {/* Detalhes: tempo, pasta, série, formato e agenda, recolhidos numa linha */}
+      <details className="group mt-3 rounded-2xl border border-borda bg-superficie" open={comBlocos}>
+        <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-sm font-semibold text-texto-2">
+          <span className="text-texto">Detalhes</span>
+          <span className="truncate">· {mensagem.tempo_minutos} min{mensagem.pasta_id ? ` · ${pastas.find((p) => p.id === mensagem.pasta_id)?.nome ?? 'Pasta'}` : ''}{detalhes.serie?.trim() ? ` · ${detalhes.serie}` : ''}{eventos.length ? ` · ${eventos.length === 1 ? '1 compromisso' : `${eventos.length} compromissos`}` : ''}</span>
+          <ChevronDown size={18} className="ml-auto shrink-0 transition-transform group-open:rotate-180" />
+        </summary>
+      <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] gap-4 border-t border-borda p-4">
         {comBlocos && (
           <>
             <div className="col-span-2">
@@ -675,16 +702,6 @@ export default function EditorMensagem() {
             </details>
           </>
         )}
-        <div className="col-span-2">
-        <Campo rotulo={estudo ? 'Texto bíblico (opcional)' : 'Texto base'}>
-          <div className="relative">
-            <BookOpen size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-texto-2" />
-            <input value={mensagem.texto_base ?? ''} placeholder="Rm 8:28"
-              onChange={(e) => alterarMensagem({ texto_base: e.target.value })} className="campo pl-10" />
-          </div>
-          <PreviaVersiculo texto={mensagem.texto_base ?? ''} />
-        </Campo>
-        </div>
         <Campo rotulo={estudo ? 'Duração' : 'Tempo'}>
           <div className="relative">
             <Clock size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-texto-2" />
@@ -734,10 +751,19 @@ export default function EditorMensagem() {
               onChange={(e) => alterarDetalhes({ serieNumero: Number(e.target.value) || undefined })} className="campo" />
           </Campo>
         </div>
+        {!estudo && formato === 'pregacao' && (
+          <div className="col-span-2">
+            <Campo rotulo="Formato">
+              <select value={formato} onChange={(e) => alterarDetalhes({ formato: e.target.value })} className="campo">
+                {FORMATOS_PALAVRA.map((f) => <option key={f.id} value={f.id}>{f.nome} · {f.resumo}</option>)}
+              </select>
+            </Campo>
+          </div>
+        )}
       </div>
 
       {/* Compromissos ligados a esta mensagem */}
-      <div className="mt-4 flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 border-t border-borda p-4">
         <span className="flex items-center gap-1.5 text-sm font-semibold text-texto-2"><CalendarDays size={16} /> Agenda:</span>
         {eventos.map((e) => (
           <Link key={e.id} to="/agenda" className="rounded-full bg-ouro-suave px-3 py-1 text-sm font-bold text-tinta">
@@ -749,6 +775,7 @@ export default function EditorMensagem() {
           <Plus size={14} /> {eventos.length ? 'Marcar outro' : 'Marcar na agenda'}
         </Link>
       </div>
+      </details>
 
       </div>
 
@@ -961,7 +988,7 @@ export default function EditorMensagem() {
                   <CampoVersiculos rotulo="Versículo base" valor={t.versiculo ?? null}
                     onChange={(v) => alterarTopico(t.id, { versiculo: v })} />
 
-                  {CAMPOS_TOPICO.map((c) => c.chave === 'observacao' || c.chave === 'ilustracao' || c.chave === 'aplicacao' ? (
+                  {CAMPOS_TOPICO.filter((c) => c.chave === 'observacao' || (t[c.chave] ?? '').trim() || revelados[t.id]?.includes(c.chave)).map((c) => c.chave === 'observacao' || c.chave === 'ilustracao' || c.chave === 'aplicacao' ? (
                     <CampoTextoVersiculo key={c.chave} rotulo={c.rotulo} placeholder={c.dica} valor={t[c.chave]}
                       onChange={(v) => alterarTopico(t.id, { [c.chave]: v } as Partial<Topico>)} />
                   ) : (
@@ -972,6 +999,18 @@ export default function EditorMensagem() {
                         className={`campo leading-relaxed ${c.chave === 'frase_chave' ? 'border-l-4 border-l-ouro font-semibold' : ''}`} />
                     </Campo>
                   ))}
+
+                  {(() => { const faltam = CAMPOS_TOPICO.filter((c) => c.chave !== 'observacao' && !(t[c.chave] ?? '').trim() && !revelados[t.id]?.includes(c.chave)); return faltam.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="pr-1 text-xs font-bold text-texto-2">Adicionar</span>
+                      {faltam.map((c) => (
+                        <button key={c.chave} type="button" onClick={() => setRevelados((r) => ({ ...r, [t.id]: [...(r[t.id] ?? []), c.chave] }))}
+                          className="rounded-full border border-dashed border-borda px-3 py-1 text-xs font-bold text-texto-2 hover:border-acao hover:text-texto">
+                          + {c.rotulo}
+                        </button>
+                      ))}
+                    </div>
+                  ) })()}
 
                   <button onClick={() => excluirTopico(t)} className="botao-fantasma -ml-2 px-2 text-sm hover:text-perigo">
                     <Trash2 size={16} /> Excluir tópico
@@ -1008,6 +1047,11 @@ export default function EditorMensagem() {
           className="flex w-full items-center justify-center gap-2 rounded-xl py-3 font-bold text-texto-2 transition-colors hover:bg-ouro-suave/50 hover:text-tinta">
           <Plus size={18} /> Adicionar tópico
         </button>
+        {!comBlocos && !mostrarBlocos ? (
+          <button type="button" onClick={() => setMostrarBlocos(true)} className="mx-auto block pb-2 text-xs font-semibold text-texto-2 hover:text-texto">
+            Inserir pergunta, atividade ou lista…
+          </button>
+        ) : (
         <div className="flex items-center gap-1.5 overflow-x-auto px-1 pb-1 pt-1.5 sem-barra sm:flex-wrap sm:justify-center sm:overflow-visible">
           <span className="shrink-0 pr-1 text-xs font-bold text-texto-2">Inserir</span>
           {ORDEM_BLOCOS.map((k) => {
@@ -1021,8 +1065,12 @@ export default function EditorMensagem() {
             )
           })}
         </div>
+        )}
       </div>
       )}
+
+      {/* Celular: Slides, Esboço e demais ações depois dos tópicos */}
+      <div className="lg:hidden">{acoes}</div>
       </div>
       </div>
     </div>
