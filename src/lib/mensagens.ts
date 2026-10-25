@@ -19,7 +19,7 @@ export async function criarMensagem(pastaId: string | null = null, opcoes: { tip
   // Livre: texto corrido, sem tópicos nem blocos pré-definidos, em qualquer um dos lados
   if (opcoes.modelo === 'livre') {
     const { data, error } = await supabase.from('mensagens')
-      .insert({ pasta_id: pastaId, tipo, titulo: '', detalhes: { formato: 'livre' } }).select('id').single()
+      .insert({ pasta_id: pastaId, tipo, titulo: '', detalhes: { formato: 'livre', rascunho: true } }).select('id').single()
     if (semColunas(error)) throw new Error(FALTA_SQL_ESTUDOS)
     if (error || !data) throw error ?? new Error('sem dados')
     return data.id as string
@@ -27,7 +27,7 @@ export async function criarMensagem(pastaId: string | null = null, opcoes: { tip
   // Pregação em branco: como sempre foi (funciona mesmo sem o SQL dos estudos)
   if (tipo === 'pregacao' && !modelo) {
     const { data, error } = await supabase.from('mensagens')
-      .insert({ pasta_id: pastaId }).select('id').single()
+      .insert({ pasta_id: pastaId, detalhes: { rascunho: true } }).select('id').single()
     if (error || !data) throw error ?? new Error('sem dados')
     return data.id as string
   }
@@ -35,7 +35,7 @@ export async function criarMensagem(pastaId: string | null = null, opcoes: { tip
     pasta_id: pastaId, tipo,
     titulo: modelo ? modelo.nome : '',
     tempo_minutos: modelo?.minutos ?? 45,
-    detalhes: { ...(modelo ? { objetivo: modelo.objetivo } : {}), ...(tipo === 'pregacao' && modelo ? { formato: modelo.id } : {}) },
+    detalhes: { rascunho: true, ...(modelo ? { objetivo: modelo.objetivo } : {}), ...(tipo === 'pregacao' && modelo ? { formato: modelo.id } : {}) },
   }).select('id').single()
   if (semColunas(error)) throw new Error(FALTA_SQL_ESTUDOS)
   if (error || !data) throw error ?? new Error('sem dados')
