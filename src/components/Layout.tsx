@@ -7,7 +7,6 @@ import Marca from './Marca'
 import Tutorial from './Tutorial'
 import CriarNovo from './CriarNovo'
 import { abrirCriar, aoMudarModo, lerModo } from '../lib/criar'
-import { useCriarRapido } from '../lib/criarRapido'
 
 type Item = { para: string; rotulo: string; Icone: typeof BookOpen; fim: boolean; novaAba?: boolean }
 const INICIO: Item = { para: '/', rotulo: 'Início', Icone: NotebookPen, fim: true }
@@ -38,8 +37,7 @@ export default function Layout() {
   const nome = nomeDoUsuario(sessao?.user)
   const usuario = identificadorDoUsuario(sessao?.user)
   const semTopo = SEM_TOPO.some((r) => r.test(pathname))
-  const { criar: criarRapido } = useCriarRapido()
-  const nova = () => { if (lerModo() === 'estudo') abrirCriar({ tipo: 'estudo' }); else void criarRapido() }
+  const nova = () => abrirCriar({ tipo: lerModo() })
   const [modo, setModo] = useState(lerModo)
   useEffect(() => aoMudarModo(() => setModo(lerModo())), [])
   const ITENS = [INICIO, modo === 'estudo' ? PERGUNTAS : BIBLIA, ...FIM]
@@ -58,9 +56,6 @@ export default function Layout() {
         <div className="px-3">
           <button onClick={nova} className="botao-primario w-full justify-start">
             <Plus size={18} strokeWidth={2.5} /> {modo === 'estudo' ? 'Novo estudo' : 'Nova mensagem'}
-          </button>
-          <button onClick={() => abrirCriar({ tipo: modo })} className="mt-1 w-full rounded-lg px-3 py-1.5 text-left text-xs font-semibold text-texto-2 hover:text-texto">
-            Outros formatos
           </button>
         </div>
 

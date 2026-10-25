@@ -111,14 +111,14 @@ export default function CriarNovo() {
           <div>
             {secao('pregacao', BookOpen, 'Palavra', 'Centrado na Bíblia', '#EAB308')}
             <div className="space-y-2">
-              {FORMATOS_PALAVRA.map((f) => cartao(f.id, 'pregacao', f.id === 'pregacao' ? undefined : f.id, ICONE_FORMATO[f.id], f.nome, f.resumo, '#EAB308', f.id === 'pregacao' && pedido.tipo !== 'estudo'))}
+              {[...FORMATOS_PALAVRA].sort((a, b) => (a.id === 'livre' ? -1 : b.id === 'livre' ? 1 : 0)).map((f) => cartao(f.id, 'pregacao', f.id === 'pregacao' ? undefined : f.id, ICONE_FORMATO[f.id], f.nome, f.id === 'livre' ? 'Escreva do zero, sem campos' : f.resumo, '#EAB308', f.id === 'livre' && pedido.tipo !== 'estudo'))}
             </div>
           </div>
           <div>
             {secao('estudo', GraduationCap, 'Estudos', 'Qualquer assunto', '#14B8A6')}
             <div className="space-y-2">
-              {cartao('estudo', 'estudo', undefined, GraduationCap, 'Em branco', 'Monte com blocos do seu jeito', '#14B8A6', pedido.tipo === 'estudo')}
-              {cartao('estudo-livre', 'estudo', 'livre', PenLine, 'Livre', 'Texto corrido, do seu jeito', '#14B8A6')}
+              {cartao('estudo-livre', 'estudo', 'livre', PenLine, 'Livre', 'Escreva do zero, sem campos', '#14B8A6', pedido.tipo === 'estudo')}
+              {cartao('estudo', 'estudo', undefined, GraduationCap, 'Em branco', 'Monte com blocos do seu jeito', '#14B8A6')}
               {estudos.map((m) => cartao(m.id, 'estudo', m.id, ICONES_ESTUDO[m.id] ?? GraduationCap, m.nome, m.blocos.map((b) => b.titulo).slice(0, 3).join(' · '), '#14B8A6'))}
             </div>
           </div>

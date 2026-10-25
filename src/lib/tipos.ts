@@ -21,6 +21,7 @@ export type DetalhesEstudo = {
   serie?: string; serieNumero?: number // série de mensagens ("Aula 1, 2, 3…")
   dadaEm?: string // quando foi pregada/dada (marca o progresso da série)
   textoLivre?: string // formato Livre: o texto corrido (as partes viram tópicos por baixo)
+  rascunho?: boolean // criado pelo menu e ainda sem nome: some ao sair do editor se nada foi escrito
 }
 
 export type Topico = {

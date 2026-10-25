@@ -307,6 +307,19 @@ export default function EditorMensagem() {
   const { pessoas, avisar } = useColaboracao(id, sessao ? { usuario: sessao.user.id, nome: nomeEu } : null, aoMudarRemoto)
   useEffect(() => { avisarRef.current = avisar })
 
+  // Rascunho (criado pelo menu, sem nome e sem nada escrito) some ao sair do editor, para não acumular "Nova mensagem"
+  const estadoRef = useRef<{ mensagem: Mensagem | null | undefined; topicos: Topico[] }>({ mensagem: undefined, topicos: [] })
+  estadoRef.current = { mensagem, topicos }
+  useEffect(() => () => {
+    const { mensagem: m, topicos: ts } = estadoRef.current
+    if (!m?.detalhes?.rascunho) return
+    const temTexto = (v?: string | null) => !!v?.trim()
+    const escreveu = temTexto(m.texto_base) || temTexto(m.detalhes?.textoLivre)
+      || ts.some((t) => temTexto(t.titulo) || temTexto(t.observacao) || temTexto(t.versiculo) || temTexto(t.aplicacao) || temTexto(t.ilustracao) || temTexto(t.frase_chave) || temTexto(t.notas))
+    // O builder só envia quando é aguardado: o then() dispara a requisição mesmo com o editor fechado
+    if (!escreveu) void supabase.from('mensagens').delete().eq('id', m.id).then(() => {}, () => {})
+  }, [])
+
   // Histórico: guarda como o projeto estava antes desta sessão de edição
   useEffect(() => { if (id) void versaoDaSessao(id) }, [id])
 
@@ -368,6 +381,12 @@ export default function EditorMensagem() {
 
   function alterarMensagem(campos: Partial<Mensagem>) {
     if (!mensagem) return
+    // Dar um nome ao projeto confirma que ele existe de verdade
+    if ('titulo' in campos && mensagem.detalhes?.rascunho && !('detalhes' in campos)) {
+      const { rascunho: _r, ...resto } = mensagem.detalhes
+      void _r
+      campos = { ...campos, detalhes: resto }
+    }
     for (const k of Object.keys(campos)) editadoEm.current.set(`m:${k}`, Date.now())
     historico.registrar(foto(), `m:${Object.keys(campos).join(',')}`)
     setMensagem({ ...mensagem, ...campos })
