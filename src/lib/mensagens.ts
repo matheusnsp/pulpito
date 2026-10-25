@@ -16,6 +16,14 @@ const semColunas = (e: { code?: string; message?: string } | null) =>
 export async function criarMensagem(pastaId: string | null = null, opcoes: { tipo?: TipoProjeto; modelo?: string } = {}) {
   const tipo: TipoProjeto = opcoes.tipo === 'estudo' ? 'estudo' : 'pregacao'
   const modelo = MODELOS.find((m) => m.id === opcoes.modelo)
+  // Livre: texto corrido, sem tópicos nem blocos pré-definidos, em qualquer um dos lados
+  if (opcoes.modelo === 'livre') {
+    const { data, error } = await supabase.from('mensagens')
+      .insert({ pasta_id: pastaId, tipo, titulo: '', detalhes: { formato: 'livre' } }).select('id').single()
+    if (semColunas(error)) throw new Error(FALTA_SQL_ESTUDOS)
+    if (error || !data) throw error ?? new Error('sem dados')
+    return data.id as string
+  }
   // Pregação em branco: como sempre foi (funciona mesmo sem o SQL dos estudos)
   if (tipo === 'pregacao' && !modelo) {
     const { data, error } = await supabase.from('mensagens')

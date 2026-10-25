@@ -1,5 +1,5 @@
 import { Link, Navigate } from 'react-router-dom'
-import { BookOpen, Check, GraduationCap, MessagesSquare, MonitorPlay, NotebookPen, Sparkles, Timer } from 'lucide-react'
+import { BookOpen, Check, GraduationCap, MessagesSquare, MonitorPlay, NotebookPen, PenLine, Sparkles, Timer } from 'lucide-react'
 import { useAuth } from '../lib/auth'
 import { AUTOR } from '../lib/autor'
 import { DIAS_TESTE, GRATUITO_INCLUI, PRECOS, RECURSOS_PREMIUM, formatarPreco } from '../lib/planoInfo'
@@ -18,6 +18,7 @@ export default function Conheca() {
   ]
   const recursos = [
     { Icone: NotebookPen, t: 'Pregação em tópicos', d: 'Texto base, pontos da mensagem e versículos ligados ao texto. Célula, EBD, devocional e discipulado também.' },
+    { Icone: PenLine, t: 'Ou do seu jeito, no formato Livre', d: 'Um texto corrido, do zero. Uma linha com # vira uma parte; na pregação, [Jo 3:16] traz o versículo.' },
     { Icone: GraduationCap, t: 'Aulas sobre qualquer assunto', d: 'Curso, palestra ou treinamento montados em blocos: explicação, definição, lista, pergunta, atividade, imagem e link.' },
     { Icone: Timer, t: 'Modo pregação e modo aula', d: 'Letra grande, cronômetro, tempo por item, próximo passo à vista e tela sempre acesa.' },
     { Icone: MonitorPlay, t: 'Slides e telão', d: 'Slides gerados em um toque, importação de PowerPoint e projeção na TV controlada pelo celular.' },
@@ -77,7 +78,7 @@ export default function Conheca() {
 
         <section className="mx-auto max-w-5xl px-5 py-10">
           <h2 className="font-display text-2xl font-extrabold sm:text-3xl">O que vem junto</h2>
-          <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="mt-6 grid gap-4 sm:grid-cols-2">
             {recursos.map(({ Icone, t, d }) => (
               <li key={t} className="cartao flex gap-4 p-5">
                 <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${Icone === GraduationCap ? 'bg-[#14B8A6]/15 text-[#14B8A6]' : 'bg-ouro-suave text-tinta'}`}><Icone size={22} /></span>

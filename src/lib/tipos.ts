@@ -20,6 +20,7 @@ export type DetalhesEstudo = {
   ehModelo?: boolean // modelo próprio: não aparece nas listas, só em "Criar novo"
   serie?: string; serieNumero?: number // série de mensagens ("Aula 1, 2, 3…")
   dadaEm?: string // quando foi pregada/dada (marca o progresso da série)
+  textoLivre?: string // formato Livre: o texto corrido (as partes viram tópicos por baixo)
 }
 
 export type Topico = {

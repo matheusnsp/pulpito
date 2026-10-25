@@ -8,6 +8,7 @@ Versão **2.1.0**. Idealizado e criado por **[Matheus Neves](https://www.matheus
 
 - **Palavra | Estudos**: dois lados no mesmo app. Na Palavra, pregação, célula, estudo bíblico (EBD), devocional e discipulado; em Estudos, aula de curso, palestra e treinamento sobre qualquer assunto.
 - **Blocos** (explicação, pergunta, atividade, lista, citação, definição, referência, imagem e link), que podem ser misturados aos tópicos.
+- **Formato Livre**, nos dois lados: um texto corrido, do zero. Uma linha começando com `#` vira o título de uma parte (um passo ao apresentar, um slide no telão) e, na Palavra, `[Jo 3:16]` traz o versículo por extenso.
 - **Respostas ao vivo**: a turma entra pelo celular com um código, responde perguntas abertas (mural) e de múltipla escolha (quiz com placar), e tudo fica guardado, com exportação em planilha.
 - **Folha impressa** em PDF e **banco de perguntas** reaproveitáveis.
 - **Colaboração**: convite por link ou código (editar ou só ver), presença de quem está no projeto e mudanças chegando na hora.

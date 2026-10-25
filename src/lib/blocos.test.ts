@@ -32,6 +32,7 @@ describe('modelos prontos', () => {
   })
   it('nomeFormato cai em Pregação por padrão', () => {
     expect(nomeFormato('celula')).toBe('Célula')
+    expect(nomeFormato('livre')).toBe('Livre')
     expect(nomeFormato(undefined)).toBe('Pregação')
   })
 })

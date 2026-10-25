@@ -1,4 +1,4 @@
-import { BookA, BookOpen, FileText, Footprints, Image as ImagemIcone, Link2, ListChecks, MessagesSquare, Mic, Quote, Sunrise, Users, type LucideIcon } from 'lucide-react'
+import { BookA, BookOpen, FileText, Footprints, Image as ImagemIcone, Link2, ListChecks, MessagesSquare, Mic, PenLine, Quote, Sunrise, Users, type LucideIcon } from 'lucide-react'
 import type { Topico } from './tipos'
 
 /*
@@ -86,8 +86,9 @@ export const FORMATOS_PALAVRA = [
   { id: 'ebd', nome: 'Estudo bíblico', resumo: 'EBD: texto, contexto e perguntas' },
   { id: 'devocional', nome: 'Devocional', resumo: 'Versículo, reflexão e oração' },
   { id: 'discipulado', nome: 'Discipulado', resumo: 'Tema, versículos e compromisso' },
+  { id: 'livre', nome: 'Livre', resumo: 'Texto corrido, do seu jeito' },
 ] as const
-export const ICONE_FORMATO: Record<string, LucideIcon> = { pregacao: Mic, celula: Users, ebd: BookOpen, devocional: Sunrise, discipulado: Footprints }
+export const ICONE_FORMATO: Record<string, LucideIcon> = { pregacao: Mic, celula: Users, ebd: BookOpen, devocional: Sunrise, discipulado: Footprints, livre: PenLine }
 export const nomeFormato = (id?: string) => FORMATOS_PALAVRA.find((f) => f.id === id)?.nome ?? 'Pregação'
 
 /* Modelos que já vêm com blocos. "lado" diz em qual lado do app o modelo aparece. */
