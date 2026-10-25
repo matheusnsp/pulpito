@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowRight, BookOpen, Briefcase, GraduationCap, LoaderCircle, Mic, NotebookPen, Presentation, Users, X, LayoutTemplate, Trash2 } from 'lucide-react'
+import { ArrowRight, BookOpen, Briefcase, GraduationCap, LoaderCircle, Mic, NotebookPen, PenLine, Presentation, Users, X, LayoutTemplate, Trash2 } from 'lucide-react'
 import { aoPedirCriar, salvarModo, type PedidoCriar } from '../lib/criar'
 import { criarMensagem, FALTA_SQL_ESTUDOS, usarModelo } from '../lib/mensagens'
 import { supabase } from '../lib/supabase'
@@ -118,6 +118,7 @@ export default function CriarNovo() {
             {secao('estudo', GraduationCap, 'Estudos', 'Qualquer assunto', '#14B8A6')}
             <div className="space-y-2">
               {cartao('estudo', 'estudo', undefined, GraduationCap, 'Em branco', 'Monte com blocos do seu jeito', '#14B8A6', pedido.tipo === 'estudo')}
+              {cartao('estudo-livre', 'estudo', 'livre', PenLine, 'Livre', 'Texto corrido, do seu jeito', '#14B8A6')}
               {estudos.map((m) => cartao(m.id, 'estudo', m.id, ICONES_ESTUDO[m.id] ?? GraduationCap, m.nome, m.blocos.map((b) => b.titulo).slice(0, 3).join(' · '), '#14B8A6'))}
             </div>
           </div>

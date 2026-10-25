@@ -28,6 +28,7 @@ import { versaoDaSessao } from '../lib/versoes'
 import { nomeDoUsuario } from '../lib/usuario'
 import { daSerie, proximoNumero } from '../lib/series'
 import { visivel } from '../lib/lixeira'
+import { partesDoTextoLivre, sincronizarPartes, textoDosTopicos } from '../lib/livre'
 import MenuMais from '../components/MenuMais'
 
 type Foto = { mensagem: Mensagem; topicos: Topico[] }
@@ -258,8 +259,12 @@ export default function EditorMensagem() {
   const [revelados, setRevelados] = useState<Record<string, string[]>>({})
   // Blocos de estudo (pergunta, atividade…) escondidos na pregação simples até alguém pedir
   const [mostrarBlocos, setMostrarBlocos] = useState(false)
+  // Formato Livre: o texto corrido vira tópicos por baixo; a ref dá a lista mais recente ao salvamento
+  const topicosRef = useRef<Topico[]>([])
+  const caixaLivre = useRef<HTMLTextAreaElement>(null)
   const [mensagem, setMensagem] = useState<Mensagem | null | undefined>(undefined)
   const [topicos, setTopicos] = useState<Topico[]>([])
+  topicosRef.current = topicos
   const [pastas, setPastas] = useState<Pasta[]>([])
   const [aberto, setAberto] = useState<string | null>(null)
   const [erro, setErro] = useState('')
@@ -540,8 +545,35 @@ export default function EditorMensagem() {
   const detalhes = mensagem.detalhes ?? {}
   // Lado Palavra: formato (célula, EBD…) e se já tem blocos misturados aos tópicos
   const formato = !estudo ? (detalhes.formato ?? 'pregacao') : null
+  const livre = detalhes.formato === 'livre'
   const temBlocos = topicos.some((t) => ehBloco(t.tipo))
-  const comBlocos = estudo || temBlocos || (formato !== null && formato !== 'pregacao')
+  const comBlocos = !livre && (estudo || temBlocos || (formato !== null && formato !== 'pregacao'))
+  // Livre: o texto mora em detalhes; se a mensagem veio de outro formato, começa com o que já havia nos tópicos
+  const textoLivre = detalhes.textoLivre ?? (livre ? textoDosTopicos(topicos) : '')
+  // Botões do guia: inserem o trecho onde está o cursor e deixam a parte editável selecionada
+  function inserirNoLivre(trecho: string, selecao: [number, number]) {
+    const el = caixaLivre.current
+    const ini = el?.selectionStart ?? textoLivre.length
+    const fim = el?.selectionEnd ?? ini
+    const antes = textoLivre.slice(0, ini)
+    const prefixo = antes && !antes.endsWith('\n') ? '\n' : ''
+    alterarTextoLivre(antes + prefixo + trecho + textoLivre.slice(fim))
+    const base = (antes + prefixo).length
+    requestAnimationFrame(() => { el?.focus(); el?.setSelectionRange(base + selecao[0], base + selecao[1]) })
+  }
+  function alterarTextoLivre(v: string) {
+    if (!mensagem) return
+    alterarDetalhes({ textoLivre: v })
+    const mid = mensagem.id
+    agendar('livre', async () => {
+      try {
+        const novos = await sincronizarPartes(mid, partesDoTextoLivre(v), topicosRef.current)
+        setTopicos(novos)
+        avisar({ tabela: 'lista' })
+        return { error: null }
+      } catch (e) { return { error: e } }
+    })
+  }
   const IconeFormato = formato ? ICONE_FORMATO[formato] ?? ICONE_FORMATO.pregacao : GraduationCap
   const acaoNome = estudo ? 'Dar aula' : formato === 'pregacao' ? 'Pregar' : 'Começar'
   const minutosBlocos = topicos.reduce((s, t) => s + (t.extra?.minutos ?? 0), 0)
@@ -651,8 +683,8 @@ export default function EditorMensagem() {
       <div className="lg:sticky lg:top-24 lg:self-start lg:[grid-area:lado] lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto lg:pb-4 sem-barra">
       <div className="hidden lg:block">{acoes}</div>
 
-      {/* Texto base: o primeiro passo, sempre à vista */}
-      <div className="cartao mt-4 p-4 lg:mt-6">
+      {/* Texto base: o primeiro passo, sempre à vista (no Livre os versículos vão no próprio texto) */}
+      {!livre && <div className="cartao mt-4 p-4 lg:mt-6">
         <Campo rotulo={estudo ? 'Texto bíblico (opcional)' : 'Texto base'}>
           <div className="relative">
             <BookOpen size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-texto-2" />
@@ -661,7 +693,7 @@ export default function EditorMensagem() {
           </div>
           <PreviaVersiculo texto={mensagem.texto_base ?? ''} />
         </Campo>
-      </div>
+      </div>}
 
       {/* Detalhes: tempo, pasta, série, formato e agenda, recolhidos numa linha */}
       <details className="group mt-3 rounded-2xl border border-borda bg-superficie" open={comBlocos}>
@@ -780,6 +812,38 @@ export default function EditorMensagem() {
       </div>
 
       <div className="min-w-0 lg:[grid-area:corpo]">
+      {livre ? (
+        <div className="cartao mt-4 p-4 lg:mt-6">
+          {/* Guia sempre à vista: o que vira título e, fora dos estudos, o que vira versículo */}
+          <div className="mb-3 rounded-xl border border-dashed border-borda bg-superficie-2/40 p-3">
+            <p className="rotulo mb-2">Como funciona</p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <button type="button" onClick={() => inserirNoLivre('# Título da parte\n', [2, 17])}
+                className="flex items-center gap-3 rounded-xl border border-borda bg-superficie p-2.5 text-left transition hover:border-acao">
+                <code className="shrink-0 rounded-lg bg-ouro-suave px-2 py-1 font-mono text-sm font-bold text-tinta"># Título</code>
+                <span className="text-xs leading-snug text-texto-2">Linha com <b className="text-texto">#</b> vira o <b className="text-texto">título de uma parte</b>: um passo ao apresentar e um slide no telão.</span>
+              </button>
+              {!estudo && (
+                <button type="button" onClick={() => inserirNoLivre('[Jo 3:16]', [1, 8])}
+                  className="flex items-center gap-3 rounded-xl border border-borda bg-superficie p-2.5 text-left transition hover:border-acao">
+                  <code className="shrink-0 rounded-lg bg-ouro-suave px-2 py-1 font-mono text-sm font-bold text-tinta">[Jo 3:16]</code>
+                  <span className="text-xs leading-snug text-texto-2">Referência <b className="text-texto">entre colchetes</b> vira o <b className="text-texto">versículo por extenso</b>, no texto, na pregação e nos slides.</span>
+                </button>
+              )}
+            </div>
+            <p className="mt-2 text-xs text-texto-2">Toque num exemplo para inserir onde o cursor está. O resto é texto livre, do seu jeito.</p>
+          </div>
+          <Campo rotulo={estudo ? 'Sua aula' : 'Sua mensagem'}>
+            <AreaTexto ref={caixaLivre} rows={16} value={textoLivre} onChange={(e) => alterarTextoLivre(e.target.value)}
+              placeholder={estudo ? 'Escreva do seu jeito. Use # no começo da linha para separar as partes da aula.' : 'Escreva do seu jeito. Use # no começo da linha para separar as partes e [Jo 3:16] para trazer um versículo.'}
+              className="campo min-h-[50dvh] text-base leading-relaxed" />
+          </Campo>
+          <p className="mt-2 text-xs text-texto-2">
+            {topicos.length ? `${topicos.length} ${topicos.length === 1 ? 'parte' : 'partes'} ${estudo ? 'da aula' : 'da mensagem'}, salvas automaticamente.` : 'Nada escrito ainda.'}
+          </p>
+          {erro && <p role="alert" className="mt-3 text-sm text-perigo">{erro}</p>}
+        </div>
+      ) : (<>
       {/* Tópicos */}
       <div className="mt-10 flex items-baseline justify-between lg:mt-6">
         <h2 className="font-display text-2xl font-extrabold">{estudo ? 'Blocos' : comBlocos ? 'Roteiro' : 'Tópicos'}</h2>
@@ -1068,6 +1132,8 @@ export default function EditorMensagem() {
         )}
       </div>
       )}
+
+      </>)}
 
       {/* Celular: Slides, Esboço e demais ações depois dos tópicos */}
       <div className="lg:hidden">{acoes}</div>
