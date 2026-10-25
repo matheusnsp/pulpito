@@ -67,7 +67,7 @@ export function versaoAmigavel(v: string) {
 export const NOVIDADES: { titulo: string; texto: string }[] = [
   {
     titulo: 'Formato Livre',
-    texto: 'Escreva do zero, sem campos. Em Outros formatos, nos dois lados. Uma linha com # vira o título de uma parte; na Palavra, [Jo 3:16] traz o versículo.'
+    texto: 'Escreva do zero, sem campos. É a primeira opção ao criar, nos dois lados. Uma linha com # vira o título de uma parte; na Palavra, [Jo 3:16] traz o versículo.'
   },
   {
     titulo: 'Mais simples de começar',

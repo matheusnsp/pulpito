@@ -15,7 +15,6 @@ import { LIVROS, parseReferencia } from '../lib/biblia'
 import type { Mensagem, Pasta } from '../lib/tipos'
 import { duplicarMensagem } from '../lib/mensagens'
 import { abrirCriar, lerModo, salvarModo } from '../lib/criar'
-import { useCriarRapido } from '../lib/criarRapido'
 import { mostrarBusca, mostrarContinuar, mostrarPastas } from '../lib/inicio'
 import { abrirTutorial } from '../lib/tutorial'
 import { criarExemplo } from '../lib/exemplo'
@@ -308,8 +307,6 @@ export default function Mensagens() {
   const filtroAtivo = mensagens === null || filtroValido ? filtro : 'todas'
   const pastaAtual = pastas.find((p) => p.id === filtroAtivo) ?? null
 
-  // Palavra: cria a pregação na hora. Estudos: abre a folha para escolher o modelo.
-  const { criar: criarRapido, criando } = useCriarRapido()
   const navigate = useNavigate()
   const [criandoExemplo, setCriandoExemplo] = useState(false)
   async function verExemplo() {
@@ -318,8 +315,8 @@ export default function Mensagens() {
     catch { setErro('Não foi possível criar o exemplo. Verifique a internet.') }
     finally { setCriandoExemplo(false) }
   }
-  const outrosFormatos = () => abrirCriar({ pastaId: pastaAtual?.id ?? null, tipo: modo })
-  const criar = () => { if (modo === 'estudo') outrosFormatos(); else void criarRapido(pastaAtual?.id ?? null) }
+  // Criar sempre passa pelo menu "O que você vai preparar?", já no lado em que a pessoa está
+  const criar = () => abrirCriar({ pastaId: pastaAtual?.id ?? null, tipo: modo })
 
   async function duplicar(m: Mensagem) {
     setMenu(null)
@@ -548,19 +545,11 @@ export default function Mensagens() {
             </h1>
           </div>
           <div className="hidden items-center gap-2 md:flex">
-            <button onClick={outrosFormatos} className="botao-fantasma px-3 text-sm">Outros formatos</button>
-            <button onClick={criar} disabled={criando} className="botao-primario">
-              {criando ? <LoaderCircle size={18} className="animate-spin" /> : <Plus size={18} strokeWidth={2.5} />} {modo === 'estudo' ? 'Novo estudo' : 'Nova mensagem'}
+            <button onClick={criar} className="botao-primario">
+              <Plus size={18} strokeWidth={2.5} /> {modo === 'estudo' ? 'Novo estudo' : 'Nova mensagem'}
             </button>
           </div>
         </header>
-
-        {/* Celular: o + cria direto; aqui fica o caminho para célula, EBD, devocional, Livre e os modelos de estudo */}
-        {todas.length > 0 && (
-          <button onClick={outrosFormatos} className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-tinta underline-offset-4 hover:underline md:hidden">
-            <Plus size={14} /> Outros formatos: célula, EBD, devocional, Livre…
-          </button>
-        )}
 
         {/* Chave: Palavra | Estudos — os dois lados do app, sempre à vista */}
         <div role="tablist" aria-label="Tipo" className="mt-5 flex gap-1.5 rounded-2xl border border-borda bg-superficie p-1.5 md:max-w-md">
@@ -727,16 +716,14 @@ export default function Mensagens() {
               ))}
             </ol>
             <div className="relative mt-7 flex flex-col items-center gap-3">
-              <button onClick={criar} disabled={criando} className="botao-primario w-full sm:w-auto">
-                {criando ? <LoaderCircle size={18} className="animate-spin" /> : <Plus size={18} />} {modo === 'estudo' ? 'Novo estudo' : 'Nova mensagem'}
+              <button onClick={criar} className="botao-primario w-full sm:w-auto">
+                <Plus size={18} /> {modo === 'estudo' ? 'Novo estudo' : 'Nova mensagem'}
               </button>
               <button onClick={verExemplo} disabled={criandoExemplo} className="botao-secundario w-full sm:w-auto">
                 {criandoExemplo ? <LoaderCircle size={18} className="animate-spin" /> : <Sparkles size={18} />} Ver um exemplo pronto
               </button>
               <p className="text-center text-sm text-texto-2">
-                {modo === 'estudo' ? 'Aula de curso, palestra, treinamento ou em branco?' : 'Célula, EBD, devocional?'}{' '}
-                <button onClick={outrosFormatos} className="font-semibold text-tinta underline-offset-4 hover:underline">Outros formatos</button>
-                {' · '}<button onClick={() => abrirTutorial()} className="font-semibold text-tinta underline-offset-4 hover:underline">Ver como funciona</button>
+                <button onClick={() => abrirTutorial()} className="font-semibold text-tinta underline-offset-4 hover:underline">Ver como funciona</button>
               </p>
             </div>
           </div>
@@ -805,7 +792,7 @@ export default function Mensagens() {
       </div>
 
       {/* Celular: botão flutuante de nova mensagem, só quando já existe lista (no vazio, o guia tem o botão) */}
-      {todas.length > 0 && <button onClick={criar} disabled={criando} aria-label={modo === 'estudo' ? 'Novo estudo' : 'Nova mensagem'}
+      {todas.length > 0 && <button onClick={criar} aria-label={modo === 'estudo' ? 'Novo estudo' : 'Nova mensagem'}
         className="fixed bottom-[calc(6.25rem+env(safe-area-inset-bottom))] right-4 z-10 flex h-14 w-14 items-center justify-center rounded-2xl bg-acao text-acao-texto shadow-[0_10px_30px_-8px_var(--acao)] active:scale-95 disabled:opacity-60 md:hidden">
         <Plus size={26} strokeWidth={2.5} />
       </button>}
