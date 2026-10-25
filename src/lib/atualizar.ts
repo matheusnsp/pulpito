@@ -66,6 +66,10 @@ export function versaoAmigavel(v: string) {
 /* Novidades recentes, mostradas em Ajustes. A mais nova primeiro. */
 export const NOVIDADES: { titulo: string; texto: string }[] = [
   {
+    titulo: 'Formato Livre',
+    texto: 'Escreva do zero, sem campos. Em Outros formatos, nos dois lados. Uma linha com # vira o título de uma parte; na Palavra, [Jo 3:16] traz o versículo.'
+  },
+  {
     titulo: 'Mais simples de começar',
     texto: 'Nova mensagem abre direto no editor. Texto base e tópicos primeiro; tempo, pasta e série ficam em Detalhes. Slides em um botão.'
   },

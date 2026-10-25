@@ -555,6 +555,13 @@ export default function Mensagens() {
           </div>
         </header>
 
+        {/* Celular: o + cria direto; aqui fica o caminho para célula, EBD, devocional, Livre e os modelos de estudo */}
+        {todas.length > 0 && (
+          <button onClick={outrosFormatos} className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-tinta underline-offset-4 hover:underline md:hidden">
+            <Plus size={14} /> Outros formatos: célula, EBD, devocional, Livre…
+          </button>
+        )}
+
         {/* Chave: Palavra | Estudos — os dois lados do app, sempre à vista */}
         <div role="tablist" aria-label="Tipo" className="mt-5 flex gap-1.5 rounded-2xl border border-borda bg-superficie p-1.5 md:max-w-md">
           {([['pregacao', 'Palavra', BookOpen], ['estudo', 'Estudos', GraduationCap]] as const).map(([v, nome, Icone]) => {
