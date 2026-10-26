@@ -2,7 +2,7 @@
 
 Prepare, pregue e projete suas mensagens. App web instalável (PWA) para celular, tablet e computador.
 
-Versão **2.4.0**. Idealizado e criado por **[Matheus Neves](https://www.matheusnsp.com.br)** ([@matheusnsp](https://github.com/matheusnsp)).
+Versão **2.4.1**. Idealizado e criado por **[Matheus Neves](https://www.matheusnsp.com.br)** ([@matheusnsp](https://github.com/matheusnsp)).
 
 ## O que faz
 

@@ -926,11 +926,11 @@ export default function EditorSlides() {
           <h1 className="font-display text-2xl font-bold sm:text-3xl">Slides</h1>
           <p className="truncate text-sm text-texto-2 sm:text-base">{mensagem.titulo}</p>
         </div>
-        <div className={`grid gap-2 sm:flex ${slides.length ? 'grid-cols-3' : 'grid-cols-1'}`}>
-          {slides.length > 0 && <button onClick={() => setPainelImportar((v) => !v)} className="botao-secundario px-2 sm:px-4">
+        <div className="grid grid-cols-3 gap-2 sm:flex">
+          <button onClick={() => setPainelImportar((v) => !v)} className="botao-secundario px-2 sm:px-4">
             <Upload size={18} /> Importar
-          </button>}
-          {slides.length > 0 && <div className="relative">
+          </button>
+          <div className="relative">
             <button onClick={() => setMenuExportar((v) => !v)} disabled={!slides.length || !!exportando}
               aria-expanded={menuExportar} className="botao-secundario w-full px-2 sm:px-4">
               {exportando
@@ -958,7 +958,7 @@ export default function EditorSlides() {
                 </div>
               </>
             )}
-          </div>}
+          </div>
           <Link to={`/pregar/${mensagem.id}`} className="botao-primario px-2 sm:px-4">
             <Play size={18} /> Pregar
           </Link>
@@ -1023,14 +1023,18 @@ export default function EditorSlides() {
                 ? `Em um toque: uma capa, um slide por ${mensagem.tipo === 'estudo' ? 'bloco' : 'tópico'} e os versículos por extenso. Depois você ajusta o que quiser.`
                 : 'Escreva os tópicos da mensagem primeiro; os slides nascem deles. Ou comece com um slide em branco.'}
             </p>
-            <button onClick={gerar} disabled={gerando || topicos.length === 0} className="botao-primario mt-5 w-full sm:w-auto">
-              {gerando ? <LoaderCircle size={18} className="animate-spin" /> : <ListPlus size={18} />}
-              {gerando ? 'Criando…' : 'Criar slides desta mensagem'}
-            </button>
+            <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-center">
+              <button onClick={gerar} disabled={gerando || topicos.length === 0} className="botao-primario">
+                {gerando ? <LoaderCircle size={18} className="animate-spin" /> : <ListPlus size={18} />}
+                {gerando ? 'Criando…' : `Criar slides ${mensagem.tipo === 'estudo' ? 'desta aula' : 'desta mensagem'}`}
+              </button>
+              <button onClick={() => setPainelImportar(true)} className="botao-secundario">
+                <Upload size={18} /> Importar PowerPoint ou PDF
+              </button>
+            </div>
             <p className="mt-4 text-sm text-texto-2">
-              <button onClick={() => inserirDepois({ topico_id: null, titulo: mensagem.titulo })} className="font-semibold text-tinta underline-offset-4 hover:underline">Começar com um slide em branco</button>
-              {' · '}
-              <button onClick={() => setPainelImportar(true)} className="font-semibold text-tinta underline-offset-4 hover:underline">Importar PowerPoint ou PDF</button>
+              Já tem a apresentação pronta? Importe e apresente pelo telão.{' '}
+              <button onClick={() => inserirDepois({ topico_id: null, titulo: mensagem.titulo })} className="font-semibold text-tinta underline-offset-4 hover:underline">Ou comece com um slide em branco</button>
             </p>
             <p className="mt-3 text-xs text-texto-2">Sem slides, o telão mostra o visual automático dos tópicos.</p>
           </div>
