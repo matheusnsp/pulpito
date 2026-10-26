@@ -431,7 +431,7 @@ function VersiculoBase({ referencia, onAbrir, contagem }: { referencia: string; 
         <button onClick={onAbrir} className="flex min-w-0 flex-1 items-center gap-2 text-left">
           <BookOpen size={16} className="shrink-0 text-tinta" />
           <span className="min-w-0">
-            <span className="block text-[10px] font-bold uppercase tracking-[0.12em] text-texto-2">Versículo base{contagem ? ` · ${contagem}` : ''}</span>
+            <span className="block text-[length:calc(10px*var(--escala,1))] font-bold uppercase tracking-[0.12em] text-texto-2">Versículo base{contagem ? ` · ${contagem}` : ''}</span>
             <span className="block truncate font-bold text-tinta">{formatarReferencia(ref)}</span>
           </span>
         </button>
@@ -547,6 +547,14 @@ export default function Pregar() {
     const salvo = Number(localStorage.getItem(CHAVE_ESCALA))
     return salvo >= ESCALA_MIN && salvo <= ESCALA_MAX ? salvo : 1
   })
+  /* O zoom vale para TODO o texto do conteúdo e do rodapé: além dos tamanhos próprios
+     (título, tópico, corpo), redefine as escalas do Tailwind (text-xs … text-2xl) dentro da área */
+  const estiloEscala = {
+    '--escala': String(escala),
+    '--fs-titulo': `${2.4 * escala}rem`, '--fs-sub': `${2.4 * escala}rem`, '--fs-topico': `${1.55 * escala}rem`, '--fs-corpo': `${1.2 * escala}rem`,
+    '--text-xs': `${0.75 * escala}rem`, '--text-sm': `${0.875 * escala}rem`, '--text-base': `${escala}rem`,
+    '--text-lg': `${1.125 * escala}rem`, '--text-xl': `${1.25 * escala}rem`, '--text-2xl': `${1.5 * escala}rem`,
+  } as CSSProperties
 
   // Telão
   const [codigoTelao, setCodigoTelao] = useState<string | null>(() => {
@@ -1031,7 +1039,7 @@ export default function Pregar() {
 
       {/* Conteúdo */}
       <main ref={areaTexto} className="flex-1 touch-pan-y overflow-y-auto" onClick={() => setPainelTexto(false)}
-        style={{ '--fs-titulo': `${2.4 * escala}rem`, '--fs-sub': `${2.4 * escala}rem`, '--fs-topico': `${1.55 * escala}rem`, '--fs-corpo': `${1.2 * escala}rem` } as CSSProperties}
+        style={estiloEscala}
         onTouchStart={(e) => {
           if (e.touches.length > 1) multitoque.current = true
           else { multitoque.current = false; toqueX.current = e.touches[0].clientX; toqueY.current = e.touches[0].clientY }
@@ -1144,7 +1152,7 @@ export default function Pregar() {
 
       {/* Navegação */}
       {/* Rodapé: versículo base. Para trocar de tópico, deslize a tela para o lado (ou use as setas do teclado) */}
-      <footer className="relative z-40 mx-auto w-full max-w-5xl px-3 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-2">
+      <footer className="relative z-40 mx-auto w-full max-w-5xl px-3 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-2" style={estiloEscala}>
         <div>
 
         {(versiculos.length > 0 || (!topico && mensagem.texto_base)) && (
