@@ -313,6 +313,8 @@ export default function EditorMensagem() {
   useEffect(() => () => {
     const { mensagem: m, topicos: ts } = estadoRef.current
     if (!m?.detalhes?.rascunho) return
+    // Ir para Slides, Pregar, Convidar ou Histórico do mesmo projeto não é "sair": o rascunho fica
+    if (window.location.pathname.includes(m.id)) return
     const temTexto = (v?: string | null) => !!v?.trim()
     const escreveu = temTexto(m.texto_base) || temTexto(m.detalhes?.textoLivre)
       || ts.some((t) => temTexto(t.titulo) || temTexto(t.observacao) || temTexto(t.versiculo) || temTexto(t.aplicacao) || temTexto(t.ilustracao) || temTexto(t.frase_chave) || temTexto(t.notas))
