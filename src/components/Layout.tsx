@@ -92,7 +92,7 @@ export default function Layout() {
             <Link to="/ajustes" aria-label="Sua conta"><Avatar nome={nome} className="h-9 w-9 text-sm" /></Link>
           </header>
         )}
-        <main className={`flex-1 overflow-auto md:pb-0 ${semTopo ? 'pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] md:pt-0' : 'pb-28'}`}>
+        <main className={`@container flex-1 overflow-auto md:pb-0 ${semTopo ? 'pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] md:pt-0' : 'pb-28'}`}>
           <Suspense fallback={<div className="flex h-40 items-center justify-center"><span className="h-7 w-7 animate-spin rounded-full border-[3px] border-borda border-t-acao" /></div>}>
             <Outlet />
           </Suspense>

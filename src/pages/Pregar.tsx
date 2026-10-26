@@ -898,13 +898,13 @@ export default function Pregar() {
       )}
 
       {/* Topo: sair, hora + cronômetro, transmitir e ferramentas */}
-      <header className="relative z-10 flex items-center gap-1.5 px-2 pt-[max(0.6rem,env(safe-area-inset-top))] md:px-4">
+      <header className="relative z-10 flex items-center gap-1 px-1.5 pt-[max(0.6rem,env(safe-area-inset-top))] sm:gap-1.5 sm:px-2 md:px-4">
         <Link to={`/mensagem/${mensagem.id}`} aria-label={estudo ? 'Sair do modo aula' : 'Sair do modo pregação'} className={iconeBotao}>
           <ChevronLeft size={24} />
         </Link>
 
-        <div className="flex flex-1 items-center justify-center gap-1.5">
-          <div className="flex min-w-[5.5rem] flex-col items-center rounded-xl border border-borda bg-superficie-2 px-3 py-1.5">
+        <div className="flex min-w-0 flex-1 items-center justify-center gap-1.5">
+          <div className="flex min-w-[5.5rem] flex-col items-center rounded-xl border border-borda bg-superficie-2 px-3 py-1.5 max-[400px]:hidden">
             <span className="flex items-center gap-1 whitespace-nowrap text-[8px] font-bold uppercase tracking-[0.1em] text-texto-2">
               <Clock size={9} /> Hora atual
             </span>

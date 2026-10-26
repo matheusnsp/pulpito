@@ -94,11 +94,11 @@ export default function Perguntas() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-3 sm:px-4 pb-10 pt-2 md:px-8 md:pt-10 lg:max-w-6xl">
+    <div className="mx-auto max-w-3xl px-3 @tsm:px-4 pb-10 pt-2 @tmd:px-8 @tmd:pt-10 @tmd:max-w-6xl">
       <h1 className="titulo-pagina">Banco de perguntas</h1>
       <p className="mt-1 text-texto-2">As perguntas e atividades de todos os seus estudos. Reuse numa aula nova com um toque.</p>
 
-      <div className="relative mt-5 lg:max-w-xl">
+      <div className="relative mt-5 @tmd:max-w-xl">
         <Search size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-texto-2" />
         <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar pergunta ou atividade"
           type="search" className="campo rounded-2xl py-3 pl-11 pr-11" />
@@ -134,7 +134,7 @@ export default function Perguntas() {
         </div>
       )}
 
-      <ul className="mt-4 grid gap-3 lg:grid-cols-2">
+      <ul className="mt-4 grid gap-3 @tmd:grid-cols-2">
         {visiveis.map((it) => {
           const def = BLOCOS[it.bloco.tipo === 'atividade' ? 'atividade' : 'pergunta']
           return (

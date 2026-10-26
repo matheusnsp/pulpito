@@ -47,8 +47,8 @@ export default function Historico() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-3 sm:px-4 pb-16 md:px-8">
-      <div className="sticky top-0 z-20 -mx-4 flex items-center bg-fundo/90 px-4 py-2 backdrop-blur md:-mx-8 md:px-8 md:py-4">
+    <div className="mx-auto max-w-3xl px-3 @tsm:px-4 pb-16 @tmd:px-8">
+      <div className="sticky top-0 z-20 -mx-4 flex items-center bg-fundo/90 px-4 py-2 backdrop-blur @tmd:-mx-8 @tmd:px-8 @tmd:py-4">
         <Link to={`/mensagem/${id}`} className="botao-fantasma -ml-2 px-2"><ChevronLeft size={20} /> Voltar</Link>
         {versoes && (
           <button onClick={salvarAgora} disabled={!!ocupado} className="botao-secundario ml-auto px-3 py-1.5 text-sm">
@@ -93,7 +93,7 @@ export default function Historico() {
                     <ol className="space-y-1 text-sm">
                       {d.topicos.map((t, k) => <li key={t.id} className="truncate"><span className="text-texto-2">{k + 1}.</span> {t.titulo || 'Sem título'}</li>)}
                     </ol>
-                    <button onClick={() => restaurar(v)} disabled={!!ocupado} className="botao-primario w-full sm:w-auto">
+                    <button onClick={() => restaurar(v)} disabled={!!ocupado} className="botao-primario w-full @tsm:w-auto">
                       {ocupado === v.id ? <LoaderCircle size={18} className="animate-spin" /> : <RotateCcw size={18} />} Restaurar esta versão
                     </button>
                   </div>

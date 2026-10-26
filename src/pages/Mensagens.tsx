@@ -151,7 +151,7 @@ function LinhaMensagem({ m, compartilhada, blocos, pasta, pastas, hoje, menuAber
         </span>
       )}
       <Link to={`/mensagem/${m.id}`} className={`min-w-0 flex-1 py-3 ${estudo || formato ? 'pl-2' : ''}`}>
-        <p className="truncate font-display text-[17px] font-bold leading-snug">{m.titulo || 'Sem título'}</p>
+        <p className="line-clamp-2 font-display text-[17px] font-bold leading-snug">{m.titulo || 'Sem título'}</p>
         {compartilhada && <span className="mt-1 inline-block rounded-full bg-ouro-suave px-2 py-0.5 text-[11px] font-bold text-tinta">Compartilhado comigo</span>}
         {(estudo || formato) && m.detalhes?.objetivo && (
           <p className="mt-1 flex items-center gap-1.5 truncate text-sm text-texto/80"><Target size={13} className="shrink-0 text-texto-2" /> <span className="truncate">{m.detalhes.objetivo}</span></p>
@@ -180,7 +180,7 @@ function LinhaMensagem({ m, compartilhada, blocos, pasta, pastas, hoje, menuAber
       </Link>
 
       <Link to={`/pregar/${m.id}`} aria-label={acaoNome}
-        className="hidden h-9 w-9 items-center justify-center rounded-xl bg-acao text-acao-texto opacity-0 transition group-hover:opacity-100 md:flex">
+        className="hidden h-9 w-9 items-center justify-center rounded-xl bg-acao text-acao-texto opacity-0 transition group-hover:opacity-100 @tmd:flex">
         <Play size={16} fill="currentColor" />
       </Link>
       <button onClick={onAbrirMenu} aria-label="Mais opções" aria-expanded={menuAberto}
@@ -454,7 +454,7 @@ export default function Mensagens() {
 
   // Resumo, acesso rápido e compromissos: em cima no celular, numa coluna ao lado no computador
   const painel = (lateral: boolean) => (
-    <div className={`grid gap-3 ${lateral ? '' : 'md:grid-cols-2'}`}>
+    <div className={`grid gap-3 ${lateral ? '' : '@tmd:grid-cols-2'}`}>
             <section className="cartao p-4">
               <h2 className="rotulo">Resumo</h2>
               <div className="mt-3 grid grid-cols-4 gap-2 text-center">
@@ -530,8 +530,8 @@ export default function Mensagens() {
   return (
     <DndContext sensors={sensores} onDragStart={aoComecar} onDragEnd={aoSoltar}
       onDragCancel={() => setArrastando(null)}>
-      <div className="mx-auto max-w-5xl px-3 sm:px-4 pb-10 pt-2 md:px-8 md:pt-10 xl:max-w-7xl">
-      <div className="xl:grid xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-start xl:gap-8">
+      <div className="mx-auto max-w-5xl px-3 @tsm:px-4 pb-10 pt-2 @tmd:px-8 @tmd:pt-10 @tlg:max-w-7xl">
+      <div className="@tlg:grid @tlg:grid-cols-[minmax(0,1fr)_22rem] @tlg:items-start @tlg:gap-8">
       <div className="min-w-0">
 
         {/* Saudação */}
@@ -552,7 +552,7 @@ export default function Mensagens() {
         </header>
 
         {/* Chave: Palavra | Estudos — os dois lados do app, sempre à vista */}
-        <div role="tablist" aria-label="Tipo" className="mt-5 flex gap-1.5 rounded-2xl border border-borda bg-superficie p-1.5 md:max-w-md">
+        <div role="tablist" aria-label="Tipo" className="mt-5 flex gap-1.5 rounded-2xl border border-borda bg-superficie p-1.5 @tmd:max-w-md">
           {([['pregacao', 'Palavra', BookOpen], ['estudo', 'Estudos', GraduationCap]] as const).map(([v, nome, Icone]) => {
             const ativo = modo === v
             return (
@@ -567,7 +567,7 @@ export default function Mensagens() {
 
         {/* Próxima pregação */}
         {proximo && (
-          <section className="escuro relative mt-6 overflow-hidden rounded-3xl border border-borda p-4 text-texto shadow-cartao sm:p-5 md:p-7" style={{ background: 'var(--hero)' }}>
+          <section className="escuro relative mt-6 overflow-hidden rounded-3xl border border-borda p-4 text-texto shadow-cartao @tsm:p-5 @tmd:p-7" style={{ background: 'var(--hero)' }}>
             <div aria-hidden className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-acao/20 blur-3xl" />
             <div className="relative">
               <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-tinta">
@@ -575,9 +575,9 @@ export default function Mensagens() {
                 Próxima pregação · {quandoEvento(proximo.inicio, hoje)}
               </p>
               {msgProxima ? (
-                <div className="md:flex md:items-end md:justify-between md:gap-8">
+                <div className="@tmd:flex @tmd:items-end @tmd:justify-between @tmd:gap-8">
                   <div className="min-w-0">
-                    <h2 className="mt-3 font-display text-2xl font-extrabold leading-tight tracking-tight md:text-3xl">{msgProxima.titulo}</h2>
+                    <h2 className="mt-3 font-display text-2xl font-extrabold leading-tight tracking-tight @tmd:text-3xl">{msgProxima.titulo}</h2>
                     <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm text-texto-2">
                       {refCurta(msgProxima.texto_base) && <span className="font-bold text-tinta">{refCurta(msgProxima.texto_base)}</span>}
                       <span>{qtdTopicos} {qtdTopicos === 1 ? 'tópico' : 'tópicos'}</span>
@@ -585,9 +585,9 @@ export default function Mensagens() {
                       <span>{proximo.titulo}{proximo.local ? ` · ${proximo.local}` : ''}</span>
                     </p>
                   </div>
-                  <div className="mt-5 flex shrink-0 gap-2 md:mt-0">
+                  <div className="mt-5 flex shrink-0 gap-2 @tmd:mt-0">
                     <Link to={`/pregar/${msgProxima.id}`}
-                      className="botao flex-1 bg-acao px-6 text-acao-texto hover:brightness-105 md:flex-none">
+                      className="botao flex-1 bg-acao px-6 text-acao-texto hover:brightness-105 @tmd:flex-none">
                       <Play size={18} fill="currentColor" /> Pregar
                     </Link>
                     <Link to={`/mensagem/${msgProxima.id}`} className="botao bg-white/10 hover:bg-white/20">
@@ -634,12 +634,12 @@ export default function Mensagens() {
               <X size={18} />
             </button>
           ) : (
-            <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-md border border-borda px-1.5 text-xs text-texto-2 md:block">/</kbd>
+            <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-md border border-borda px-1.5 text-xs text-texto-2 @tmd:block">/</kbd>
           )}
         </div>}
 
         {/* Pastas (fixas no topo ao rolar, para receber o arraste); só quando existem ou a lista cresceu */}
-        {mostrarPastas(todas.length, pastas.length, filtroAtivo !== 'todas') ? <div className="sticky top-0 z-10 -mx-4 bg-fundo/90 px-4 py-3 backdrop-blur md:-mx-8 md:px-8">
+        {mostrarPastas(todas.length, pastas.length, filtroAtivo !== 'todas') ? <div className="sticky top-0 z-10 -mx-4 bg-fundo/90 px-4 py-3 backdrop-blur @tmd:-mx-8 @tmd:px-8">
           <div className="sem-barra flex gap-2 overflow-x-auto">
             <ChipPasta valor="todas" rotulo="Todas" qtd={todas.length} ativo={filtroAtivo === 'todas'}
               soltavel={false} onClick={() => setFiltro('todas')} />
@@ -676,7 +676,7 @@ export default function Mensagens() {
         {pastaAtual && (
           <div className="mb-3 flex flex-wrap items-center gap-1">
             <h2 className="mr-auto font-display text-lg font-bold">{pastaAtual.nome}</h2>
-            <button onClick={criar} className="botao-secundario hidden px-3 py-1.5 text-sm md:inline-flex">
+            <button onClick={criar} className="botao-secundario hidden px-3 py-1.5 text-sm @tmd:inline-flex">
               <Plus size={16} /> Nova nesta pasta
             </button>
             <button onClick={() => renomearPasta(pastaAtual)} className="botao-fantasma px-3 py-1.5 text-sm">
@@ -691,7 +691,7 @@ export default function Mensagens() {
         {erro && <p role="alert" className="mb-3 rounded-xl bg-perigo/10 px-3 py-2 text-sm text-perigo">{erro}</p>}
 
         {mensagens === null && !erro && (
-          <ul className="grid grid-cols-[minmax(0,1fr)] gap-3 md:grid-cols-2" aria-label="Carregando">
+          <ul className="grid grid-cols-[minmax(0,1fr)] gap-3 @tmd:grid-cols-2" aria-label="Carregando">
             {[0, 1, 2, 3].map((i) => (
               <li key={i} className="cartao h-[76px] animate-pulse bg-superficie-2/60" />
             ))}
@@ -699,7 +699,7 @@ export default function Mensagens() {
         )}
 
         {mensagens !== null && todas.length === 0 && !excluida && (
-          <div className="cartao relative overflow-hidden px-5 py-8 sm:px-8 sm:py-10">
+          <div className="cartao relative overflow-hidden px-5 py-8 @tsm:px-8 @tsm:py-10">
             <div aria-hidden className="pointer-events-none absolute left-1/2 top-0 h-40 w-72 -translate-x-1/2 rounded-full bg-acao/20 blur-3xl" />
             <h2 className="relative text-center font-display text-2xl font-extrabold">
               {modo === 'estudo' ? 'Seu primeiro estudo em três passos' : 'Sua primeira mensagem em três passos'}
@@ -716,10 +716,10 @@ export default function Mensagens() {
               ))}
             </ol>
             <div className="relative mt-7 flex flex-col items-center gap-3">
-              <button onClick={criar} className="botao-primario w-full sm:w-auto">
+              <button onClick={criar} className="botao-primario w-full @tsm:w-auto">
                 <Plus size={18} /> {modo === 'estudo' ? 'Novo estudo' : 'Nova mensagem'}
               </button>
-              <button onClick={verExemplo} disabled={criandoExemplo} className="botao-secundario w-full sm:w-auto">
+              <button onClick={verExemplo} disabled={criandoExemplo} className="botao-secundario w-full @tsm:w-auto">
                 {criandoExemplo ? <LoaderCircle size={18} className="animate-spin" /> : <Sparkles size={18} />} Ver um exemplo pronto
               </button>
               <p className="text-center text-sm text-texto-2">
@@ -731,7 +731,7 @@ export default function Mensagens() {
 
         {/* Séries: progresso de cada uma e filtro rápido */}
         {series.length > 0 && !termo && (
-          <div className="-mx-4 mb-3 flex gap-2 overflow-x-auto px-4 pb-1 sem-barra md:mx-0 md:flex-wrap md:px-0">
+          <div className="-mx-4 mb-3 flex gap-2 overflow-x-auto px-4 pb-1 sem-barra @tmd:mx-0 @tmd:flex-wrap @tmd:px-0">
             {series.map((sr) => {
               const ativa = serieFiltro === sr.nome
               return (
@@ -748,7 +748,7 @@ export default function Mensagens() {
         )}
 
         {filtradas.length > 0 && (
-          <ul className="grid grid-cols-[minmax(0,1fr)] gap-3 md:grid-cols-2 2xl:grid-cols-3">
+          <ul className="grid grid-cols-[minmax(0,1fr)] gap-3 @tmd:grid-cols-2 @txl:grid-cols-3">
             {filtradas.map((m) => (
               <LinhaMensagem key={m.id} m={m} compartilhada={!!m.proprietario_compartilhamento && m.proprietario_compartilhamento !== sessao?.user.id} blocos={contagem[m.id]} pastas={pastas} hoje={hoje}
                 pasta={filtroAtivo === 'todas' ? pastas.find((p) => p.id === m.pasta_id) ?? null : null}
@@ -775,7 +775,7 @@ export default function Mensagens() {
 
       {/* Computador: coluna da direita fixa com resumo, atalhos e agenda */}
       {doisLados.length > 0 && (
-        <aside className="sticky top-10 hidden space-y-3 xl:block">
+        <aside className="sticky top-10 hidden space-y-3 @tlg:block">
           {painel(true)}
           <div className="cartao p-4">
             <p className="rotulo">Atalhos do teclado</p>

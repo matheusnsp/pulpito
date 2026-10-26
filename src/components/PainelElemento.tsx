@@ -63,7 +63,7 @@ function Alternar({ ativo, onClick, children, rotulo }: { ativo: boolean; onClic
   )
 }
 
-const botaoAcao = 'botao-secundario flex-col gap-0.5 px-1 py-2 text-[11px] sm:flex-row sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-sm'
+const botaoAcao = 'botao-secundario flex-col gap-0.5 px-1 py-2 text-[11px] @tsm:flex-row @tsm:gap-1.5 @tsm:px-3 @tsm:py-1.5 @tsm:text-sm'
 
 export default function PainelElemento({ el, onMudar, onAcao, onAlinhar, temEstiloCopiado, campoTexto }: {
   el: Elemento
@@ -143,7 +143,7 @@ export default function PainelElemento({ el, onMudar, onAcao, onAlinhar, temEsti
           <div><Rotulo>Cor das *palavras marcadas*</Rotulo><Cores valor={el.destaque ?? '#FFC107'} onChange={(c) => onMudar({ destaque: c })} /></div>
           <div><Rotulo>Faixa atrás do texto</Rotulo><Cores valor={el.faixa} nenhuma="Sem faixa" onChange={(c) => onMudar({ faixa: c })} /></div>
           <div><Rotulo>Contorno das letras</Rotulo><Cores valor={el.contorno} nenhuma="Sem contorno" onChange={(c) => onMudar({ contorno: c })} /></div>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 @tsm:grid-cols-2">
             <Deslizante rotulo="Espaço entre linhas" valor={el.entrelinha ?? 1.15} min={0.8} max={2.2} passo={0.05} onChange={(n) => onMudar({ entrelinha: n })} formato={(n) => n.toFixed(2)} />
             <Deslizante rotulo="Espaço entre letras" valor={el.espaco ?? 0} min={-0.08} max={0.4} passo={0.01} onChange={(n) => onMudar({ espaco: n })} formato={(n) => n.toFixed(2)} />
             <Deslizante rotulo="Transparência" valor={Math.round((1 - (el.opac ?? 1)) * 100)} min={0} max={90} passo={5} onChange={(n) => onMudar({ opac: 1 - n / 100 })} formato={(n) => `${n}%`} />
@@ -190,7 +190,7 @@ export default function PainelElemento({ el, onMudar, onAcao, onAlinhar, temEsti
           {formaComContorno && el.preenchido && (
             <div><Rotulo>Borda</Rotulo><Cores valor={el.corBorda} nenhuma="Sem borda" onChange={(c) => onMudar({ corBorda: c })} /></div>
           )}
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 @tsm:grid-cols-2">
             {el.tipo !== 'icone' && (
               <Deslizante rotulo={el.tipo === 'linha' ? 'Espessura' : 'Espessura da borda'} valor={el.borda ?? 0.45} min={0.1} max={3} passo={0.05} onChange={(n) => onMudar({ borda: n })} formato={(n) => n.toFixed(2)} />
             )}
@@ -217,7 +217,7 @@ export default function PainelElemento({ el, onMudar, onAcao, onAlinhar, temEsti
                 className={`rounded-xl border py-2 text-sm font-semibold ${(el.ajuste ?? 'cobrir') === v ? 'border-acao bg-acao/15' : 'border-borda'}`}>{n}</button>
             ))}
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 @tsm:grid-cols-2">
             {(el.forma ?? 'ret') === 'ret' && (
               <Deslizante rotulo="Cantos arredondados" valor={el.raio ?? 1} min={0} max={20} passo={0.2} onChange={(n) => onMudar({ raio: n })} formato={(n) => n.toFixed(1)} />
             )}

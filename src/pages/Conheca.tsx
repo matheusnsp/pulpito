@@ -38,7 +38,7 @@ export default function Conheca() {
         <Marca icone />
         <nav className="flex items-center gap-2">
           <Link to="/login" className="botao-fantasma px-3 text-sm">Entrar</Link>
-          <Link to="/criar-conta" className="botao-primario px-3 py-2 text-sm">Criar conta grátis</Link>
+          <Link to="/criar-conta" className="botao-primario whitespace-nowrap px-3 py-2 text-sm">Criar conta<span className="max-[400px]:hidden"> grátis</span></Link>
         </nav>
       </header>
 

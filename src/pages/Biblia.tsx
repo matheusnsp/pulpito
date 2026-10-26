@@ -174,13 +174,13 @@ function Seletor({ versao, livroAtual, onEscolher, onFechar }: {
           {!livro && (
             <>
               {AT.some(passa) && <p className="rotulo mb-2">Antigo Testamento</p>}
-              <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">{AT.filter(passa).map(botaoLivro)}</div>
+              <div className="grid grid-cols-2 gap-1.5 @tsm:grid-cols-3">{AT.filter(passa).map(botaoLivro)}</div>
               {NT.some(passa) && <p className="rotulo mb-2 mt-5">Novo Testamento</p>}
-              <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">{NT.filter(passa).map(botaoLivro)}</div>
+              <div className="grid grid-cols-2 gap-1.5 @tsm:grid-cols-3">{NT.filter(passa).map(botaoLivro)}</div>
             </>
           )}
           {livro && (
-            <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-8">
+            <div className="grid grid-cols-5 gap-1.5 @tsm:grid-cols-8">
               {total === 0 && <p className="col-span-full py-6 text-center text-texto-2">Carregando…</p>}
               {Array.from({ length: total }, (_, i) => (
                 <button key={i} onClick={() => onEscolher(livro, i + 1)}
@@ -352,7 +352,7 @@ export default function Biblia() {
   const botaoNav = 'flex h-11 w-11 items-center justify-center rounded-full border border-borda bg-superficie text-texto-2 shadow-cartao hover:text-texto disabled:opacity-30'
 
   return (
-    <div className="mx-auto max-w-3xl px-3 sm:px-4 pb-10 pt-2 md:px-8 md:pt-10">
+    <div className="mx-auto max-w-3xl px-3 @tsm:px-4 pb-10 pt-2 @tmd:px-8 @tmd:pt-10">
       <div ref={topo} className="scroll-mt-4" />
 
       {/* Topo: busca, versão e tamanho da letra */}
@@ -389,7 +389,7 @@ export default function Biblia() {
         </button>
         <button onClick={() => setSeletor(true)} className="group mx-auto text-center">
           <span className="rotulo">{versao} · toque para trocar</span>
-          <span className="mt-1 flex items-center justify-center gap-1.5 font-display text-3xl font-extrabold tracking-tight md:text-4xl">
+          <span className="mt-1 flex items-center justify-center gap-1.5 font-display text-3xl font-extrabold tracking-tight @tmd:text-4xl">
             {nomeCap}
             <ChevronDown size={24} className="text-texto-2 transition group-hover:translate-y-0.5" />
           </span>
@@ -477,7 +477,7 @@ export default function Biblia() {
 
       {/* Ações da seleção */}
       {selecao.length > 0 && (
-        <div className="fixed inset-x-3 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] z-30 mx-auto flex max-w-lg animate-entrar items-center gap-1 rounded-2xl bg-texto p-1.5 pl-4 text-fundo shadow-2xl md:bottom-6">
+        <div className="fixed inset-x-3 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] z-30 mx-auto flex max-w-lg animate-entrar items-center gap-1 rounded-2xl bg-texto p-1.5 pl-4 text-fundo shadow-2xl @tmd:bottom-6">
           <span className="min-w-0 flex-1 truncate text-sm font-bold">{refSelecao}</span>
           <button onClick={copiar} aria-label="Copiar" title="Copiar" className="rounded-xl p-2.5 hover:bg-fundo/15"><Copy size={18} /></button>
           <button onClick={compartilhar} aria-label="Compartilhar" title="Compartilhar" className="rounded-xl p-2.5 hover:bg-fundo/15"><Share2 size={18} /></button>

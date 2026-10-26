@@ -57,7 +57,7 @@ function TrocarSenha({ email }: { email: string }) {
         <input type="password" required autoComplete="current-password" value={atual}
           onChange={(e) => setAtual(e.target.value)} className="campo" />
       </label>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 @tsm:grid-cols-2">
         <label className="block">
           <span className="mb-1.5 block text-sm font-semibold text-texto-2">Nova senha</span>
           <input type="password" required autoComplete="new-password" placeholder="Pelo menos 6 caracteres"
@@ -121,18 +121,18 @@ export default function Ajustes() {
   ]
 
   return (
-    <div className="mx-auto max-w-2xl px-3 sm:px-4 pb-12 pt-2 md:max-w-3xl md:px-8 md:pt-10 lg:max-w-4xl xl:max-w-7xl">
+    <div className="mx-auto max-w-2xl px-3 @tsm:px-4 pb-12 pt-2 @tmd:max-w-3xl @tmd:px-8 @tmd:pt-10 @tmd:max-w-4xl @tlg:max-w-7xl">
       <div className="flex items-end justify-between gap-3">
         <h1 className="titulo-pagina">Ajustes</h1>
         <span className="mb-1 rounded-full bg-superficie-2 px-3 py-1 text-xs font-bold text-texto-2">Pulpito {NUMERO_VERSAO}</span>
       </div>
 
-      <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-5 xl:grid-cols-12 xl:items-start">
+      <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-5 @tlg:grid-cols-12 @tlg:items-start">
         {/* No computador: duas colunas independentes (sem buracos). No celular: uma coluna, na ordem do "order". */}
-        <div className="contents xl:col-span-7 xl:block xl:space-y-5">
+        <div className="contents @tlg:col-span-7 @tlg:block @tlg:space-y-5">
         {/* Conta: perfil, trocar senha e sair */}
         <section className="cartao order-1 overflow-hidden">
-          <div className="relative flex flex-wrap items-center gap-4 p-4 sm:p-5">
+          <div className="relative flex flex-wrap items-center gap-4 p-4 @tsm:p-5">
             <div aria-hidden className="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full bg-acao/15 blur-3xl" />
             <span className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-acao font-display text-2xl font-extrabold text-acao-texto">
               {iniciais}
@@ -144,18 +144,18 @@ export default function Ajustes() {
                 <Sparkles size={12} /> {plano.premium ? (emTeste(plano) ? `Premium · teste, ${diasRestantes(plano.valida_ate)} dias` : 'Premium') : `Gratuito · ${plano.mensagens_ativas}/${plano.limite} mensagens`}
               </Link>
             </div>
-            <div className="relative flex w-full gap-2 sm:w-auto">
+            <div className="relative flex w-full flex-wrap gap-2 @tsm:w-auto @tsm:flex-nowrap">
               <button onClick={() => setSenhaAberta((v) => !v)} aria-expanded={senhaAberta}
-                className={`${senhaAberta ? 'botao-primario' : 'botao-secundario'} flex-1 py-2 text-sm sm:flex-none`}>
+                className={`${senhaAberta ? 'botao-primario' : 'botao-secundario'} min-w-[8.5rem] flex-1 whitespace-nowrap py-2 text-sm @tsm:flex-none`}>
                 <KeyRound size={16} /> Trocar senha
               </button>
-              <button onClick={sair} disabled={saindo} className="botao-secundario flex-1 py-2 text-sm hover:text-perigo sm:flex-none">
+              <button onClick={sair} disabled={saindo} className="botao-secundario min-w-[6rem] flex-1 whitespace-nowrap py-2 text-sm hover:text-perigo @tsm:flex-none">
                 <LogOut size={16} /> {saindo ? 'Saindo…' : 'Sair'}
               </button>
             </div>
           </div>
           {senhaAberta && email && (
-            <div className="border-t border-borda bg-superficie-2/40 p-4 sm:p-5">
+            <div className="border-t border-borda bg-superficie-2/40 p-4 @tsm:p-5">
               <p className="mb-3 text-sm text-texto-2">Para trocar, confirme primeiro a senha que você usa hoje.</p>
               <TrocarSenha email={email} />
             </div>
@@ -164,7 +164,7 @@ export default function Ajustes() {
           {excluirAberto
             ? <ExcluirConta email={email} temSenha={contaTemSenha(sessao?.user)} aoCancelar={() => setExcluirAberto(false)} />
             : (
-              <div className="border-t border-borda px-4 py-2.5 text-right sm:px-5">
+              <div className="border-t border-borda px-4 py-2.5 text-right @tsm:px-5">
                 <button onClick={() => setExcluirAberto(true)} className="text-xs font-semibold text-texto-2 underline-offset-4 hover:text-perigo hover:underline">
                   Excluir conta
                 </button>
@@ -175,9 +175,9 @@ export default function Ajustes() {
         <div className="order-2"><MeusDados /></div>
 
         {/* Preferências: tema e Bíblia */}
-        <section className="cartao order-4 p-4 sm:p-5">
+        <section className="cartao order-4 p-4 @tsm:p-5">
           <Titulo Icone={Palette} titulo="Aparência" texto="O modo pregação e o telão são sempre escuros, nas cores do tema." />
-          <div role="radiogroup" aria-label="Tema" className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+          <div role="radiogroup" aria-label="Tema" className="mt-4 grid grid-cols-2 gap-3 @tmd:grid-cols-4">
             {TEMAS.map((t) => {
               const ativo = tema === t.valor
               return (
@@ -225,7 +225,7 @@ export default function Ajustes() {
                   <button key={v.id} role="radio" aria-checked={ativo} onClick={() => mudarVersao(v.id)}
                     className={`rounded-xl border-2 px-3 py-2.5 text-left transition ${ativo ? 'border-acao bg-ouro-suave' : 'border-borda hover:border-texto-2'}`}>
                     <b className="flex items-center justify-between font-display">{v.id}{ativo && <Check size={15} className="text-tinta" />}</b>
-                    <span className="mt-0.5 line-clamp-2 block text-[11px] leading-tight text-texto-2 sm:text-xs">{v.nome}</span>
+                    <span className="mt-0.5 line-clamp-2 block text-[11px] leading-tight text-texto-2 @tsm:text-xs">{v.nome}</span>
                   </button>
                 )
               })}
@@ -237,9 +237,9 @@ export default function Ajustes() {
         <div className="order-5"><Sobre /></div>
         </div>
 
-        <div className="contents xl:col-span-5 xl:block xl:space-y-5">
+        <div className="contents @tlg:col-span-5 @tlg:block @tlg:space-y-5">
         {/* Atalhos */}
-        <section className="order-3 grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-2">
+        <section className="order-3 grid grid-cols-2 gap-3 @tmd:grid-cols-4 @tlg:grid-cols-2">
           {atalhos.map(({ nome: n, texto, Icone, acao, para }) => {
             const conteudo = (
               <>
@@ -288,7 +288,7 @@ function AdicionarEmail({ nome }: { nome: string }) {
   }
 
   return (
-    <div className="border-t border-borda bg-ouro-suave/60 p-4 sm:p-5">
+    <div className="border-t border-borda bg-ouro-suave/60 p-4 @tsm:p-5">
       <div className="flex items-start gap-3">
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-acao text-acao-texto"><Mail size={18} /></span>
         <div className="min-w-0 flex-1">
@@ -297,7 +297,7 @@ function AdicionarEmail({ nome }: { nome: string }) {
           {enviado ? (
             <p role="status" className="mt-3 flex items-center gap-1.5 text-sm font-semibold text-tinta"><Check size={16} /> Enviamos um link para {email.trim()}. Clique nele para confirmar.</p>
           ) : (
-            <form onSubmit={adicionar} className="mt-3 flex flex-col gap-2 sm:flex-row">
+            <form onSubmit={adicionar} className="mt-3 flex flex-col gap-2 @tsm:flex-row">
               <input type="email" required placeholder="voce@exemplo.com" value={email} onChange={(e) => setEmail(e.target.value)}
                 className="campo flex-1" autoComplete="email" autoCapitalize="none" inputMode="email" />
               <button disabled={enviando} className="botao-primario py-2 text-sm">{enviando ? 'Enviando…' : 'Adicionar'}</button>
@@ -336,7 +336,7 @@ function ExcluirConta({ email, temSenha, aoCancelar }: { email: string; temSenha
   }
 
   return (
-    <form onSubmit={excluir} className="border-t border-borda bg-perigo/5 p-4 sm:p-5">
+    <form onSubmit={excluir} className="border-t border-borda bg-perigo/5 p-4 @tsm:p-5">
       <div className="flex items-start gap-3">
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-perigo text-white"><TriangleAlert size={18} /></span>
         <div className="min-w-0 flex-1 space-y-3">
@@ -347,7 +347,7 @@ function ExcluirConta({ email, temSenha, aoCancelar }: { email: string; temSenha
               Antes, vale <b className="text-texto">baixar seus dados</b> no cartão abaixo.
             </p>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 @tsm:grid-cols-2">
             {temSenha && (
               <label className="block">
                 <span className="mb-1.5 block text-sm font-semibold text-texto-2">Sua senha</span>
@@ -383,7 +383,7 @@ function MeusDados() {
     try { await baixarMeusDados(); setEstado('pronto') } catch { setEstado('erro') }
   }
   return (
-    <section className="cartao p-4 sm:p-5">
+    <section className="cartao p-4 @tsm:p-5">
       <Titulo Icone={DatabaseBackup} titulo="Seus dados" texto="Um arquivo com todas as suas mensagens, tópicos, slides, pastas, agenda, aulas e respostas. Nada fica preso no app." />
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <button onClick={baixar} disabled={estado === 'baixando'} className="botao-secundario">
@@ -431,7 +431,7 @@ function Sobre() {
   ]
   return (
     <section>
-      <div className="cartao flex flex-col gap-4 p-4 sm:p-5 sm:flex-row sm:items-center">
+      <div className="cartao flex flex-col gap-4 p-4 @tsm:p-5 @tsm:flex-row @tsm:items-center">
         <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-acao font-display text-xl font-extrabold text-acao-texto">MN</span>
         <div className="min-w-0 flex-1">
           <p className="text-sm text-texto-2">O Pulpito foi idealizado e criado por</p>
@@ -479,7 +479,7 @@ function AtualizarApp() {
 
   return (
     <section className={`cartao overflow-hidden ${estado === 'nova' ? 'border-acao ring-4 ring-acao/15' : ''}`}>
-        <div className="flex items-center gap-4 p-4 sm:p-5">
+        <div className="flex items-center gap-4 p-4 @tsm:p-5">
           <span className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl" style={{ background: visual.fundo, color: visual.cor }}>
             {estado === 'verificando' || atualizando ? <LoaderCircle size={26} className="animate-spin" />
               : estado === 'em-dia' ? <CircleCheck size={28} />
@@ -506,13 +506,13 @@ function AtualizarApp() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-2 px-5 py-4 sm:flex-row">
+        <div className="flex flex-col gap-2 px-5 py-4 @tsm:flex-row">
           {estado === 'nova' ? (
-            <button onClick={atualizar} disabled={atualizando} className="botao-primario w-full sm:flex-1">
+            <button onClick={atualizar} disabled={atualizando} className="botao-primario w-full @tsm:flex-1">
               <Download size={18} /> Atualizar agora
             </button>
           ) : (
-            <button onClick={verificar} disabled={estado === 'verificando'} className="botao-secundario w-full sm:flex-1">
+            <button onClick={verificar} disabled={estado === 'verificando'} className="botao-secundario w-full @tsm:flex-1">
               <RefreshCw size={18} className={estado === 'verificando' ? 'animate-spin' : ''} /> Verificar de novo
             </button>
           )}
@@ -541,7 +541,7 @@ function AtualizarApp() {
             A Bíblia baixada, o login e as mensagens continuam.
           </p>
           <p>No iPhone e iPad, se nada mudar, feche o app (deslize ele para cima na troca de apps) e abra de novo.</p>
-          <button onClick={atualizar} disabled={atualizando} className="botao-secundario w-full sm:w-auto">
+          <button onClick={atualizar} disabled={atualizando} className="botao-secundario w-full @tsm:w-auto">
             <RefreshCw size={16} /> Fazer atualização completa
           </button>
         </div>

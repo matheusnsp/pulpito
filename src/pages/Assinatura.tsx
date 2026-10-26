@@ -21,19 +21,19 @@ export default function Assinatura() {
       : { titulo: 'Você é Premium', texto: plano.valida_ate ? `Válido até ${new Date(plano.valida_ate).toLocaleDateString('pt-BR')}.` : 'Sem data de vencimento. Obrigado!' }
 
   return (
-    <div className="mx-auto max-w-2xl px-3 pb-16 pt-2 sm:px-4 md:px-8 md:pt-10">
+    <div className="mx-auto max-w-2xl px-3 pb-16 pt-2 @tsm:px-4 @tmd:px-8 @tmd:pt-10">
       <Link to="/ajustes" className="botao-fantasma -ml-2 px-2"><ChevronLeft size={20} /> Ajustes</Link>
 
-      <section className="escuro relative mt-4 overflow-hidden rounded-3xl border border-borda p-5 text-texto shadow-cartao sm:p-7" style={{ background: 'var(--hero)' }}>
+      <section className="escuro relative mt-4 overflow-hidden rounded-3xl border border-borda p-5 text-texto shadow-cartao @tsm:p-7" style={{ background: 'var(--hero)' }}>
         <div aria-hidden className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-acao/20 blur-3xl" />
         <div className="relative">
           <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-tinta"><Sparkles size={13} /> Pulpito Premium</p>
-          <h1 className="mt-3 font-display text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl">{situacao.titulo}</h1>
+          <h1 className="mt-3 font-display text-3xl font-extrabold leading-tight tracking-tight @tsm:text-4xl">{situacao.titulo}</h1>
           <p className="mt-2 text-texto-2">{situacao.texto}</p>
         </div>
       </section>
 
-      <div className="mt-5 grid gap-4 md:grid-cols-2">
+      <div className="mt-5 grid gap-4 @tmd:grid-cols-2">
         <section className="cartao p-5">
           <h2 className="font-display text-lg font-bold">Gratuito</h2>
           <p className="mt-1 text-2xl font-extrabold">R$ 0</p>

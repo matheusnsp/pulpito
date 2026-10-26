@@ -32,8 +32,8 @@ export default function Lixeira() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-3 sm:px-4 pb-16 md:px-8">
-      <div className="sticky top-0 z-20 -mx-4 flex items-center bg-fundo/90 px-4 py-2 backdrop-blur md:-mx-8 md:px-8 md:py-4">
+    <div className="mx-auto max-w-3xl px-3 @tsm:px-4 pb-16 @tmd:px-8">
+      <div className="sticky top-0 z-20 -mx-4 flex items-center bg-fundo/90 px-4 py-2 backdrop-blur @tmd:-mx-8 @tmd:px-8 @tmd:py-4">
         <Link to="/" className="botao-fantasma -ml-2 px-2"><ChevronLeft size={20} /> Início</Link>
       </div>
       <h1 className="titulo-pagina mt-2 flex items-center gap-3"><Trash2 size={28} className="text-texto-2" /> Lixeira</h1>
@@ -66,7 +66,7 @@ export default function Lixeira() {
               </span>
               {ocupado === m.id ? <LoaderCircle size={20} className="mx-3 animate-spin text-texto-2" /> : (
                 <>
-                  <button onClick={() => agir(m, 'restaurar')} className="botao-secundario px-3 py-1.5 text-sm"><RotateCcw size={16} /> <span className="max-sm:hidden">Restaurar</span></button>
+                  <button onClick={() => agir(m, 'restaurar')} className="botao-secundario px-3 py-1.5 text-sm"><RotateCcw size={16} /> <span className="@max-tsm:hidden">Restaurar</span></button>
                   <button onClick={() => agir(m, 'apagar')} aria-label="Apagar de vez" title="Apagar de vez" className="rounded-xl p-2 text-texto-2 hover:bg-perigo/10 hover:text-perigo"><Trash2 size={18} /></button>
                 </>
               )}
