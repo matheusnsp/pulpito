@@ -622,6 +622,8 @@ export default function Pregar() {
   const sub = subEstado.pagina === indice
     ? Math.max(0, Math.min(subEstado.sub, passos - 1))
     : 0
+  // Slide personalizado que está no telão agora (importado ou gerado), para mostrar as anotações dele
+  const slideAtual = slidesDaPagina[sub] ?? null
   const noMural = temMural && (muralNoLugar ? sub === 0 : sub === passos - 1)
   const versiculoDoPasso = variosVersiculos && !noMural && sub >= passosBase && sub < passosBase + versiculos.length
     ? versiculos[sub - passosBase]
@@ -1092,6 +1094,13 @@ export default function Pregar() {
               {topico.notas?.trim() && (
                 <TextoRico texto={topico.notas} className="text-base text-texto-2" />
               )}
+            </div>
+          )}
+
+          {slideAtual?.estilo?.notas?.trim() && (
+            <div className="mt-6 rounded-2xl border border-dashed border-acao/50 bg-ouro-suave/30 p-4">
+              <p className="rotulo">Suas anotações deste slide</p>
+              <TextoRico texto={slideAtual.estilo.notas} className="mt-1 text-base text-texto" />
             </div>
           )}
         </div>

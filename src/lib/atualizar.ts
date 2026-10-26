@@ -66,6 +66,10 @@ export function versaoAmigavel(v: string) {
 /* Novidades recentes, mostradas em Ajustes. A mais nova primeiro. */
 export const NOVIDADES: { titulo: string; texto: string }[] = [
   {
+    titulo: 'Anotações por slide',
+    texto: 'Em Slides, cada slide ganha um campo de anotações só para você, inclusive os importados de PDF e PowerPoint. Aparecem no celular no modo pregação e nas notas ao exportar.'
+  },
+  {
     titulo: 'Formato Livre',
     texto: 'Escreva do zero, sem campos. É a primeira opção ao criar, nos dois lados. Uma linha com # vira o título de uma parte; na Palavra, [Jo 3:16] traz o versículo.'
   },

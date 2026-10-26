@@ -1264,6 +1264,16 @@ export default function EditorSlides() {
                 </div>
 
 
+                {/* Anotações do apresentador: valem para slides importados de PDF ou PowerPoint também */}
+                <div className="rounded-2xl border border-borda bg-superficie p-4">
+                  <Campo rotulo="Suas anotações para este slide">
+                    <textarea rows={3} value={sel.estilo?.notas ?? ''} className="campo resize-y leading-relaxed"
+                      placeholder="O que lembrar quando este slide estiver na tela…"
+                      onChange={(e) => alterar(sel.id, { estilo: { ...sel.estilo, notas: e.target.value } })} />
+                  </Campo>
+                  <p className="mt-1.5 text-xs text-texto-2">Só você vê: aparecem no seu celular no modo pregação e nas notas do PowerPoint ao exportar. Nunca vão para o telão.</p>
+                </div>
+
                 <div className="grid grid-cols-[minmax(0,1fr)] gap-6 md:grid-cols-2">
                   {/* Textos */}
                   {estilo.layout === 'vazio' ? (
