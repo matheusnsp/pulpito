@@ -66,6 +66,10 @@ export function versaoAmigavel(v: string) {
 /* Novidades recentes, mostradas em Ajustes. A mais nova primeiro. */
 export const NOVIDADES: { titulo: string; texto: string }[] = [
   {
+    titulo: 'Telas ajustadas a qualquer tamanho',
+    texto: 'Tablet, celular pequeno e computador: as páginas agora se organizam pela largura que sobra ao lado do menu. Nada de ícones cortados ou colunas apertadas.'
+  },
+  {
     titulo: 'Anotações por slide',
     texto: 'Em Slides, cada slide ganha um campo de anotações só para você, inclusive os importados de PDF e PowerPoint. Aparecem no celular no modo pregação e nas notas ao exportar.'
   },

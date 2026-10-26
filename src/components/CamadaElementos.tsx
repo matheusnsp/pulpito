@@ -114,7 +114,7 @@ export default function CamadaElementos({ elementos, selecionado, onSelecionar, 
     if (g.atual !== g.el) onConfirmar({ ...g.atual, x: arred(g.atual.x), y: arred(g.atual.y), w: arred(g.atual.w), h: arred(g.atual.h) })
   }
 
-  const alca = 'absolute h-4 w-4 touch-none rounded-full border-2 border-black bg-[#FFC107] shadow sm:h-3.5 sm:w-3.5'
+  const alca = 'absolute h-4 w-4 touch-none rounded-full border-2 border-black bg-[#FFC107] shadow @tsm:h-3.5 @tsm:w-3.5'
   const CANTOS: { c: Canto; pos: string; cursor: string }[] = [
     { c: 'nw', pos: '-left-2 -top-2', cursor: 'cursor-nwse-resize' },
     { c: 'ne', pos: '-right-2 -top-2', cursor: 'cursor-nesw-resize' },

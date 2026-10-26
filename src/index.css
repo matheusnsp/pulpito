@@ -114,6 +114,13 @@ html.tema-claro .escuro {
 }
 
 @theme {
+  /* Pontos de quebra pela largura do CONTEÚDO (não da janela): no computador a barra lateral
+     ocupa 16rem, então as páginas dentro do Layout usam @tsm/@tmd/@tlg/@txl em vez de sm/md/lg/xl */
+  --container-tsm: 40rem;
+  --container-tmd: 48rem;
+  --container-tlg: 64rem;
+  --container-txl: 80rem;
+  --container-t2xl: 96rem;
   --font-sans: "Atkinson Hyperlegible Next", system-ui, sans-serif;
   --font-display: "Plus Jakarta Sans Variable", "Atkinson Hyperlegible Next", system-ui, sans-serif;
   --font-escritura: "Literata Variable", Georgia, serif;

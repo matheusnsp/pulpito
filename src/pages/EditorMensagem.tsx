@@ -543,7 +543,7 @@ export default function EditorMensagem() {
   }
 
   if (mensagem === undefined) return (
-    <div className="mx-auto max-w-3xl space-y-4 px-3 sm:px-4 pt-16 md:px-8" aria-label="Carregando">
+    <div className="mx-auto max-w-3xl space-y-4 px-3 @tsm:px-4 pt-16 @tmd:px-8" aria-label="Carregando">
       <div className="h-10 w-2/3 animate-pulse rounded-xl bg-superficie-2" />
       <div className="h-24 animate-pulse rounded-2xl bg-superficie-2" />
       <div className="h-16 animate-pulse rounded-2xl bg-superficie-2" />
@@ -557,8 +557,8 @@ export default function EditorMensagem() {
   )
 
   const indicador = {
-    salvo: <><Check size={16} /> <span className="max-sm:sr-only">Salvo</span></>,
-    salvando: <><LoaderCircle size={16} className="animate-spin" /> <span className="max-sm:sr-only">Salvando</span></>,
+    salvo: <><Check size={16} /> <span className="@max-tsm:sr-only">Salvo</span></>,
+    salvando: <><LoaderCircle size={16} className="animate-spin" /> <span className="@max-tsm:sr-only">Salvando</span></>,
     erro: <><CircleAlert size={16} /> Não salvou</>,
   }[status]
 
@@ -601,39 +601,39 @@ export default function EditorMensagem() {
 
   // Slides, Esboço e demais ações: na coluna da direita no computador, depois dos tópicos no celular
   const acoes = (
-      <div className={`mt-4 grid gap-2 sm:flex sm:flex-wrap lg:mt-2 lg:grid lg:grid-cols-2 ${comBlocos ? 'grid-cols-3' : 'grid-cols-2'}`}>
-        <Link to={`/pregar/${mensagem.id}`} className="botao-primario hidden sm:inline-flex lg:col-span-2">
+      <div className={`mt-4 grid gap-2 @tsm:flex @tsm:flex-wrap @tlg:mt-2 @tlg:grid @tlg:grid-cols-2 ${comBlocos ? 'grid-cols-3' : 'grid-cols-2'}`}>
+        <Link to={`/pregar/${mensagem.id}`} className="botao-primario hidden @tsm:inline-flex @tlg:col-span-2">
           <Play size={18} fill="currentColor" /> {acaoNome}
         </Link>
-        <Link to={`/mensagem/${mensagem.id}/slides`} className={`botao-secundario ${comBlocos ? 'max-sm:px-2 max-sm:text-sm' : ''}`}>
+        <Link to={`/mensagem/${mensagem.id}/slides`} className={`botao-secundario ${comBlocos ? '@max-tsm:px-2 @max-tsm:text-sm' : ''}`}>
           <Presentation size={18} /> Slides
         </Link>
-        <button onClick={compartilharEsboco} disabled={topicos.length === 0 && !mensagem.texto_base} className={`botao-secundario ${comBlocos ? 'max-sm:px-2 max-sm:text-sm' : ''}`}>
+        <button onClick={compartilharEsboco} disabled={topicos.length === 0 && !mensagem.texto_base} className={`botao-secundario ${comBlocos ? '@max-tsm:px-2 @max-tsm:text-sm' : ''}`}>
           {copiado ? <><Check size={18} className="text-sucesso" /> Copiado</>
-            : <><span className="sm:hidden"><Share2 size={18} /></span><span className="hidden sm:inline"><ClipboardCopy size={18} /></span> {comBlocos ? 'Roteiro' : 'Esboço'}</>}
+            : <><span className="@tsm:hidden"><Share2 size={18} /></span><span className="hidden @tsm:inline"><ClipboardCopy size={18} /></span> {comBlocos ? 'Roteiro' : 'Esboço'}</>}
         </button>
         {comBlocos && (
-          <Link to={`/mensagem/${mensagem.id}/respostas`} className="botao-secundario max-sm:order-last max-sm:col-span-3 max-sm:text-sm lg:order-last lg:px-3">
+          <Link to={`/mensagem/${mensagem.id}/respostas`} className="botao-secundario @max-tsm:order-last @max-tsm:col-span-3 @max-tsm:text-sm @tlg:order-last @tlg:px-3">
             <MessagesSquare size={18} /> {estudo ? "Respostas das aulas" : "Respostas"}
           </Link>
         )}
         {comBlocos && (
-          <button onClick={baixarFolha} disabled={gerandoFolha || topicos.length === 0} className="botao-secundario max-sm:px-2 max-sm:text-sm">
-            {gerandoFolha ? <LoaderCircle size={18} className="animate-spin" /> : <FileDown size={18} />} <span className="sm:hidden">Folha</span><span className="hidden sm:inline">{estudo ? 'Folha do aluno' : 'Folha impressa'}</span>
+          <button onClick={baixarFolha} disabled={gerandoFolha || topicos.length === 0} className="botao-secundario @max-tsm:px-2 @max-tsm:text-sm">
+            {gerandoFolha ? <LoaderCircle size={18} className="animate-spin" /> : <FileDown size={18} />} <span className="@tsm:hidden">Folha</span><span className="hidden @tsm:inline">{estudo ? 'Folha do aluno' : 'Folha impressa'}</span>
           </button>
         )}
       </div>
   )
 
   return (
-    <div className="mx-auto max-w-3xl px-3 sm:px-4 pb-28 md:px-8 lg:max-w-6xl">
+    <div className="mx-auto max-w-3xl px-3 @tsm:px-4 pb-28 @tmd:px-8 @tlg:max-w-6xl">
       {/* Barra do topo (fixa ao rolar) */}
-      <div className="sticky top-0 z-20 -mx-4 flex items-center gap-1 bg-fundo/90 px-4 py-2 backdrop-blur md:-mx-8 md:px-8 md:py-4">
+      <div className="sticky top-0 z-20 -mx-4 flex items-center gap-1 bg-fundo/90 px-4 py-2 backdrop-blur @tmd:-mx-8 @tmd:px-8 @tmd:py-4">
         <Link to="/" className="botao-fantasma -ml-2 px-2">
-          <ChevronLeft size={20} /> <span className="hidden sm:inline">Início</span>
+          <ChevronLeft size={20} /> <span className="hidden @tsm:inline">Início</span>
         </Link>
-        {papelAtual === 'dono' && <Link to={`/mensagem/${mensagem.id}/compartilhar`} className="botao-secundario hidden px-2 py-1.5 text-xs sm:inline-flex sm:text-sm" aria-label="Convidar" title="Convidar pessoas">
-          <Share2 size={15} /> <span className="max-sm:hidden">Convidar</span>
+        {papelAtual === 'dono' && <Link to={`/mensagem/${mensagem.id}/compartilhar`} className="botao-secundario hidden px-2 py-1.5 text-xs @tsm:inline-flex @tsm:text-sm" aria-label="Convidar" title="Convidar pessoas">
+          <Share2 size={15} /> <span className="@max-tsm:hidden">Convidar</span>
         </Link>}
         {pessoas.length > 0 && (
           <span className="ml-2 flex items-center" title={`${pessoas.map((p) => p.nome).join(', ')} ${pessoas.length === 1 ? 'está' : 'estão'} com o projeto aberto`}>
@@ -642,30 +642,30 @@ export default function EditorMensagem() {
                 {p.nome.split(' ').map((x) => x[0]).slice(0, 2).join('')}
               </span>
             ))}
-            <span className="ml-1.5 hidden text-xs font-semibold text-texto-2 lg:inline">{pessoas.length === 1 ? `${pessoas[0].nome} está aqui` : `+${pessoas.length} aqui`}</span>
+            <span className="ml-1.5 hidden text-xs font-semibold text-texto-2 @tlg:inline">{pessoas.length === 1 ? `${pessoas[0].nome} está aqui` : `+${pessoas.length} aqui`}</span>
           </span>
         )}
         <span className={`ml-auto mr-1 flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${status === 'erro' ? 'bg-perigo/10 text-perigo' : 'text-texto-2'}`}>
           {indicador}
         </span>
         <button onClick={desfazerAgora} disabled={!historico.podeDesfazer}
-          aria-label="Desfazer" title="Desfazer (Cmd + Z)" className={`${iconeBotao} max-sm:hidden`}>
+          aria-label="Desfazer" title="Desfazer (Cmd + Z)" className={`${iconeBotao} @max-tsm:hidden`}>
           <Undo2 size={18} />
         </button>
         <button onClick={refazerAgora} disabled={!historico.podeRefazer}
-          aria-label="Refazer" title="Refazer (Cmd + Shift + Z)" className={`${iconeBotao} max-sm:hidden`}>
+          aria-label="Refazer" title="Refazer (Cmd + Shift + Z)" className={`${iconeBotao} @max-tsm:hidden`}>
           <Redo2 size={18} />
         </button>
         <MenuMais mensagem={mensagem} topicos={topicos} dono={papelAtual === 'dono'}
           onDada={(dadaEm) => alterarDetalhes({ dadaEm })} />
-        <Link to={`/pregar/${mensagem.id}`} className="botao-primario ml-1 px-3 py-2 text-sm sm:hidden">
+        <Link to={`/pregar/${mensagem.id}`} className="botao-primario ml-1 px-3 py-2 text-sm @tsm:hidden">
           <Play size={16} fill="currentColor" /> {acaoNome}
         </Link>
       </div>
 
       {/* Computador: conteúdo à esquerda e, à direita, uma coluna fixa com ações e dados */}
-      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_23rem] lg:gap-x-10 lg:[grid-template-areas:'titulo_lado'_'corpo_lado']">
-      <div className="min-w-0 lg:[grid-area:titulo]">
+      <div className="@tlg:grid @tlg:grid-cols-[minmax(0,1fr)_23rem] @tlg:gap-x-10 @tlg:[grid-template-areas:'titulo_lado'_'corpo_lado']">
+      <div className="min-w-0 @tlg:[grid-area:titulo]">
       {estudo ? (
         <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-[#14B8A6]/15 px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-wider text-[#14B8A6]">
           <GraduationCap size={13} /> Estudo
@@ -685,7 +685,7 @@ export default function EditorMensagem() {
       {/* Título */}
       <TituloCrescente value={mensagem.titulo} onChange={(v) => alterarMensagem({ titulo: v })}
         placeholder={estudo ? 'Título do estudo' : 'Título da mensagem'}
-        className="mt-2 w-full bg-transparent font-display text-2xl font-extrabold leading-tight tracking-tight outline-none placeholder:text-texto-2/50 sm:text-3xl md:text-4xl" />
+        className="mt-2 w-full bg-transparent font-display text-2xl font-extrabold leading-tight tracking-tight outline-none placeholder:text-texto-2/50 @tsm:text-3xl @tmd:text-4xl" />
       {detalhes.serie?.trim() && (() => {
         const lista = daSerie([...irmas.filter((m) => m.id !== mensagem.id), mensagem], detalhes.serie)
         const k = lista.findIndex((m) => m.id === mensagem.id)
@@ -701,11 +701,11 @@ export default function EditorMensagem() {
 
       </div>
 
-      <div className="lg:sticky lg:top-24 lg:self-start lg:[grid-area:lado] lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto lg:pb-4 sem-barra">
-      <div className="hidden lg:block">{acoes}</div>
+      <div className="@tlg:sticky @tlg:top-24 @tlg:self-start @tlg:[grid-area:lado] @tlg:max-h-[calc(100dvh-7rem)] @tlg:overflow-y-auto @tlg:pb-4 sem-barra">
+      <div className="hidden @tlg:block">{acoes}</div>
 
       {/* Texto base: o primeiro passo, sempre à vista (no Livre os versículos vão no próprio texto) */}
-      {!livre && <div className="cartao mt-4 p-4 lg:mt-6">
+      {!livre && <div className="cartao mt-4 p-4 @tlg:mt-6">
         <Campo rotulo={estudo ? 'Texto bíblico (opcional)' : 'Texto base'}>
           <div className="relative">
             <BookOpen size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-texto-2" />
@@ -832,13 +832,13 @@ export default function EditorMensagem() {
 
       </div>
 
-      <div className="min-w-0 lg:[grid-area:corpo]">
+      <div className="min-w-0 @tlg:[grid-area:corpo]">
       {livre ? (
-        <div className="cartao mt-4 p-4 lg:mt-6">
+        <div className="cartao mt-4 p-4 @tlg:mt-6">
           {/* Guia sempre à vista: o que vira título e, fora dos estudos, o que vira versículo */}
           <div className="mb-3 rounded-xl border border-dashed border-borda bg-superficie-2/40 p-3">
             <p className="rotulo mb-2">Como funciona</p>
-            <div className="grid gap-2 sm:grid-cols-2">
+            <div className="grid gap-2 @tsm:grid-cols-2">
               <button type="button" onClick={() => inserirNoLivre('# Título da parte\n', [2, 17])}
                 className="flex items-center gap-3 rounded-xl border border-borda bg-superficie p-2.5 text-left transition hover:border-acao">
                 <code className="shrink-0 rounded-lg bg-ouro-suave px-2 py-1 font-mono text-sm font-bold text-tinta"># Título</code>
@@ -866,7 +866,7 @@ export default function EditorMensagem() {
         </div>
       ) : (<>
       {/* Tópicos */}
-      <div className="mt-10 flex items-baseline justify-between lg:mt-6">
+      <div className="mt-10 flex items-baseline justify-between @tlg:mt-6">
         <h2 className="font-display text-2xl font-extrabold">{estudo ? 'Blocos' : comBlocos ? 'Roteiro' : 'Tópicos'}</h2>
         {topicos.length > 0 && (
           <span className="text-sm text-texto-2">
@@ -903,15 +903,15 @@ export default function EditorMensagem() {
                     aria-label={`Arrastar bloco ${i + 1}`} title="Arraste para reordenar"
                     className="group/alca relative flex h-9 w-9 shrink-0 cursor-grab touch-none items-center justify-center rounded-xl active:cursor-grabbing"
                     style={{ background: `${def.cor}26`, color: def.cor }}>
-                    <def.Icone size={18} className="md:group-hover/alca:opacity-0" />
-                    <GripVertical size={16} className="absolute opacity-0 md:group-hover/alca:opacity-100" />
+                    <def.Icone size={18} className="@tmd:group-hover/alca:opacity-0" />
+                    <GripVertical size={16} className="absolute opacity-0 @tmd:group-hover/alca:opacity-100" />
                   </button>
                 ) : (
                 <button type="button" {...alca.attributes} {...alca.listeners}
                   aria-label={`Arrastar tópico ${i + 1}`} title="Arraste para reordenar"
                   className={`group/alca relative flex h-8 w-8 shrink-0 cursor-grab touch-none items-center justify-center rounded-full font-display text-sm font-extrabold active:cursor-grabbing ${estaAberto || arrastando ? 'bg-acao text-acao-texto' : 'bg-ouro-suave text-tinta'}`}>
-                  <span className="md:group-hover/alca:opacity-0">{i + 1}</span>
-                  <GripVertical size={16} className="absolute opacity-0 md:group-hover/alca:opacity-100" />
+                  <span className="@tmd:group-hover/alca:opacity-0">{i + 1}</span>
+                  <GripVertical size={16} className="absolute opacity-0 @tmd:group-hover/alca:opacity-100" />
                 </button>
                 )}
                 <div className="min-w-0 flex-1">
@@ -924,24 +924,24 @@ export default function EditorMensagem() {
                   <TituloCrescente value={t.titulo} placeholder={def ? def.titulo.dica : 'Título do tópico'}
                     onChange={(v) => alterarTopico(t.id, { titulo: v })}
                     onFocus={() => setAberto(t.id)}
-                    className="w-full bg-transparent font-display text-lg font-bold leading-snug outline-none placeholder:text-texto-2/50 md:text-xl" />
+                    className="w-full bg-transparent font-display text-lg font-bold leading-snug outline-none placeholder:text-texto-2/50 @tmd:text-xl" />
                   {!estaAberto && dividirReferencias(t.versiculo).length > 0 && <p className="truncate text-sm font-semibold text-tinta">{dividirReferencias(t.versiculo).join(' · ')}</p>}
                   {!estaAberto && def && tipoB === 'lista' && itensDaLista(t.observacao).length > 0 && (
                     <p className="truncate text-sm text-texto-2">{itensDaLista(t.observacao).join(' · ')}</p>
                   )}
                 </div>
                 <div className="flex shrink-0 items-center">
-                  <button onClick={() => mover(i, -1)} disabled={i === 0} aria-label="Subir tópico" className={`${iconeBotao} ${estaAberto ? '' : 'max-sm:hidden'}`}>
+                  <button onClick={() => mover(i, -1)} disabled={i === 0} aria-label="Subir tópico" className={`${iconeBotao} ${estaAberto ? '' : '@max-tsm:hidden'}`}>
                     <ChevronUp size={18} />
                   </button>
-                  <button onClick={() => mover(i, 1)} disabled={i === topicos.length - 1} aria-label="Descer tópico" className={`${iconeBotao} ${estaAberto ? '' : 'max-sm:hidden'}`}>
+                  <button onClick={() => mover(i, 1)} disabled={i === topicos.length - 1} aria-label="Descer tópico" className={`${iconeBotao} ${estaAberto ? '' : '@max-tsm:hidden'}`}>
                     <ChevronDown size={18} />
                   </button>
                   <button onClick={() => setAberto(estaAberto ? null : t.id)} aria-expanded={estaAberto}
                     aria-label={estaAberto ? 'Fechar tópico' : 'Editar tópico'}
-                    className="ml-1 rounded-xl border border-borda p-1.5 text-sm font-bold text-texto-2 hover:text-texto sm:px-3">
-                    <span className="hidden sm:inline">{estaAberto ? 'Fechar' : 'Editar'}</span>
-                    <ChevronDown size={18} className={`transition-transform sm:hidden ${estaAberto ? 'rotate-180' : ''}`} />
+                    className="ml-1 rounded-xl border border-borda p-1.5 text-sm font-bold text-texto-2 hover:text-texto @tsm:px-3">
+                    <span className="hidden @tsm:inline">{estaAberto ? 'Fechar' : 'Editar'}</span>
+                    <ChevronDown size={18} className={`transition-transform @tsm:hidden ${estaAberto ? 'rotate-180' : ''}`} />
                   </button>
                 </div>
               </div>
@@ -1113,7 +1113,7 @@ export default function EditorMensagem() {
       {estudo ? (
         <div className="mt-3 rounded-2xl border-2 border-dashed border-borda p-3">
           <p className="mb-2.5 flex items-center justify-center gap-2 font-bold text-texto-2"><Plus size={18} /> Adicionar bloco</p>
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+          <div className="grid grid-cols-3 gap-2 @tsm:grid-cols-5">
             {ORDEM_BLOCOS.map((k) => {
               const b = BLOCOS[k]
               return (
@@ -1137,7 +1137,7 @@ export default function EditorMensagem() {
             Inserir pergunta, atividade ou lista…
           </button>
         ) : (
-        <div className="flex items-center gap-1.5 overflow-x-auto px-1 pb-1 pt-1.5 sem-barra sm:flex-wrap sm:justify-center sm:overflow-visible">
+        <div className="flex items-center gap-1.5 overflow-x-auto px-1 pb-1 pt-1.5 sem-barra @tsm:flex-wrap @tsm:justify-center @tsm:overflow-visible">
           <span className="shrink-0 pr-1 text-xs font-bold text-texto-2">Inserir</span>
           {ORDEM_BLOCOS.map((k) => {
             const b = BLOCOS[k]
@@ -1157,7 +1157,7 @@ export default function EditorMensagem() {
       </>)}
 
       {/* Celular: Slides, Esboço e demais ações depois dos tópicos */}
-      <div className="lg:hidden">{acoes}</div>
+      <div className="@tlg:hidden">{acoes}</div>
       </div>
       </div>
     </div>

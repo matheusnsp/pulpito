@@ -72,7 +72,7 @@ export default function CartaoCalendario() {
         </button>
       ) : (
         <div className="mt-4 space-y-3">
-          <button onClick={() => copiar(https)} className="botao-primario w-full sm:w-auto">
+          <button onClick={() => copiar(https)} className="botao-primario w-full @tsm:w-auto">
             {copiado ? <><Check size={18} /> Link copiado</> : <><Copy size={18} /> Copiar link da agenda</>}
           </button>
 

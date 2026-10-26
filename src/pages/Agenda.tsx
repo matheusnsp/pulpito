@@ -92,9 +92,9 @@ function FormEvento({ inicial, mensagens, onSalvo, onExcluido, onFechar }: {
   }
 
   return (
-    <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/50 sm:items-center" onClick={onFechar}>
+    <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/50 @tsm:items-center" onClick={onFechar}>
       <form onSubmit={salvar} onClick={(e) => e.stopPropagation()}
-        className="max-h-[92dvh] w-full max-w-md space-y-5 overflow-y-auto rounded-t-3xl border border-borda bg-superficie p-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:rounded-3xl">
+        className="max-h-[92dvh] w-full max-w-md space-y-5 overflow-y-auto rounded-t-3xl border border-borda bg-superficie p-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] @tsm:rounded-3xl">
         <div className="flex items-center justify-between">
           <h2 className="font-display text-2xl font-bold">{r.id ? 'Editar compromisso' : 'Novo compromisso'}</h2>
           <button type="button" onClick={onFechar} aria-label="Fechar" className={iconeBotao}><X size={20} /></button>
@@ -154,7 +154,7 @@ function FormEvento({ inicial, mensagens, onSalvo, onExcluido, onFechar }: {
               <Trash2 size={18} /> Excluir
             </button>
           )}
-          <button disabled={salvando} className="botao-primario flex-1 px-6 py-3 sm:ml-auto sm:flex-none sm:py-2.5">
+          <button disabled={salvando} className="botao-primario flex-1 px-6 py-3 @tsm:ml-auto @tsm:flex-none @tsm:py-2.5">
             {salvando ? 'Salvando…' : 'Salvar'}
           </button>
         </div>
@@ -285,7 +285,7 @@ export default function Agenda() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-3 sm:px-4 pb-12 pt-2 md:px-8 md:pt-10">
+    <div className="mx-auto max-w-5xl px-3 @tsm:px-4 pb-12 pt-2 @tmd:px-8 @tmd:pt-10">
       <header className="flex items-center justify-between gap-3">
         <h1 className="titulo-pagina">Agenda</h1>
         <button onClick={novo} className="botao-primario"><Plus size={18} /> Novo</button>
@@ -293,9 +293,9 @@ export default function Agenda() {
 
       {erro && <p role="alert" className="mt-4 text-sm text-perigo">{erro}</p>}
 
-      <div className="lg:grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:items-start lg:gap-8">
+      <div className="@tmd:grid @tmd:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] @tmd:items-start @tmd:gap-8">
       {/* Calendário */}
-      <section className="cartao mt-6 rounded-3xl p-4 lg:sticky lg:top-6">
+      <section className="cartao mt-6 rounded-3xl p-4 @tmd:sticky @tmd:top-6">
         <div className="mb-3 flex items-center gap-1">
           <h2 className="flex-1 pl-1 font-display text-xl font-bold">
             {maiuscula(mes.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }))}
@@ -333,7 +333,7 @@ export default function Agenda() {
 
       <div>
       {/* Dia selecionado */}
-      <section className="mt-8 lg:mt-6">
+      <section className="mt-8 @tmd:mt-6">
         <h2 className="font-display text-lg font-bold">{tituloDia}</h2>
         {eventos === null && <p className="mt-3 text-texto-2">Carregando…</p>}
         {eventos && doDia.length === 0 && (

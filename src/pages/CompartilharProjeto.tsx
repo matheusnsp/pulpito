@@ -62,16 +62,16 @@ export default function CompartilharProjeto() {
   if (!autorizado) return <div className="mx-auto max-w-xl p-8"><p>Somente o dono pode gerenciar o compartilhamento.</p><Link to={`/mensagem/${id}`} className="botao-secundario mt-4">Voltar</Link></div>
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5 px-3 sm:px-4 pb-24 pt-8 md:px-8">
+    <div className="mx-auto max-w-3xl space-y-5 px-3 @tsm:px-4 pb-24 pt-8 @tmd:px-8">
       <Link to={`/mensagem/${id}`} className="text-sm font-bold text-tinta hover:underline">← Voltar para o projeto</Link>
       <div>
-        <h1 className="font-display text-2xl font-extrabold md:text-3xl">Compartilhar projeto</h1>
+        <h1 className="font-display text-2xl font-extrabold @tmd:text-3xl">Compartilhar projeto</h1>
         <p className="mt-1 text-sm text-texto-2">{titulo || 'Projeto sem título'} · Você controla quem pode visualizar ou editar.</p>
       </div>
-      <section className="cartao p-4 sm:p-5 md:p-6">
+      <section className="cartao p-4 @tsm:p-5 @tmd:p-6">
         <h2 className="flex items-center gap-2 font-display text-lg font-extrabold"><UserPlus size={20} className="text-tinta" /> Convidar alguém</h2>
         <p className="mt-1 text-sm text-texto-2">Gere um link e um código equivalentes. A pessoa precisa entrar com a conta dela e aceitar o convite.</p>
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="mt-4 grid grid-cols-1 gap-3 @tsm:grid-cols-2">
           <label className="text-sm font-bold">Permissão
             <select className="campo mt-1" value={permissao} onChange={(e) => setPermissao(e.target.value as PermissaoConvite)}>
               <option value="editor">Pode editar</option><option value="leitor">Somente visualizar</option>
@@ -104,7 +104,7 @@ export default function CompartilharProjeto() {
         )}
       </section>
 
-      <section className="cartao p-4 sm:p-5 md:p-6">
+      <section className="cartao p-4 @tsm:p-5 @tmd:p-6">
         <h2 className="flex items-center gap-2 font-display text-lg font-extrabold"><Users size={20} className="text-tinta" /> Pessoas com acesso</h2>
         {membros.filter((m) => !m.bloqueado).length === 0 ? <p className="mt-3 text-sm text-texto-2">Ninguém aceitou um convite ainda.</p> : (
           <ul className="mt-4 divide-y divide-borda">
@@ -130,7 +130,7 @@ export default function CompartilharProjeto() {
         )}
       </section>
 
-      <section className="cartao p-4 sm:p-5 md:p-6">
+      <section className="cartao p-4 @tsm:p-5 @tmd:p-6">
         <h2 className="flex items-center gap-2 font-display text-lg font-extrabold"><ShieldCheck size={20} className="text-tinta" /> Convites criados</h2>
         <p className="mt-1 text-xs text-texto-2">Revogar o link impede novas entradas. Para remover quem já aceitou, use “Pessoas com acesso”.</p>
         <ul className="mt-3 divide-y divide-borda">

@@ -154,14 +154,14 @@ export default function Projetar() {
 
   return (
     <div onDoubleClick={alternarTelaCheia}
-      className={`escuro relative h-dvh select-none text-white ${slide ? 'cursor-none bg-black' : 'bg-fundo'}`}>
+      className={`escuro relative h-dvh select-none text-white ${slide ? 'cursor-none bg-black' : 'overflow-y-auto bg-fundo'}`}>
       {slide ? <Slide slide={slide} /> : (
-        <div className="flex h-full flex-col items-center justify-center gap-10 p-8 text-center">
+        <div className="flex min-h-full flex-col items-center justify-center gap-8 p-6 pb-24 text-center sm:gap-10 sm:p-8 sm:pb-24">
           <Marca icone className="text-5xl" />
           <div className="flex flex-col items-center gap-10 md:flex-row md:gap-16">
             <div>
               <p className="text-lg text-texto-2">Código do telão</p>
-              <p className="mt-2 text-[10vw] font-bold leading-none tracking-[0.12em] tabular-nums md:text-[7vw]">
+              <p className="mt-2 text-[12vw] font-bold leading-none tracking-[0.12em] tabular-nums sm:text-[10vw] md:text-[7vw]">
                 {codigo.slice(0, 3)} {codigo.slice(3)}
               </p>
             </div>
@@ -182,7 +182,7 @@ export default function Projetar() {
 
       {!telaCheia && (
         <button onClick={alternarTelaCheia}
-          className="absolute bottom-5 right-5 flex cursor-pointer items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white/80 hover:bg-white/10">
+          className="fixed bottom-5 right-5 flex cursor-pointer items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white/80 hover:bg-white/10">
           <Maximize size={16} /> Tela cheia
         </button>
       )}

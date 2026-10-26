@@ -30,9 +30,9 @@ const CAMPOS_SLIDE = ['topico_id', 'ordem', 'titulo', 'subtitulo', 'texto', 'fun
 const versaoAtual = () => lerVersao()
 const botaoPequeno = 'botao-secundario px-3 py-1.5 text-sm'
 /* Ferramentas em linha (rolam para o lado no celular) */
-const ferramenta = 'botao-secundario shrink-0 px-3 py-2 text-sm sm:py-1.5'
+const ferramenta = 'botao-secundario shrink-0 px-3 py-2 text-sm @tsm:py-1.5'
 /* Ações empilhadas no celular: ícone em cima, nome embaixo */
-const acaoSlide = 'botao-secundario flex-col gap-0.5 px-1 py-2 text-[11px] sm:flex-row sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm'
+const acaoSlide = 'botao-secundario flex-col gap-0.5 px-1 py-2 text-[11px] @tsm:flex-row @tsm:gap-2 @tsm:px-3 @tsm:py-1.5 @tsm:text-sm'
 const iconeBotao = 'flex h-9 w-9 items-center justify-center rounded-xl text-texto-2 hover:bg-superficie-2 hover:text-texto disabled:opacity-25'
 const NOMES_ELEMENTO: Record<TipoElemento, string> = {
   texto: 'Texto', foto: 'Foto', seta: 'Seta', circulo: 'Círculo', retangulo: 'Retângulo', linha: 'Linha', icone: 'Ícone',
@@ -862,7 +862,7 @@ export default function EditorSlides() {
       <p className="text-sm text-texto-2">Tudo o que você escreveu vira slide, menos as <b className="text-texto">notas pessoais</b>.</p>
       <div>
         <span className="mb-1.5 block text-sm font-semibold text-texto-2">Tamanho do texto no slide</span>
-        <div role="radiogroup" aria-label="Texto em cada slide" className="grid max-w-xl grid-cols-2 gap-2 sm:grid-cols-4">
+        <div role="radiogroup" aria-label="Texto em cada slide" className="grid max-w-xl grid-cols-2 gap-2 @tsm:grid-cols-4">
           {(Object.keys(DENSIDADES) as Densidade[]).map((d) => {
             const ativo = densidade === d
             const { nome, dica } = DENSIDADES[d]
@@ -899,13 +899,13 @@ export default function EditorSlides() {
   )
 
   return (
-    <div className="mx-auto max-w-6xl px-3 sm:px-4 pb-28 pt-4 md:pt-8">
+    <div className="mx-auto max-w-6xl px-3 @tsm:px-4 pb-28 pt-4 @tmd:pt-8">
       {/* Barra do topo */}
       <div className="flex items-center gap-1">
         <Link to={`/mensagem/${mensagem.id}`} className="botao-fantasma -ml-2 px-2">
           <ChevronLeft size={20} /> Mensagem
         </Link>
-        {papelAtual === 'dono' && <Link to={`/mensagem/${mensagem.id}/compartilhar`} className="botao-secundario px-2 py-1.5 text-xs sm:text-sm">
+        {papelAtual === 'dono' && <Link to={`/mensagem/${mensagem.id}/compartilhar`} className="botao-secundario px-2 py-1.5 text-xs @tsm:text-sm">
           Convidar
         </Link>}
         <span className={`ml-auto mr-2 flex items-center gap-1.5 text-sm ${status === 'erro' ? 'text-perigo' : 'text-texto-2'}`}>
@@ -921,28 +921,28 @@ export default function EditorSlides() {
         </button>
       </div>
 
-      <div className="mt-3 flex flex-col gap-3 sm:mt-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className="mt-3 flex flex-col gap-3 @tsm:mt-4 @tsm:flex-row @tsm:items-end @tsm:justify-between">
         <div className="min-w-0">
-          <h1 className="font-display text-2xl font-bold sm:text-3xl">Slides</h1>
-          <p className="truncate text-sm text-texto-2 sm:text-base">{mensagem.titulo}</p>
+          <h1 className="font-display text-2xl font-bold @tsm:text-3xl">Slides</h1>
+          <p className="truncate text-sm text-texto-2 @tsm:text-base">{mensagem.titulo}</p>
         </div>
-        <div className="grid grid-cols-3 gap-2 sm:flex">
-          <button onClick={() => setPainelImportar((v) => !v)} className="botao-secundario px-2 sm:px-4">
+        <div className="grid grid-cols-3 gap-2 @tsm:flex">
+          <button onClick={() => setPainelImportar((v) => !v)} className="botao-secundario px-2 @tsm:px-4">
             <Upload size={18} /> Importar
           </button>
           <div className="relative">
             <button onClick={() => setMenuExportar((v) => !v)} disabled={!slides.length || !!exportando}
-              aria-expanded={menuExportar} className="botao-secundario w-full px-2 sm:px-4">
+              aria-expanded={menuExportar} className="botao-secundario w-full px-2 @tsm:px-4">
               {exportando
                 ? <><LoaderCircle size={18} className="animate-spin" /> {exportando}</>
                 : <><Download size={18} /> Exportar</>}
             </button>
             {menuExportar && (
               <>
-                <div className="fixed inset-0 z-30 bg-black/40 sm:bg-transparent" onClick={() => setMenuExportar(false)} />
+                <div className="fixed inset-0 z-30 bg-black/40 @tsm:bg-transparent" onClick={() => setMenuExportar(false)} />
                 {/* Celular: folha embaixo, ao alcance do polegar. Computador: menu suspenso */}
-                <div className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 animate-subir rounded-3xl border border-borda bg-superficie p-2 shadow-xl sm:absolute sm:inset-x-auto sm:bottom-auto sm:right-0 sm:top-full sm:mt-2 sm:w-64 sm:animate-entrar sm:rounded-2xl sm:p-1.5">
-                  <p className="rotulo px-3 pb-1 pt-2 sm:hidden">Exportar slides</p>
+                <div className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 animate-subir rounded-3xl border border-borda bg-superficie p-2 shadow-xl @tsm:absolute @tsm:inset-x-auto @tsm:bottom-auto @tsm:right-0 @tsm:top-full @tsm:mt-2 @tsm:w-64 @tsm:animate-entrar @tsm:rounded-2xl @tsm:p-1.5">
+                  <p className="rotulo px-3 pb-1 pt-2 @tsm:hidden">Exportar slides</p>
                   <button onClick={() => exportar('pptx')} className="flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-superficie-2">
                     <Presentation size={18} className="mt-0.5 shrink-0 text-tinta" />
                     <span><b className="block text-sm">PowerPoint editável</b><span className="text-xs text-texto-2">Textos que dá para mudar no PowerPoint, com suas anotações nas notas</span></span>
@@ -959,7 +959,7 @@ export default function EditorSlides() {
               </>
             )}
           </div>
-          <Link to={`/pregar/${mensagem.id}`} className="botao-primario px-2 sm:px-4">
+          <Link to={`/pregar/${mensagem.id}`} className="botao-primario px-2 @tsm:px-4">
             <Play size={18} /> Pregar
           </Link>
         </div>
@@ -975,7 +975,7 @@ export default function EditorSlides() {
               <X size={18} />
             </button>
           </div>
-          <div className="grid gap-3 text-sm sm:grid-cols-2">
+          <div className="grid gap-3 text-sm @tsm:grid-cols-2">
             <div className="rounded-2xl bg-superficie-2 p-4">
               <p className="font-semibold">PDF ou imagens</p>
               <p className="mt-1 text-texto-2">
@@ -988,15 +988,15 @@ export default function EditorSlides() {
               <p className="mt-1 text-texto-2">Traz só os textos, para você aplicar o visual do Pulpito.</p>
             </div>
           </div>
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+          <div className="flex flex-col gap-3 @tsm:flex-row @tsm:flex-wrap @tsm:items-end">
             <Campo rotulo="Os slides vão aparecer em">
-              <select value={destinoImport} onChange={(e) => setDestinoImport(e.target.value)} className="campo sm:w-auto">
+              <select value={destinoImport} onChange={(e) => setDestinoImport(e.target.value)} className="campo @tsm:w-auto">
                 {opcoesTopico}
               </select>
             </Campo>
             <input ref={arquivoImport} type="file" multiple accept=".pdf,.pptx,image/*" className="hidden"
               onChange={(e) => { importar(e.target.files); e.target.value = '' }} />
-            <button onClick={() => arquivoImport.current?.click()} disabled={!!importando} className="botao-primario w-full sm:w-auto">
+            <button onClick={() => arquivoImport.current?.click()} disabled={!!importando} className="botao-primario w-full @tsm:w-auto">
               {importando ? <LoaderCircle size={18} className="animate-spin" /> : <Upload size={18} />}
               {importando ?? 'Escolher arquivos'}
             </button>
@@ -1007,7 +1007,7 @@ export default function EditorSlides() {
       {slides.length === 0 ? (
         <section className="mt-6 overflow-hidden rounded-3xl border border-borda bg-superficie">
           {/* Como a capa vai ficar: o mesmo visual que o botão gera */}
-          <div className="mx-auto max-w-xl p-4 pb-0 sm:p-6 sm:pb-0">
+          <div className="mx-auto max-w-xl p-4 pb-0 @tsm:p-6 @tsm:pb-0">
             <div className="rounded-2xl p-1 ring-1 ring-borda">
               <SlideVisual className="rounded-xl" slide={{
                 titulo: mensagem.titulo || 'Título da mensagem',
@@ -1016,14 +1016,14 @@ export default function EditorSlides() {
               }} />
             </div>
           </div>
-          <div className="mx-auto max-w-xl p-4 text-center sm:p-6">
+          <div className="mx-auto max-w-xl p-4 text-center @tsm:p-6">
             <h2 className="font-display text-2xl font-bold">Esta mensagem ainda não tem slides</h2>
             <p className="mt-1 text-texto-2">
               {topicos.length
                 ? `Em um toque: uma capa, um slide por ${mensagem.tipo === 'estudo' ? 'bloco' : 'tópico'} e os versículos por extenso. Depois você ajusta o que quiser.`
                 : 'Escreva os tópicos da mensagem primeiro; os slides nascem deles. Ou comece com um slide em branco.'}
             </p>
-            <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-center">
+            <div className="mt-5 flex flex-col gap-2 @tsm:flex-row @tsm:justify-center">
               <button onClick={gerar} disabled={gerando || topicos.length === 0} className="botao-primario">
                 {gerando ? <LoaderCircle size={18} className="animate-spin" /> : <ListPlus size={18} />}
                 {gerando ? 'Criando…' : `Criar slides ${mensagem.tipo === 'estudo' ? 'desta aula' : 'desta mensagem'}`}
@@ -1068,25 +1068,25 @@ export default function EditorSlides() {
               </p>
             </div>
           ) : (
-            <div className="mt-6 flex items-center gap-2">
+            <div className="mt-6 flex items-center gap-2 whitespace-nowrap">
               <button onClick={() => { setSelecao(new Set()); setAncora(null) }}
                 className="botao-fantasma -ml-2 px-2 text-sm">
-                <ListChecks size={18} /> Selecionar vários
+                <ListChecks size={18} /> Selecionar<span className="@max-[26rem]:hidden">&nbsp;vários</span>
               </button>
               <button onClick={() => inserirDepois({})} className="botao-secundario ml-1 px-3 py-1.5 text-sm">
-                <Plus size={16} /> Novo slide
+                <Plus size={16} /> Novo<span className="@max-[26rem]:hidden">&nbsp;slide</span>
               </button>
               {slides.length > 0 && (
                 <button onClick={apagarTodos} className="botao-fantasma ml-auto px-2 text-sm hover:text-perigo">
-                  <Trash2 size={17} /> Apagar todos
+                  <Trash2 size={17} /> Apagar<span className="@max-[26rem]:hidden">&nbsp;todos</span>
                 </button>
               )}
             </div>
           )}
 
-          <div className="mt-3 grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
+          <div className="mt-3 grid gap-6 @tmd:grid-cols-[220px_minmax(0,1fr)]">
             {/* Miniaturas */}
-            <aside className="sem-barra -mx-4 flex snap-x gap-2.5 overflow-x-auto px-4 pb-2 sm:gap-3 lg:mx-0 lg:max-h-[80dvh] lg:flex-col lg:overflow-y-auto lg:overflow-x-visible lg:px-0">
+            <aside className="sem-barra -mx-4 flex snap-x gap-2.5 overflow-x-auto px-4 pb-2 @tsm:gap-3 @tmd:mx-0 @tmd:max-h-[80dvh] @tmd:flex-col @tmd:overflow-y-auto @tmd:overflow-x-visible @tmd:px-0">
               {slides.map((s, i) => {
                 const marcado = !!selecao?.has(s.id)
                 const destaque = selecao ? marcado : s.id === sel?.id
@@ -1094,14 +1094,14 @@ export default function EditorSlides() {
                   <Fragment key={s.id}>
                   {i > 0 && !selecao && (
                     <button onClick={() => inserirDepois({}, i)} aria-label={`Novo slide entre o ${i} e o ${i + 1}`} title="Novo slide aqui"
-                      className="group/mais -mx-1.5 flex shrink-0 items-center justify-center self-center lg:-my-2.5 lg:mx-0 lg:h-5">
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full border border-borda bg-superficie text-texto-2 transition hover:border-acao hover:bg-acao hover:text-acao-texto lg:opacity-0 lg:group-hover/mais:opacity-100 lg:focus-visible:opacity-100">
+                      className="group/mais -mx-1.5 flex shrink-0 items-center justify-center self-center @tmd:-my-2.5 @tmd:mx-0 @tmd:h-5">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full border border-borda bg-superficie text-texto-2 transition hover:border-acao hover:bg-acao hover:text-acao-texto @tmd:opacity-0 @tmd:group-hover/mais:opacity-100 @tmd:focus-visible:opacity-100">
                         <Plus size={14} strokeWidth={2.5} />
                       </span>
                     </button>
                   )}
                   <button onClick={(e) => clicarMiniatura(s, e)} aria-pressed={selecao ? marcado : undefined}
-                    className={`relative w-32 shrink-0 select-none sm:w-40 rounded-xl p-1 text-left transition lg:w-full ${destaque
+                    className={`relative w-32 shrink-0 select-none @tsm:w-40 rounded-xl p-1 text-left transition @tmd:w-full ${destaque
                       ? 'bg-superficie ring-2 ring-acao' : 'ring-1 ring-borda hover:ring-texto-2'}`}>
                     <SlideVisual slide={s} className={`rounded-lg ${selecao && !marcado ? 'opacity-60' : ''}`} />
                     {selecao && (
@@ -1119,7 +1119,7 @@ export default function EditorSlides() {
               })}
               {!selecao && (
                 <button onClick={() => inserirDepois({}, slides.length)}
-                  className="flex w-24 shrink-0 flex-col items-center sm:w-40 sm:flex-row justify-center gap-1.5 rounded-xl border border-dashed border-borda py-4 text-sm font-semibold text-texto-2 hover:border-acao hover:text-tinta lg:w-full">
+                  className="flex w-24 shrink-0 flex-col items-center @tsm:w-40 @tsm:flex-row justify-center gap-1.5 rounded-xl border border-dashed border-borda py-4 text-sm font-semibold text-texto-2 hover:border-acao hover:text-tinta @tmd:w-full">
                   <Plus size={16} /> Slide
                 </button>
               )}
@@ -1128,7 +1128,7 @@ export default function EditorSlides() {
             {sel && (
               <section className="min-w-0 space-y-5">
                 {/* Prévia: fica presa no topo enquanto um elemento é editado */}
-                <div className={elAtual ? 'sticky top-0 z-20 -mx-4 bg-fundo/95 px-4 pb-3 pt-2 backdrop-blur md:mx-0 md:px-0' : ''}>
+                <div className={elAtual ? 'sticky top-0 z-20 -mx-4 bg-fundo/95 px-4 pb-3 pt-2 backdrop-blur @tmd:mx-0 @tmd:px-0' : ''}>
                   {/* Enquanto edita, a prévia fica visível ao rolar o painel (e não ocupa mais que ~40% da altura) */}
                   <div className="relative mx-auto" style={elAtual ? { maxWidth: 'min(100%, calc(42dvh * 16 / 9))' } : undefined}>
                     <SlideVisual className="rounded-2xl ring-1 ring-borda"
@@ -1141,8 +1141,8 @@ export default function EditorSlides() {
                 </div>
 
                 {/* Ações do slide: no celular, quatro botões iguais logo abaixo da prévia */}
-                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-                  <div className="grid grid-cols-4 gap-1.5 sm:flex sm:gap-2">
+                <div className="flex flex-col gap-2 @tsm:flex-row @tsm:flex-wrap @tsm:items-center">
+                  <div className="grid grid-cols-4 gap-1.5 @tsm:flex @tsm:gap-2">
                     <button onClick={() => mover(-1)} disabled={iSel === 0} className={acaoSlide}>
                       <ArrowUp size={16} /> Antes
                     </button>
@@ -1156,9 +1156,9 @@ export default function EditorSlides() {
                       <Trash2 size={16} /> Excluir
                     </button>
                   </div>
-                  <label className="flex items-center gap-2 text-sm text-texto-2 sm:ml-auto">
+                  <label className="flex items-center gap-2 text-sm text-texto-2 @tsm:ml-auto">
                     <span className="shrink-0">Aparece em</span>
-                    <select value={sel.topico_id ?? ''} className="campo min-w-0 flex-1 py-1.5 sm:w-auto sm:flex-none"
+                    <select value={sel.topico_id ?? ''} className="campo min-w-0 flex-1 py-1.5 @tsm:w-auto @tsm:flex-none"
                       onChange={(e) => alterar(sel.id, { topico_id: e.target.value || null })}>
                       {opcoesTopico}
                     </select>
@@ -1167,9 +1167,9 @@ export default function EditorSlides() {
 
                 {/* Adicionar elementos */}
                 <div className="rounded-2xl border border-borda bg-superficie p-3">
-                  <span className="rotulo mb-2 block sm:hidden">Adicionar ao slide</span>
-                  <div className="sem-barra -mx-3 flex items-center gap-1.5 overflow-x-auto px-3 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
-                    <span className="rotulo mr-1 hidden sm:inline">Adicionar</span>
+                  <span className="rotulo mb-2 block @tsm:hidden">Adicionar ao slide</span>
+                  <div className="sem-barra -mx-3 flex items-center gap-1.5 overflow-x-auto px-3 @tsm:mx-0 @tsm:flex-wrap @tsm:overflow-visible @tsm:px-0">
+                    <span className="rotulo mr-1 hidden @tsm:inline">Adicionar</span>
                     <input ref={arquivoElemento} type="file" accept="image/*" className="hidden"
                       onChange={(e) => { const f = e.target.files?.[0]; if (f) adicionarFotoElemento(f); e.target.value = '' }} />
                     <input ref={arquivoTroca} type="file" accept="image/*" className="hidden"
@@ -1193,7 +1193,7 @@ export default function EditorSlides() {
                       <div className="mb-3 flex items-center justify-between gap-2">
                         <p className="text-xs text-texto-2">
                           Arraste para mover; puxe as bolinhas para o tamanho e a de cima para girar.
-                          <span className="hidden sm:inline"> Setas do teclado ajustam; Ctrl+D duplica.</span>
+                          <span className="hidden @tsm:inline"> Setas do teclado ajustam; Ctrl+D duplica.</span>
                         </p>
                         <button onClick={() => setElSel(null)} className="botao-fantasma shrink-0 px-2 py-1 text-sm">Pronto</button>
                       </div>
@@ -1237,7 +1237,7 @@ export default function EditorSlides() {
                     <span className="rotulo flex items-center gap-1.5"><LayoutTemplate size={14} /> Modelos editáveis</span>
                     <span className="text-xs text-texto-2">tudo vira caixa livre</span>
                   </div>
-                  <div className="sem-barra -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
+                  <div className="sem-barra -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 @tsm:mx-0 @tsm:px-0">
                     {MODELOS.map((m) => (
                       <button key={m.id} onClick={() => aplicarModelo(m.id)}
                         className="w-36 shrink-0 rounded-xl border-2 border-borda bg-superficie p-1.5 text-left transition-colors hover:border-acao">
@@ -1274,7 +1274,7 @@ export default function EditorSlides() {
                   <p className="mt-1.5 text-xs text-texto-2">Só você vê: aparecem no seu celular no modo pregação e nas notas do PowerPoint ao exportar. Nunca vão para o telão.</p>
                 </div>
 
-                <div className="grid grid-cols-[minmax(0,1fr)] gap-6 md:grid-cols-2">
+                <div className="grid grid-cols-[minmax(0,1fr)] gap-6 @tmd:grid-cols-2">
                   {/* Textos */}
                   {estilo.layout === 'vazio' ? (
                     <div className="space-y-3 rounded-2xl border border-dashed border-borda p-4">
@@ -1448,7 +1448,7 @@ export default function EditorSlides() {
                           opcoes={[{ valor: 'p', rotulo: 'P' }, { valor: 'm', rotulo: 'M' }, { valor: 'g', rotulo: 'G' }]}
                           onChange={(v) => alterarEstilo({ tamanho: v })} />
                       </div>
-                      <div className="grid w-full gap-3 sm:grid-cols-2">
+                      <div className="grid w-full gap-3 @tsm:grid-cols-2">
                         <label className="block">
                           <span className="mb-2 block text-sm font-semibold text-texto-2">Fonte dos títulos</span>
                           <select value={estilo.fonteTitulo ?? (estilo.fonte === 'serif' ? 'classica' : 'moderna')} className="campo"
