@@ -1,7 +1,7 @@
 {
   "name": "pulpito",
   "private": true,
-  "version": "2.4.2",
+  "version": "2.5.0",
   "author": "Matheus Neves <116042913+matheusnsp@users.noreply.github.com> (https://www.matheusnsp.com.br)",
   "type": "module",
   "scripts": {

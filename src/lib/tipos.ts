@@ -75,6 +75,7 @@ export type EstiloSlide = {
   tamanho: 'p' | 'm' | 'g'
   fonte: 'sans' | 'serif'
   escurecer: number // 0 a 0.8, usado só com imagem de fundo
+  notas?: string // anotações do apresentador: ficam no celular e nas notas do PowerPoint, nunca no telão
   ajuste: 'cobrir' | 'conter' // foto preenche o slide ou aparece inteira
   layout?: LayoutSlide // como o texto é arrumado (capa, tópico, versículo, frase)
   destaque?: string // cor de destaque (referências, faixa, aspas)

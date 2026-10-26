@@ -182,11 +182,14 @@ async function renderizar(slides: Slide[], separarTextos: boolean, aoProgredir?:
 function notasPorSlide(slides: Slide[], topicos: Topico[]) {
   const vistos = new Set<string>()
   return slides.map((s) => {
-    if (!s.topico_id || vistos.has(s.topico_id)) return ''
+    // Anotações do próprio slide (valem para importados); o tópico entra uma vez, no primeiro slide dele
+    const proprias = s.estilo?.notas?.trim() ? `Anotações: ${s.estilo.notas.trim()}` : ''
+    if (!s.topico_id || vistos.has(s.topico_id)) return proprias
     vistos.add(s.topico_id)
     const t = topicos.find((x) => x.id === s.topico_id)
-    if (!t) return ''
+    if (!t) return proprias
     return [
+      proprias,
       t.titulo,
       t.versiculo && `Versículos: ${t.versiculo}`,
       t.observacao && `Observação: ${t.observacao}`,
