@@ -4,11 +4,58 @@ import { useEffect, useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { BookOpen, Maximize } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import { canalTelao, codigoValido, gerarCodigo, type SlideTelao } from '../lib/telao'
+import { canalTelao, codigoValido, gerarCodigo, imagensDoSlide, type Preparo, type SlideTelao } from '../lib/telao'
 import SlideVisual from '../components/SlideVisual'
 import Marca from '../components/Marca'
 
 const CHAVE_CODIGO = 'pulpito-codigo-telao'
+
+/* Imagens já baixadas ficam guardadas aqui (e no cache do navegador), para o slide trocar na hora.
+   Sem isso, o telão só pedia a imagem quando o slide entrava, e ficava preto até ela chegar. */
+const baixadas = new Map<string, HTMLImageElement>()
+const pendentes = new Map<string, Promise<boolean>>()
+
+function baixar(url: string, tentativas = 2): Promise<boolean> {
+  const pronta = baixadas.get(url)
+  if (pronta) return Promise.resolve(true)
+  const andamento = pendentes.get(url)
+  if (andamento) return andamento
+  const p = new Promise<boolean>((ok) => {
+    const img = new Image()
+    img.decoding = 'async'
+    img.onload = () => { baixadas.set(url, img); ok(true) }
+    img.onerror = () => ok(false)
+    img.src = url
+  }).then((deu) => deu || (tentativas > 1 ? baixar(url, tentativas - 1) : false))
+    .finally(() => pendentes.delete(url))
+  pendentes.set(url, p)
+  return p
+}
+
+/* Baixa a lista toda, poucas por vez, avisando o andamento */
+async function baixarTodas(urls: string[], andamento: (p: Preparo) => void, cancelada: () => boolean) {
+  const fila = [...urls]
+  const estado: Preparo = { feitas: 0, total: urls.length, falhas: 0 }
+  const trabalhador = async () => {
+    for (let u = fila.shift(); u !== undefined && !cancelada(); u = fila.shift()) {
+      const deu = await baixar(u)
+      if (!deu) estado.falhas++
+      estado.feitas++
+      andamento({ ...estado })
+    }
+  }
+  await Promise.all([0, 1, 2].map(trabalhador))
+  return estado
+}
+
+/* Espera as imagens do slide (até um limite), para nunca trocar para um slide preto */
+function esperarImagens(urls: string[], limiteMs = 4000) {
+  if (!urls.length) return Promise.resolve()
+  return Promise.race([
+    Promise.all(urls.map((u) => baixar(u))).then(() => undefined),
+    new Promise<void>((ok) => setTimeout(ok, limiteMs)),
+  ])
+}
 
 const porTamanho = (t: string, grande: string, medio: string, pequeno: string) =>
   t.length > 300 ? pequeno : t.length > 150 ? medio : grande
@@ -118,6 +165,7 @@ export default function Projetar() {
   const [slide, setSlide] = useState<SlideTelao | null>(null)
   const [online, setOnline] = useState(false)
   const [telaCheia, setTelaCheia] = useState(false)
+  const [preparo, setPreparo] = useState<Preparo | null>(null)
 
   useEffect(() => { sessionStorage.setItem(CHAVE_CODIGO, codigo) }, [codigo])
 
@@ -127,9 +175,30 @@ export default function Projetar() {
   useEffect(() => {
     const ch = supabase.channel(canalTelao(codigo), { config: { broadcast: { self: false } } })
     let pulso: ReturnType<typeof setInterval> | undefined
+    let serie = 0 // número do último slide recebido: um mais antigo que chegue depois é ignorado
+    let preparoAtual = 0
 
-    ch.on('broadcast', { event: 'slide' }, ({ payload }) => setSlide(payload as SlideTelao))
-      .on('broadcast', { event: 'tchau' }, () => setSlide(null))
+    const mostrar = async (novo: SlideTelao) => {
+      const n = ++serie
+      const urls = novo.tipo === 'personalizado' ? imagensDoSlide(novo) : []
+      await esperarImagens(urls)
+      if (n === serie) setSlide(novo)
+    }
+
+    const preparar = async (urls: string[]) => {
+      const n = ++preparoAtual
+      const avisar = (p: Preparo) => {
+        setPreparo(p)
+        // andamento para o celular: a cada 3 imagens e no fim, para não lotar o canal
+        if (p.feitas === p.total || p.feitas % 3 === 0) ch.send({ type: 'broadcast', event: 'preparo', payload: p })
+      }
+      avisar({ feitas: 0, total: urls.length, falhas: 0 })
+      await baixarTodas(urls, avisar, () => n !== preparoAtual)
+    }
+
+    ch.on('broadcast', { event: 'slide' }, ({ payload }) => { void mostrar(payload as SlideTelao) })
+      .on('broadcast', { event: 'preparar' }, ({ payload }) => { void preparar(((payload as { urls?: unknown }).urls as string[] | undefined) ?? []) })
+      .on('broadcast', { event: 'tchau' }, () => { serie++; setSlide(null) })
       .on('broadcast', { event: 'ola' }, () =>
         ch.send({ type: 'broadcast', event: 'presente', payload: {} }))
       .subscribe((status) => {
@@ -177,6 +246,15 @@ export default function Projetar() {
             <span className={`h-2 w-2 rounded-full ${online ? 'bg-sucesso' : 'bg-aviso'}`} />
             {online ? 'Pronto, aguardando o celular' : 'Conectando ao servidor…'}
           </p>
+          {preparo && preparo.total > 0 && (
+            <p className="text-sm text-texto-2">
+              {preparo.feitas < preparo.total
+                ? `Baixando os slides: ${preparo.feitas} de ${preparo.total}…`
+                : preparo.falhas
+                  ? `${preparo.total - preparo.falhas} de ${preparo.total} slides prontos. ${preparo.falhas} não baixaram; peça para baixar de novo no celular.`
+                  : `Todos os ${preparo.total} slides com imagem já estão prontos neste computador.`}
+            </p>
+          )}
         </div>
       )}
 

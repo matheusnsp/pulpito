@@ -21,6 +21,18 @@ export type SlideTelao =
       texto?: string | null; fundo?: string | null; estilo?: Partial<EstiloSlide> | null
     }
 
+/* Andamento do download das imagens no telão (feito antes da apresentação) */
+export type Preparo = { feitas: number; total: number; falhas: number }
+
+/* Todas as imagens que um slide precisa baixar: foto de fundo (img:URL), foto do slide e fotos soltas */
+export function imagensDoSlide(s: { fundo?: string | null; estilo?: Partial<EstiloSlide> | null }): string[] {
+  const urls: string[] = []
+  if (s.fundo?.startsWith('img:')) urls.push(s.fundo.slice(4))
+  if (s.estilo?.foto) urls.push(s.estilo.foto)
+  for (const el of s.estilo?.elementos ?? []) if (el.tipo === 'foto' && el.url) urls.push(el.url)
+  return [...new Set(urls.filter((u) => /^https?:/.test(u)))]
+}
+
 export const CHAVE_TELAO = 'pulpito-telao'
 export const canalTelao = (codigo: string) => `telao-${codigo}`
 export const codigoValido = (c: string) => /^\d{6}$/.test(c)
@@ -36,24 +48,29 @@ const opcoes = { config: { broadcast: { self: false } } }
 export function useEmissorTelao(codigo: string | null) {
   const canal = useRef<RealtimeChannel | null>(null)
   const ultimo = useRef<SlideTelao>({ tipo: 'vazio' })
+  const imagens = useRef<string[]>([])
   const ultimoSinal = useRef(0)
   const [online, setOnline] = useState(false)
+  const [preparo, setPreparo] = useState<Preparo | null>(null)
 
   useEffect(() => {
     if (!codigo) return
     const ch = supabase.channel(canalTelao(codigo), opcoes)
     const sinal = () => { ultimoSinal.current = Date.now(); setOnline(true) }
 
-    ch.on('broadcast', { event: 'pedir-estado' }, () => {
-        sinal()
-        ch.send({ type: 'broadcast', event: 'slide', payload: ultimo.current })
-      })
+    // Ao (re)conectar, o telão recebe o slide atual e a lista de imagens para baixar de uma vez
+    const mandarEstado = () => {
+      ch.send({ type: 'broadcast', event: 'slide', payload: ultimo.current })
+      if (imagens.current.length) ch.send({ type: 'broadcast', event: 'preparar', payload: { urls: imagens.current } })
+    }
+    ch.on('broadcast', { event: 'pedir-estado' }, () => { sinal(); mandarEstado() })
       .on('broadcast', { event: 'presente' }, sinal)
+      .on('broadcast', { event: 'preparo' }, ({ payload }) => { sinal(); setPreparo(payload as Preparo) })
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           canal.current = ch
           ch.send({ type: 'broadcast', event: 'ola', payload: {} })
-          ch.send({ type: 'broadcast', event: 'slide', payload: ultimo.current })
+          mandarEstado()
         }
       })
 
@@ -78,5 +95,13 @@ export function useEmissorTelao(codigo: string | null) {
     canal.current?.send({ type: 'broadcast', event: 'tchau', payload: {} })
   }, [])
 
-  return { online: !!codigo && online, enviar, despedir }
+  /* Pede ao telão que baixe todas as imagens agora, antes da apresentação */
+  const preparar = useCallback((urls: string[]) => {
+    imagens.current = urls
+    if (!urls.length) { setPreparo(null); return }
+    setPreparo({ feitas: 0, total: urls.length, falhas: 0 })
+    canal.current?.send({ type: 'broadcast', event: 'preparar', payload: { urls } })
+  }, [])
+
+  return { online: !!codigo && online, enviar, despedir, preparar, preparo }
 }

@@ -8,14 +8,14 @@ import { FaixaAoVivo, PainelAoVivo, RespostasAoVivo, type AoVivo } from '../comp
 import { aceitaResposta, ehMultipla, linkResponder, useAulaAoVivo } from '../lib/aoVivo'
 import { Link, useParams } from 'react-router-dom'
 import {
-  Check, BookOpen, Cast, ChartNoAxesColumn, ChevronDown, Radio, Clock, ExternalLink, Target, Timer, ChevronLeft, Maximize, Minus, MonitorPlay, Pause, Play, Plus, RotateCcw, Settings, X,
+  Check, BookOpen, Cast, ChartNoAxesColumn, ChevronDown, Radio, Clock, ExternalLink, ImageDown, LoaderCircle, Target, Timer, ChevronLeft, Maximize, Minus, MonitorPlay, Pause, Play, Plus, RotateCcw, Settings, X,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Mensagem, Slide, Topico } from '../lib/tipos'
 import {
   parseReferencia, formatarReferencia, lerCapitulo, lerReferencia, nomeDoLivro, dividirReferencias,
 } from '../lib/biblia'
-import { CHAVE_TELAO, codigoValido, useEmissorTelao, type SlideTelao } from '../lib/telao'
+import { CHAVE_TELAO, codigoValido, imagensDoSlide, useEmissorTelao, type Preparo, type SlideTelao } from '../lib/telao'
 import { usePinca } from '../lib/pinca'
 
 type SlideVersiculo = Extract<SlideTelao, { tipo: 'versiculo' }>
@@ -151,16 +151,22 @@ function BibliaSobreposta({ inicial, podeProjetar, projetado, onProjetar, onFech
 }
 
 /* ── Painel de conexão com o telão ── */
-function PainelTelao({ codigo, online, apagado, onConectar, onDesconectar, onAlternarApagado, onFechar }: {
+function PainelTelao({ codigo, online, apagado, imagens, preparo, onPreparar, onConectar, onDesconectar, onAlternarApagado, onFechar }: {
   codigo: string | null
   online: boolean
   apagado: boolean
+  imagens: number // quantos slides com imagem a mensagem tem
+  preparo: Preparo | null // andamento do download no telão
+  onPreparar: () => void
   onConectar: (codigo: string) => void
   onDesconectar: () => void
   onAlternarApagado: () => void
   onFechar: () => void
 }) {
   const [digitado, setDigitado] = useState('')
+  const baixando = !!preparo && preparo.feitas < preparo.total
+  const prontas = preparo ? preparo.feitas - preparo.falhas : 0
+  const completo = !!preparo && !baixando && preparo.falhas === 0
 
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/60 sm:items-center" onClick={onFechar}>
@@ -194,6 +200,36 @@ function PainelTelao({ codigo, online, apagado, onConectar, onDesconectar, onAlt
               <p className="text-sm text-texto-2">
                 Confira se a página /projetar está aberta com esse código. Se ele mudou, desconecte e digite o novo.
               </p>
+            )}
+            {/* Imagens dos slides baixadas no telão ANTES da apresentação, para nunca ficar preto esperando download */}
+            {imagens > 0 && (
+              <div className="space-y-2 rounded-2xl border border-borda px-4 py-3">
+                <p className="flex items-center gap-2 text-sm font-semibold">
+                  {completo ? <Check size={16} className="text-sucesso" /> : baixando ? <LoaderCircle size={16} className="animate-spin text-texto-2" /> : <ImageDown size={16} className="text-texto-2" />}
+                  {!online
+                    ? `${imagens} slides com imagem para baixar no telão`
+                    : completo
+                      ? `Todos os ${imagens} slides com imagem já estão no telão`
+                      : baixando
+                        ? `Baixando os slides no telão: ${preparo.feitas} de ${preparo.total}`
+                        : preparo && preparo.falhas
+                          ? `${prontas} de ${preparo.total} prontos. ${preparo.falhas} não baixaram`
+                          : `${imagens} slides com imagem para baixar no telão`}
+                </p>
+                {preparo && preparo.total > 0 && (
+                  <div className="h-1.5 overflow-hidden rounded-full bg-superficie-2">
+                    <div className={`h-full rounded-full transition-[width] ${completo ? 'bg-sucesso' : 'bg-acao'}`} style={{ width: `${Math.round((prontas / preparo.total) * 100)}%` }} />
+                  </div>
+                )}
+                <p className="text-xs text-texto-2">
+                  {completo
+                    ? 'Pode apresentar sem depender da internet do telão.'
+                    : 'O download começa sozinho quando o telão conecta. Faça isso antes de começar.'}
+                </p>
+                <button onClick={onPreparar} disabled={!online || baixando} className="botao-secundario w-full py-2 text-sm">
+                  <ImageDown size={16} /> {preparo?.falhas ? 'Tentar baixar de novo' : 'Baixar os slides no telão agora'}
+                </button>
+              </div>
             )}
             <button onClick={onAlternarApagado} className="botao-secundario w-full">
               {apagado ? 'Voltar a mostrar os slides' : 'Apagar o telão'}
@@ -431,7 +467,7 @@ function VersiculoBase({ referencia, onAbrir, contagem }: { referencia: string; 
         <button onClick={onAbrir} className="flex min-w-0 flex-1 items-center gap-2 text-left">
           <BookOpen size={16} className="shrink-0 text-tinta" />
           <span className="min-w-0">
-            <span className="block text-[10px] font-bold uppercase tracking-[0.12em] text-texto-2">Versículo base{contagem ? ` · ${contagem}` : ''}</span>
+            <span className="block text-[length:calc(10px*var(--escala,1))] font-bold uppercase tracking-[0.12em] text-texto-2">Versículo base{contagem ? ` · ${contagem}` : ''}</span>
             <span className="block truncate font-bold text-tinta">{formatarReferencia(ref)}</span>
           </span>
         </button>
@@ -547,6 +583,14 @@ export default function Pregar() {
     const salvo = Number(localStorage.getItem(CHAVE_ESCALA))
     return salvo >= ESCALA_MIN && salvo <= ESCALA_MAX ? salvo : 1
   })
+  /* O zoom vale para TODO o texto do conteúdo e do rodapé: além dos tamanhos próprios
+     (título, tópico, corpo), redefine as escalas do Tailwind (text-xs … text-2xl) dentro da área */
+  const estiloEscala = {
+    '--escala': String(escala),
+    '--fs-titulo': `${2.4 * escala}rem`, '--fs-sub': `${2.4 * escala}rem`, '--fs-topico': `${1.55 * escala}rem`, '--fs-corpo': `${1.2 * escala}rem`,
+    '--text-xs': `${0.75 * escala}rem`, '--text-sm': `${0.875 * escala}rem`, '--text-base': `${escala}rem`,
+    '--text-lg': `${1.125 * escala}rem`, '--text-xl': `${1.25 * escala}rem`, '--text-2xl': `${1.5 * escala}rem`,
+  } as CSSProperties
 
   // Telão
   const [codigoTelao, setCodigoTelao] = useState<string | null>(() => {
@@ -557,7 +601,7 @@ export default function Pregar() {
   const [ajudaTelaCheia, setAjudaTelaCheia] = useState(false)
   const [telaoApagado, setTelaoApagado] = useState(false)
   const [versiculoProjetado, setVersiculoProjetado] = useState<SlideVersiculo | null>(null)
-  const { online: telaoOnline, enviar, despedir } = useEmissorTelao(codigoTelao)
+  const { online: telaoOnline, enviar, despedir, preparar, preparo } = useEmissorTelao(codigoTelao)
 
   // Cronômetro
   const [rodando, setRodando] = useState(false)
@@ -603,6 +647,10 @@ export default function Pregar() {
     const topicoId = indice > 0 ? topicos[indice - 1]?.id ?? null : null
     return slides.filter((s) => s.topico_id === topicoId).sort((a, b) => a.ordem - b.ordem)
   }, [slides, topicos, indice])
+
+  // Todas as imagens da mensagem (slides importados de PDF e fotos): o telão baixa tudo antes da apresentação
+  const imagensDaMensagem = useMemo(() => [...new Set(slides.flatMap(imagensDoSlide))], [slides])
+  useEffect(() => { if (codigoTelao) preparar(imagensDaMensagem) }, [codigoTelao, imagensDaMensagem, preparar])
 
   // Pergunta aberta ou atividade com as respostas ao vivo abertas ganha um passo a mais: o mural no telão.
   // Primeiro vem a pergunta (ou os slides dela) e, ao avançar, o telão vira o mural com o QR Code.
@@ -1031,7 +1079,7 @@ export default function Pregar() {
 
       {/* Conteúdo */}
       <main ref={areaTexto} className="flex-1 touch-pan-y overflow-y-auto" onClick={() => setPainelTexto(false)}
-        style={{ '--fs-titulo': `${2.4 * escala}rem`, '--fs-sub': `${2.4 * escala}rem`, '--fs-topico': `${1.55 * escala}rem`, '--fs-corpo': `${1.2 * escala}rem` } as CSSProperties}
+        style={estiloEscala}
         onTouchStart={(e) => {
           if (e.touches.length > 1) multitoque.current = true
           else { multitoque.current = false; toqueX.current = e.touches[0].clientX; toqueY.current = e.touches[0].clientY }
@@ -1144,7 +1192,7 @@ export default function Pregar() {
 
       {/* Navegação */}
       {/* Rodapé: versículo base. Para trocar de tópico, deslize a tela para o lado (ou use as setas do teclado) */}
-      <footer className="relative z-40 mx-auto w-full max-w-5xl px-3 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-2">
+      <footer className="relative z-40 mx-auto w-full max-w-5xl px-3 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-2" style={estiloEscala}>
         <div>
 
         {(versiculos.length > 0 || (!topico && mensagem.texto_base)) && (
@@ -1186,6 +1234,7 @@ export default function Pregar() {
 
       {painelTelao && (
         <PainelTelao codigo={codigoTelao} online={telaoOnline} apagado={telaoApagado}
+          imagens={imagensDaMensagem.length} preparo={preparo} onPreparar={() => preparar(imagensDaMensagem)}
           onConectar={(c) => setCodigoTelao(c)}
           onDesconectar={desconectarTelao}
           onAlternarApagado={() => setTelaoApagado((a) => !a)}
