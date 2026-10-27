@@ -66,6 +66,10 @@ export function versaoAmigavel(v: string) {
 /* Novidades recentes, mostradas em Ajustes. A mais nova primeiro. */
 export const NOVIDADES: { titulo: string; texto: string }[] = [
   {
+    titulo: 'Telão sem tela preta',
+    texto: 'Ao conectar o telão, ele baixa todas as imagens dos slides antes da apresentação (acompanhe no painel Telão). E nunca troca para um slide cuja imagem ainda não chegou.'
+  },
+  {
     titulo: 'Zoom em todo o texto da pregação',
     texto: 'No modo pregação, o tamanho do texto (+ e −, ou pinça) agora vale para tudo: anotações do slide, notas do tópico, rótulos e o versículo base no rodapé.'
   },
